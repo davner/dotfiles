@@ -1,7 +1,6 @@
 # Global agent instructions
 
 - Never use the em dash "—". Use plain dash "-" instead
-- When writing commit messages, NEVER auto-add your agent name as co-author
 - Never manually modify CHANGELOG.md files or any files that are marked as auto-generated
 - When making technical decisions, do not give much weight to development cost.
   Instead, prefer quality, simplicity, robustness, scalability, and long term maintainability.
@@ -13,4 +12,13 @@
 - Apply that same high standard to engineering excellence: lint, test failures, and test flakiness.
   If you see one, even if it is not caused by what you are working on right now, still get it fixed.
 - Before using "dynamic workflows", "ultra code" or any harness feature that immediately spawns a large swarm of subagents, always explain the tradeoffs and ask the user for explicit approval.
-- Commit messages must follow Conventional Commits (`type(scope): summary`). If a ticket ID (e.g. `GPP-123`) is present in the git branch name or was given earlier in conversation, use it as the scope, e.g. `fix(GPP-123): fix for this thing`.
+
+## Git workflow
+
+- Do not commit or push changes unless explicitly instructed.
+- Never use `git add .`; stage only the files relevant to the current task.
+- Before proposing a commit, run the appropriate tests and formatting checks.
+- Show `git status --short` and summarize the staged diff.
+- Use Conventional Commits messages (`type(scope): summary`). If a ticket ID (e.g. `GPP-123`) appears in the branch name or was given earlier in conversation, use it as the scope, e.g. `fix(GPP-123): fix for this thing`.
+- Never auto-add your agent name as a commit co-author.
+- Never amend, rebase, reset, force-push, or delete branches without explicit approval.
