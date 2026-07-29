@@ -13,3 +13,4 @@
 - Apply that same high standard to engineering excellence: lint, test failures, and test flakiness.
   If you see one, even if it is not caused by what you are working on right now, still get it fixed.
 - Before using "dynamic workflows", "ultra code" or any harness feature that immediately spawns a large swarm of subagents, always explain the tradeoffs and ask the user for explicit approval.
+- Commit messages must follow Conventional Commits (`type(scope): summary`). If a ticket ID (e.g. `GPP-123`) is present in the git branch name or was given earlier in conversation, use it as the scope, e.g. `fix(GPP-123): fix for this thing`.
