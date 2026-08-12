@@ -59,13 +59,18 @@ in
   programs.git = {
     enable = true;
     settings = {
-      user = {
-        name = "Dan Avner";
-        email = "ldpavner@gmail.com";
-      };
+      user.name = "Dan Avner";
+      user.email = "ldpavner@gmail.com";
       init.defaultBranch = "main";
     };
     lfs.enable = true;
+  };
+
+  programs.gh = {
+    enable = true;
+    settings = {
+      git_protocol = "ssh";
+    };
   };
 
   # Edit-in-place: the real file stays in my repo, ~/.config just points at it.
