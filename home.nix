@@ -58,11 +58,13 @@ in
 
   programs.git = {
     enable = true;
-    settings.user = {
-      name = "Dan Avner";
-      email = "ldpavner@gmail.com";
+    settings = {
+      user = {
+        name = "Dan Avner";
+        email = "ldpavner@gmail.com";
+      };
+      init.defaultBranch = "main";
     };
-    init.defaultBranch = "main";
     lfs.enable = true;
   };
 
