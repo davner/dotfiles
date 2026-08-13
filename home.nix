@@ -62,6 +62,7 @@ in
       user.name = "Dan Avner";
       user.email = "ldpavner@gmail.com";
       init.defaultBranch = "main";
+      push.autoSetupRemote = "true";
     };
     lfs.enable = true;
   };
