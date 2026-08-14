@@ -13,6 +13,21 @@
   If you see one, even if it is not caused by what you are working on right now, still get it fixed.
 - Before using "dynamic workflows", "ultra code" or any harness feature that immediately spawns a large swarm of subagents, always explain the tradeoffs and ask the user for explicit approval.
 
+## Subagents
+
+Specialists live in `~/.claude/agents/` (symlinked from `home/.claude/agents/`).
+Each one's `description` says when to route to it, so usually just delegate.
+Two habits the descriptions cannot express on their own:
+
+- Design before building. For anything larger than a small change, `architect`
+  plans and `senior-dev` implements the plan. Do not skip straight to code.
+- Nothing self-certifies. Code that `senior-dev` wrote goes to `code-reviewer`
+  before it is called done, and frontend work goes to `ui-verifier`. Fixes go
+  back to `senior-dev`, never to the reviewer, which is why the reviewing agents
+  cannot write files.
+
+Independent agents can run in parallel, but review always follows implementation.
+
 ## Skills
 
 Skills that should be installed, if not, install them.

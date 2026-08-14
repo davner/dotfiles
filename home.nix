@@ -81,6 +81,9 @@ in
     config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.config/herdr";
   home.file.".claude/settings.json".source =
     config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.claude/settings.json";
+  # the subagent roster. one file per agent, claude picks them up by name.
+  home.file.".claude/agents".source =
+    config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.claude/agents";
 
   home.file.".claude/CLAUDE.md".source =
     config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/AGENTS.md";
