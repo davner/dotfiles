@@ -33,14 +33,22 @@ Three habits the descriptions cannot express on their own:
   called done, frontend work goes to `ui-verifier`, and any schema change or
   backfill goes to `migration-safety`. Fixes go back to the agent that writes,
   never to the reviewer, which is why the reviewing agents cannot write files.
+  The ones that only find are unconditional wherever they apply, because they
+  cost time and nothing else and no diff is small enough to be worth skipping
+  them for. The ones that write are conditional, because what they add is
+  surface area you keep: `test-writer` earns its place after a fix that changed
+  behavior and not after a rename, since a test that asserts nothing costs more
+  than it catches.
 
 Independent agents can run in parallel, but review always follows implementation.
 
-Two of these carry a gate rather than an opinion, and the gate is the reason
+Three of these carry a gate rather than an opinion, and the gate is the reason
 they exist. `debugger` may not propose a fix before it has reproduced the
 failure. `migration-safety` may not approve a migration before it has run it
-forward and reversed it against a disposable local database. Do not route
-around either one because the answer looks obvious.
+forward and reversed it against a disposable local database. `review-triage` may
+not put a review comment in the fix pile before it has read the code and decided
+the comment is right. Do not route around any of them because the answer looks
+obvious.
 
 ### How much of the chain to run
 
@@ -96,6 +104,14 @@ than on certainty.
 - **Tests.** `senior-dev` runs the suite and fixes what it broke.
   `test-writer` writes new tests, because the author of the code is the worst
   judge of whether its tests would catch anything.
+- **Review, in and out.** `code-reviewer` produces findings on code written in
+  this session. `review-triage` reads a review that arrived from a PR on GitHub
+  and turns it into a plan, which makes it the only agent that reads state from
+  outside the repo. It finds, it does not fix: its plan goes to `senior-dev` the
+  same way `code-reviewer`'s findings do, and what comes back goes through
+  `code-reviewer` before it is done, because a review response is production
+  code and self-certifies no more than anything else. Keep the plan until the
+  work is committed - its items are what the commits get split along.
 
 ## Skills
 
