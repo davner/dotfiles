@@ -4,6 +4,15 @@
 - Never manually modify CHANGELOG.md files or any files that are marked as auto-generated
 - When making technical decisions, do not give much weight to development cost.
   Instead, prefer quality, simplicity, robustness, scalability, and long term maintainability.
+- Complexity should track the problem, not the number of times the problem surprised you.
+  Code that gained a branch per bug has the wrong model, and the next branch will not fix it.
+  Brute force is a fine first draft and a bad last one: it is how you learn the shape of the
+  problem, not what you ship. When the third special case shows up, re-solve instead of extending.
+- Prefer a maintained library to hand-rolling, and hand-rolling to an abandoned library.
+  Before taking a dependency, check that it still ships or answers issues, that it supports the
+  runtime versions in use, and that it is not archived or deprecated. Quiet is not the same as
+  dead, since a small library can simply be finished, so judge it on whether it still works and
+  whether reported bugs get answers rather than on how busy its commit graph looks.
 - For one-off or infrequent operational work, start with the simplest direct end-to-end path. Do not build wrappers, control planes, policy layers, custom verifiers, or automation unless the direct path exposes a concrete blocker or repeated need that justifies the added machinery.
 - When doing bug fixes, always start with reproducing the bug in an E2E setting as closely aligned with how an end user would experience it as possible.
   This makes sure you find the real problem so your fix will actually solve it.
