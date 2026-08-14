@@ -9,6 +9,8 @@ machine's configuration, not a package anyone installs a version of.
 
 ## 2026-08-14
 
+- **Added** agents: Rule out brute force and unmaintained dependencies ([`fd5f5b9`](https://github.com/davner/dotfiles/commit/fd5f5b9e5ca45ddef1f1e59d6a705677c19de0b9))
+- **Docs** Regenerate the changelog ([`2e87f53`](https://github.com/davner/dotfiles/commit/2e87f537854b22913571b9ac27a6f03085d0be9e))
 - **Added** agents: Add review-triage for reviews arriving from GitHub ([`efeb92b`](https://github.com/davner/dotfiles/commit/efeb92b3ced59f57849a8a24e371cb8b871a4185))
 - **Docs** Regenerate the changelog ([`a4f4af5`](https://github.com/davner/dotfiles/commit/a4f4af501a0789b47df49270d92b2b3e8b0ec90d))
 - **Docs** Group the changelog by day instead of by release ([`f8adb10`](https://github.com/davner/dotfiles/commit/f8adb10601c8748ab1018d3741ac28abcac2abc7))
