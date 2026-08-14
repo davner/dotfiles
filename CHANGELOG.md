@@ -24,6 +24,7 @@ Every change to this repo, newest first, from the commit history.
 
 ### Documentation
 
+- Regenerate the changelog ([`02458ff`](https://github.com/davner/dotfiles/commit/02458ffa750601b5f5906bec742bcd969dd8e0e1), 2026-08-14)
 - Rewrite the README around tables ([`0430f58`](https://github.com/davner/dotfiles/commit/0430f58269131c7d600611d55db66483269105ab), 2026-08-14)
 - Generate CHANGELOG.md from the commit history ([`47b8c60`](https://github.com/davner/dotfiles/commit/47b8c603933244626e35472472894f5871a54eae), 2026-08-14)
 - **agents**: Route the new specialists and bound the pipeline ([`151e6fc`](https://github.com/davner/dotfiles/commit/151e6fc7dace3084f9eed68aff31c6baf346405d), 2026-08-14)
@@ -38,6 +39,7 @@ Every change to this repo, newest first, from the commit history.
 
 ### CI
 
+- Regenerate the changelog on every push to main ([`99fa1d1`](https://github.com/davner/dotfiles/commit/99fa1d1122466d2d526130f5bf0b3c94ad4f92c8), 2026-08-14)
 - Open a pull request when flake inputs move ([`84473cf`](https://github.com/davner/dotfiles/commit/84473cf6a287c36c5a917b9687c020c1321aabfa), 2026-08-14)
 - Check every push, build everything weekly ([`8148786`](https://github.com/davner/dotfiles/commit/81487865f72786f2a0a80d299d8f443632d8189a), 2026-08-14)
 
