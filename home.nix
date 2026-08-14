@@ -16,6 +16,7 @@ in
     jq        # json on the command line
     lazygit
     neovim
+    shellcheck  # ./test.sh lints with it, and it is worth having on PATH anyway
     nodejs
     pnpm
     uv
@@ -71,6 +72,7 @@ in
     enable = true;
     settings = {
       git_protocol = "ssh";
+      aliases.co = "pr checkout";
     };
   };
 
