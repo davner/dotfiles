@@ -1,0 +1,5 @@
+# Collapsed by default in diffs and excluded from language stats, because
+# nothing here is written by hand. CHANGELOG.md comes from `git-cliff`,
+# flake.lock from `nix flake update`.
+CHANGELOG.md linguist-generated=true
+flake.lock linguist-generated=true
