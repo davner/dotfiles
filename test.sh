@@ -333,6 +333,23 @@ backup
 $u
 /Users/$u" "$got"
     fi
+
+    # home.nix throws for a username it has no address for, so this failing
+    # means a machine was added to the users list and not to gitEmails.
+    email="$(nix eval --raw \
+      "$DIR#darwinConfigurations.$attr.config.home-manager.users.\"$u\".programs.git.settings.user.email" \
+      2>"$WORK/stderr")"
+    case "$email" in
+      *@*.*) ok "#$attr commits as $email" ;;
+      *) bad "#$attr has a git address" "$(grep -v '^warning:' "$WORK/stderr" | head -3)" ;;
+    esac
+    # The README documents which address goes with which machine, which is
+    # only useful while it still matches the configuration it describes.
+    if grep -qF "$email" "$DIR/README.md"; then
+      ok "README lists $u's address"
+    else
+      bad "README lists $u's address" "$email is configured but not documented"
+    fi
   done <<<"$listed"
 fi
 

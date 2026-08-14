@@ -2,6 +2,18 @@
 
 let
   dotfiles = "${config.home.homeDirectory}/.dotfiles";
+
+  # Which address git commits as, per machine. Same name either way; only the
+  # address changes. A username missing from this map fails the build on
+  # purpose: committing work from the wrong address is the whole thing this
+  # map exists to prevent, and a silent default would do exactly that.
+  gitEmails = {
+    "danavner" = "ldpavner@gmail.com";
+    "dan.avner" = "dan.avner@noirlab.edu";
+  };
+  gitEmail =
+    gitEmails.${user} or (throw
+      "home.nix: no git email for \"${user}\". Add one to gitEmails.");
 in
 
 {
@@ -61,7 +73,7 @@ in
     enable = true;
     settings = {
       user.name = "Dan Avner";
-      user.email = "ldpavner@gmail.com";
+      user.email = gitEmail;
       init.defaultBranch = "main";
       push.autoSetupRemote = "true";
     };

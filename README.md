@@ -38,10 +38,16 @@ neovim: 0.11.2 -> 0.11.4
 `./bootstrap.sh` offers to add it - an addition, so the other machines keep
 working.
 
-| macOS username | Flake attribute | Built by |
+| macOS username | Flake attribute | git commits as |
 | --- | --- | --- |
-| `danavner` | `#danavner` | `./rebuild.sh` on that Mac, or `--user danavner` |
-| `dan.avner` | `#dan-avner` | `./rebuild.sh` on that Mac, or `--user dan.avner` |
+| `danavner` | `#danavner` | `ldpavner@gmail.com` |
+| `dan.avner` | `#dan-avner` | `dan.avner@noirlab.edu` |
+
+The name on a commit is `Dan Avner` either way; only the address follows the
+machine. `home.nix` holds the mapping, and a username missing from it fails the
+build rather than quietly committing from the wrong address - so adding a Mac
+is two edits: the username list, which `./bootstrap.sh` offers, and the address
+in `home.nix`.
 
 Dots become dashes in the attribute name. That is not cosmetic:
 `darwin-rebuild` splits its `--flake …#attr` argument on `.`, so a literal
