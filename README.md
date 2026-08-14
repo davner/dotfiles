@@ -17,7 +17,6 @@ nothing to undo.
 | `./rebuild.sh` | After any change to this repo | yes |
 | `./rebuild.sh --build` | To check a change builds, and preview what it would change | no |
 | `./test.sh` | Before committing | no |
-| `nix develop --command git-cliff -o CHANGELOG.md` | After committing, to refresh the changelog | no |
 
 Both build scripts default to whoever runs them. `--user NAME` builds someone
 else's configuration; `--help` on either prints its options.
@@ -89,6 +88,7 @@ not on `PATH`; the dev shell supplies both at the versions `flake.lock` pins.
 | Workflow | Trigger | Runs |
 | --- | --- | --- |
 | `test.yml` | Every push and PR | `./test.sh --fast`, shellcheck, actionlint |
+| `changelog.yml` | Every push to `main` | Regenerates `CHANGELOG.md` and commits it if it moved |
 | `weekly.yml` | Mondays 14:00 UTC, or on demand | Full `./test.sh`, `nix flake check`, a real build of every configuration, and a changelog freshness check |
 | `update.yml` | Mondays 15:00 UTC, or on demand | `nix flake update`, then opens a PR if the inputs moved and everything still builds |
 
@@ -111,7 +111,22 @@ cannot check: it needs a Mac with these usernames on it.
 ## Changelog
 
 [`CHANGELOG.md`](CHANGELOG.md) is generated from the commit history by
-[git-cliff](https://git-cliff.org) and is never edited by hand. Commits follow
+[git-cliff](https://git-cliff.org) and is never edited by hand. `changelog.yml`
+regenerates it on every push to `main` and commits it back, so there is nothing
+to remember - which does mean a `git pull` before the next session, because
+that bot commit lands on `main`.
+
+It cannot be a local hook: git-cliff reads committed history, so at
+pre-commit time the commit being written does not exist yet and the changelog
+would always be one commit behind.
+
+To regenerate by hand anyway:
+
+```sh
+nix develop --command git-cliff -o CHANGELOG.md
+```
+
+Entries are commit subjects verbatim, and commits follow
 [Conventional Commits](https://www.conventionalcommits.org), which is what makes
-the grouping work; a commit message written carelessly is a changelog entry
-written carelessly.
+the grouping work. A carelessly written subject line is a carelessly written
+public changelog entry.

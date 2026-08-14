@@ -1,0 +1,49 @@
+name: changelog
+
+# Keeps CHANGELOG.md in step with main without anyone having to remember. It
+# has to run after the commits exist, because that is what git-cliff reads -
+# which is also why this cannot be a local pre-commit hook: at that point the
+# commit being made is not in the history yet.
+#
+# The commit this pushes does not start a second run of anything: GitHub does
+# not trigger workflows for pushes authenticated with GITHUB_TOKEN.
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+# Two pushes in quick succession would otherwise race on the same file.
+concurrency:
+  group: changelog
+  cancel-in-progress: false
+
+jobs:
+  regenerate:
+    runs-on: macos-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          # git-cliff walks the whole history. The default shallow clone would
+          # silently produce a changelog holding one commit.
+          fetch-depth: 0
+
+      - uses: DeterminateSystems/nix-installer-action@main
+
+      - name: Regenerate CHANGELOG.md
+        run: nix develop --command git-cliff -o CHANGELOG.md
+
+      - name: Commit it if it moved
+        run: |
+          set -euo pipefail
+          if git diff --quiet CHANGELOG.md; then
+            echo "Changelog is already current."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add CHANGELOG.md
+          git commit -m "docs: regenerate the changelog"
+          git push

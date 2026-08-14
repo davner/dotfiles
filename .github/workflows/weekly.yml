@@ -18,6 +18,9 @@ jobs:
     timeout-minutes: 90
     steps:
       - uses: actions/checkout@v5
+        with:
+          # test.sh renders the changelog template, which needs the history.
+          fetch-depth: 0
 
       - uses: DeterminateSystems/nix-installer-action@main
 
@@ -38,15 +41,3 @@ jobs:
             nix build --no-link --print-build-logs ".#darwinConfigurations.$attr.system"
             echo "::endgroup::"
           done
-
-      # Last on purpose: a stale changelog should not hide a real build failure.
-      # Weekly rather than per-push, so forgetting to regenerate costs one red
-      # run a week instead of blocking every push.
-      - name: CHANGELOG.md is current
-        run: |
-          set -euo pipefail
-          nix develop --command git-cliff -o /tmp/CHANGELOG.expected
-          if ! diff -u CHANGELOG.md /tmp/CHANGELOG.expected; then
-            echo "::error::CHANGELOG.md is behind the commit history. Regenerate it with: nix develop --command git-cliff -o CHANGELOG.md"
-            exit 1
-          fi

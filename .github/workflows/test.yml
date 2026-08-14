@@ -20,6 +20,9 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v5
+        with:
+          # test.sh renders the changelog template, which needs the history.
+          fetch-depth: 0
 
       - uses: DeterminateSystems/nix-installer-action@main
 
