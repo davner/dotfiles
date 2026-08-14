@@ -111,7 +111,9 @@ cannot check: it needs a Mac with these usernames on it.
 ## Changelog
 
 [`CHANGELOG.md`](CHANGELOG.md) is generated from the commit history by
-[git-cliff](https://git-cliff.org) and is never edited by hand. `changelog.yml`
+[git-cliff](https://git-cliff.org) and is never edited by hand. It is grouped by
+the day each change landed rather than by release, because this repo has no
+releases to group by. `changelog.yml`
 regenerates it on every push to `main` and commits it back, so there is nothing
 to remember - which does mean a `git pull` before the next session, because
 that bot commit lands on `main`.
