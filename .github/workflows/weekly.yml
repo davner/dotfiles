@@ -1,0 +1,52 @@
+name: weekly
+
+# The expensive half: evaluating both configurations and then building their
+# whole system closures from a cold store. This is what catches a package that
+# vanished from nixpkgs or an option that changed meaning under a locked input,
+# neither of which the push tests can see.
+on:
+  schedule:
+    - cron: "0 14 * * 1" # Mondays 14:00 UTC, 07:00 in Arizona
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  full:
+    runs-on: macos-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: DeterminateSystems/nix-installer-action@main
+
+      - name: ./test.sh
+        run: nix develop --command ./test.sh
+
+      - name: nix flake check
+        run: nix flake check --print-build-logs
+
+      # Only builds. Activation is what needs a real Mac with these users on
+      # it, and no CI runner has that.
+      - name: Build every configuration
+        run: |
+          set -euo pipefail
+          for user in $(./users.sh list); do
+            attr="${user//./-}"
+            echo "::group::darwinConfigurations.$attr.system"
+            nix build --no-link --print-build-logs ".#darwinConfigurations.$attr.system"
+            echo "::endgroup::"
+          done
+
+      # Last on purpose: a stale changelog should not hide a real build failure.
+      # Weekly rather than per-push, so forgetting to regenerate costs one red
+      # run a week instead of blocking every push.
+      - name: CHANGELOG.md is current
+        run: |
+          set -euo pipefail
+          nix develop --command git-cliff -o /tmp/CHANGELOG.expected
+          if ! diff -u CHANGELOG.md /tmp/CHANGELOG.expected; then
+            echo "::error::CHANGELOG.md is behind the commit history. Regenerate it with: nix develop --command git-cliff -o CHANGELOG.md"
+            exit 1
+          fi

@@ -1,0 +1,29 @@
+name: test
+
+# Everything here is quick: the shell-level half of ./test.sh, plus the two
+# linters. The flake evaluations and the actual system builds are slow enough
+# to live in weekly.yml instead.
+on: [push, pull_request]
+
+concurrency:
+  group: test-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    # Darwin on purpose. This repo never runs anywhere else, and the tests
+    # exercise scripts that assume a Mac.
+    runs-on: macos-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: DeterminateSystems/nix-installer-action@main
+
+      # nix develop supplies shellcheck and actionlint at the versions
+      # flake.lock pins, so nothing in test.sh has to skip.
+      - name: ./test.sh --fast
+        run: nix develop --command ./test.sh --fast
