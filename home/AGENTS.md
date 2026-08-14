@@ -17,16 +17,85 @@
 
 Specialists live in `~/.claude/agents/` (symlinked from `home/.claude/agents/`).
 Each one's `description` says when to route to it, so usually just delegate.
-Two habits the descriptions cannot express on their own:
+Three habits the descriptions cannot express on their own:
 
-- Design before building. For anything larger than a small change, `architect`
-  plans and `senior-dev` implements the plan. Do not skip straight to code.
-- Nothing self-certifies. Code that `senior-dev` wrote goes to `code-reviewer`
-  before it is called done, and frontend work goes to `ui-verifier`. Fixes go
-  back to `senior-dev`, never to the reviewer, which is why the reviewing agents
-  cannot write files.
+- Research before designing, when the design turns on something the repo cannot
+  answer. `researcher` establishes what is possible and what already exists,
+  and `architect` turns that into a plan for this codebase. Guessing at the
+  design stage is the most expensive place to guess.
+- Design before building. Once a change crosses more than one file or adds a
+  boundary, `architect` plans and `senior-dev` implements the plan. Below that
+  line, see how much of the chain to run - the pipeline is not free and small
+  work should not pay for it.
+- Nothing self-certifies, including the plan. `architect`'s plan goes to
+  `plan-reviewer` before code is written against it, and revisions go back to
+  `architect`. Code that `senior-dev` wrote goes to `code-reviewer` before it is
+  called done, frontend work goes to `ui-verifier`, and any schema change or
+  backfill goes to `migration-safety`. Fixes go back to the agent that writes,
+  never to the reviewer, which is why the reviewing agents cannot write files.
 
 Independent agents can run in parallel, but review always follows implementation.
+
+Two of these carry a gate rather than an opinion, and the gate is the reason
+they exist. `debugger` may not propose a fix before it has reproduced the
+failure. `migration-safety` may not approve a migration before it has run it
+forward and reversed it against a disposable local database. Do not route
+around either one because the answer looks obvious.
+
+### How much of the chain to run
+
+The full chain is for work that is expensive to get wrong, not for everything.
+Match the ceremony to the change:
+
+- **A one-line fix, a typo, a rename, a config value** - do it yourself. No
+  agent. Reaching for the roster here costs more than the change.
+- **A change confined to one file, where the fix is already obvious** - straight
+  to `senior-dev`, then `code-reviewer`. No design stage; there is nothing to
+  design.
+- **A change that crosses files or adds a boundary** - the full chain, starting
+  at `architect`.
+- **Anything touching a schema, money, permissions, or data you cannot
+  regenerate** - the full chain, and `migration-safety` is not optional.
+
+When it is genuinely unclear which of these applies, it is the third one.
+
+### Finishing work
+
+Documentation is part of a change, not a follow-up. A change is not done when
+the tests pass; it is done when nothing in the repo describes the old
+behavior. So when work finishes, or when part of it finishes:
+
+- Every doc the change made wrong gets fixed in the same unit of work.
+- Every plan, TODO, roadmap item, or milestone note the change completed gets
+  closed or deleted, and one that it half-completed gets split so the remaining
+  half is still visible. A finished plan left in place is indistinguishable
+  from an ignored one, which is how these accumulate.
+- A published package gets its reference checked against the code whenever the
+  public surface moves: exported names, signatures, defaults, flags, env vars,
+  supported versions.
+
+`doc-auditor` does this sweep. Run it at the end of a milestone, before a
+release, and any time the planning documents have gone a while without being
+reconciled. It is read-only and cheap to run, so run it on suspicion rather
+than on certainty.
+
+### Who owns what, where the edges blur
+
+- **Docs.** `senior-dev` writes the docstrings and comments inside the code it
+  writes. `docs-writer` owns everything a reader sees from outside: pages,
+  READMEs, guides, examples. `doc-auditor` finds which documents stopped being
+  true and hands `docs-writer` the list, the same way `code-reviewer` hands
+  findings to `senior-dev`. Point `docs-writer` at a known-wrong doc; run
+  `doc-auditor` when the question is what has gone stale.
+- **Migrations.** `code-reviewer` reads a migration as code and its APPROVE
+  never covers it. `migration-safety` runs it. A diff with a migration needs
+  both, and they can run at the same time.
+- **Searching.** `researcher` is for answers that are not in the repo. The
+  built-in `Explore` is for answers that are. Do not send a codebase question
+  to the web.
+- **Tests.** `senior-dev` runs the suite and fixes what it broke.
+  `test-writer` writes new tests, because the author of the code is the worst
+  judge of whether its tests would catch anything.
 
 ## Skills
 

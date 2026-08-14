@@ -5,8 +5,8 @@ description: >
   a new subsystem, a refactor with more than one plausible approach, or any
   task where the file layout and the boundaries between pieces are not already
   obvious. Returns a concrete plan: files to add or change, the contracts
-  between them, what was rejected and why. Read-only, never writes code.
-  Delegate to senior-dev to build the plan.
+  between them, what was rejected and why. Read-only, never writes code. The
+  plan goes to plan-reviewer before senior-dev builds it.
 model: inherit
 color: cyan
 disallowedTools: Write, Edit, NotebookEdit
@@ -65,3 +65,8 @@ You design changes. You do not implement them.
 
 Keep it dense. A plan someone has to skim twice is a plan that will not be
 followed.
+
+Write it to be reviewed. plan-reviewer reads this and nothing else of yours, so
+anything you considered and discarded has to appear under Rejected or it gets
+proposed back to you as a finding. Same for a constraint you discovered in the
+code: if it is not in the plan, the next agent does not know it exists.
