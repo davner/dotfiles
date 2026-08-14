@@ -9,6 +9,9 @@ Every change to this repo, newest first, from the commit history.
 
 ### Added
 
+- **statusline**: Show session and weekly rate limits ([`a1e1526`](https://github.com/davner/dotfiles/commit/a1e1526e114287e911b19a93f78eb3be5a09bcef), 2026-08-14)
+- Use the right git identity per machine ([`36701b0`](https://github.com/davner/dotfiles/commit/36701b0cddc2646d0b1db8271a6e2fbc9829dab3), 2026-08-14)
+- Build the configuration for whoever runs the scripts ([`a8864df`](https://github.com/davner/dotfiles/commit/a8864dff5585c9fe2e3c6937a04f6e2cbbdc06e1), 2026-08-14)
 - **agents**: Add five specialists to the subagent roster ([`06d2a9d`](https://github.com/davner/dotfiles/commit/06d2a9d0822c919c2e6bf9b24f43c7ec5fc09cfb), 2026-08-14)
 - **agents**: Add subagent roster and symlink it from home-manager ([`bc79caa`](https://github.com/davner/dotfiles/commit/bc79caac96b30a9d473a9f9ef8f94b406d604a8b), 2026-08-14)
 - Extend the mac configurations and git ([`dc56ebe`](https://github.com/davner/dotfiles/commit/dc56ebe94e390008edb007fbeaa0a2beb8ea4ff9), 2026-08-13)
@@ -21,11 +24,22 @@ Every change to this repo, newest first, from the commit history.
 
 ### Documentation
 
+- Rewrite the README around tables ([`0430f58`](https://github.com/davner/dotfiles/commit/0430f58269131c7d600611d55db66483269105ab), 2026-08-14)
+- Generate CHANGELOG.md from the commit history ([`47b8c60`](https://github.com/davner/dotfiles/commit/47b8c603933244626e35472472894f5871a54eae), 2026-08-14)
 - **agents**: Route the new specialists and bound the pipeline ([`151e6fc`](https://github.com/davner/dotfiles/commit/151e6fc7dace3084f9eed68aff31c6baf346405d), 2026-08-14)
 - Correct how agent skills get installed ([`362ff42`](https://github.com/davner/dotfiles/commit/362ff424e26a8c2c4fca4c8efa842de99aef66bd), 2026-08-14)
 - List agent skills that should be installed ([`6a7dca3`](https://github.com/davner/dotfiles/commit/6a7dca32fa744df54b5d0e1c95794ce92989952c), 2026-08-12)
 - Add Git workflow section requiring explicit commit approval ([`46baad4`](https://github.com/davner/dotfiles/commit/46baad4bc6b010d6d5a3ad1ea8d678e0f1e7fc1d), 2026-07-29)
 - Require conventional commit format with ticket-id scope ([`ad89b6d`](https://github.com/davner/dotfiles/commit/ad89b6d51a40b74641f51a61f6ad171a355f4fbb), 2026-07-29)
+
+### Tests
+
+- Cover the scripts, the flake wiring and the guard rails ([`d136639`](https://github.com/davner/dotfiles/commit/d136639abcf5a70aaa80dbce182dfd0b1a57ef61), 2026-08-14)
+
+### CI
+
+- Open a pull request when flake inputs move ([`84473cf`](https://github.com/davner/dotfiles/commit/84473cf6a287c36c5a917b9687c020c1321aabfa), 2026-08-14)
+- Check every push, build everything weekly ([`8148786`](https://github.com/davner/dotfiles/commit/81487865f72786f2a0a80d299d8f443632d8189a), 2026-08-14)
 
 ### Chores
 
