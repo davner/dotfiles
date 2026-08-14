@@ -307,13 +307,19 @@ SL="$DIR/home/.claude/statusline.sh"
 plain() { sed $'s/\x1b\\[[0-9;]*m//g'; }
 NOW="$(date +%s)"
 
+# Every window below is deliberately offset past its boundary instead of landing
+# on it, and the offset is drift tolerance rather than an arbitrary number. The
+# script reads the clock after this line runs and floors what is left, so an
+# exact 259200 (3d) or 900 (15m) renders as 2d or 14m the moment one second has
+# passed. That is a real second on a loaded CI runner, not a theoretical one.
+# Round these off and the suite starts failing a few times a week.
 sl_out="$(printf '{"model":{"display_name":"Opus 5"},"context_window":{"used_percentage":8},"rate_limits":{"five_hour":{"used_percentage":23.5,"resets_at":%d},"seven_day":{"used_percentage":41.2,"resets_at":%d}}}' \
-  "$((NOW + 7230))" "$((NOW + 259200))" | "$SL" | plain)"
+  "$((NOW + 7230))" "$((NOW + 259200 + 3600))" | "$SL" | plain)"
 eq "a full payload renders every segment" \
   "Opus 5 · ctx 8% · 5h 24% (2h00m) · wk 41% (3d)" "$sl_out"
 
 sl_out="$(printf '{"model":{"display_name":"Opus 5"},"fast_mode":true,"context_window":{"used_percentage":82},"rate_limits":{"five_hour":{"used_percentage":91,"resets_at":%d}}}' \
-  "$((NOW + 900))" | "$SL")"
+  "$((NOW + 900 + 30))" | "$SL")"
 contains "a spent limit is coloured red" "$sl_out" $'\033[31m'
 contains "fast mode is visible" "$(printf '%s' "$sl_out" | plain)" "fast"
 contains "an absent weekly window is skipped, not blanked" \
