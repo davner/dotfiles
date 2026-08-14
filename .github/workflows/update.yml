@@ -1,0 +1,77 @@
+name: update
+
+# Bumps the flake inputs once a week and opens a pull request, but only after
+# proving the result still builds. Nothing lands unreviewed.
+#
+# To stop the weekly bump, delete this file or comment out the schedule; the
+# workflow_dispatch trigger keeps it usable on demand either way.
+on:
+  schedule:
+    - cron: "0 15 * * 1" # Mondays, an hour after weekly.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  flake-update:
+    runs-on: macos-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: DeterminateSystems/nix-installer-action@main
+
+      - name: nix flake update
+        run: nix flake update
+
+      - name: Did anything move?
+        id: moved
+        run: |
+          if git diff --quiet flake.lock; then
+            echo "moved=false" >> "$GITHUB_OUTPUT"
+            echo "Inputs are already current."
+          else
+            echo "moved=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: ./test.sh
+        if: steps.moved.outputs.moved == 'true'
+        run: nix develop --command ./test.sh
+
+      # A pull request opened with GITHUB_TOKEN does not trigger test.yml, so
+      # the checks that would have run on it run here instead. Same loop as
+      # weekly.yml: both are short enough that sharing them would cost more
+      # than the duplication does.
+      - name: Build every configuration
+        if: steps.moved.outputs.moved == 'true'
+        run: |
+          set -euo pipefail
+          for user in $(./users.sh list); do
+            attr="${user//./-}"
+            echo "::group::darwinConfigurations.$attr.system"
+            nix build --no-link --print-build-logs ".#darwinConfigurations.$attr.system"
+            echo "::endgroup::"
+          done
+
+      - name: Open a pull request
+        if: steps.moved.outputs.moved == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          branch="flake-update-$(date -u +%Y-%m-%d)"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git switch -c "$branch"
+          git add flake.lock
+          git commit -m "chore(deps): nix flake update"
+          git push --force-with-lease --set-upstream origin "$branch"
+          if gh pr view "$branch" --json number >/dev/null 2>&1; then
+            echo "Pull request already open for $branch."
+          else
+            gh pr create \
+              --title "chore(deps): nix flake update" \
+              --body "Weekly flake input bump. \`./test.sh\` passed and every configuration built before this was opened, so the checks that a token-authored PR cannot trigger have already run in the [update workflow](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})."
+          fi

@@ -89,7 +89,8 @@ not on `PATH`; the dev shell supplies both at the versions `flake.lock` pins.
 | Workflow | Trigger | Runs |
 | --- | --- | --- |
 | `test.yml` | Every push and PR | `./test.sh --fast`, shellcheck, actionlint |
-| `weekly.yml` | Mondays 14:00 UTC, or on demand | Full `./test.sh`, `nix flake check`, and a real build of every configuration |
+| `weekly.yml` | Mondays 14:00 UTC, or on demand | Full `./test.sh`, `nix flake check`, a real build of every configuration, and a changelog freshness check |
+| `update.yml` | Mondays 15:00 UTC, or on demand | `nix flake update`, then opens a PR if the inputs moved and everything still builds |
 
 The weekly build is what notices a package disappearing out from under a locked
 input, which no amount of shell testing can see. Activation is the one thing CI
