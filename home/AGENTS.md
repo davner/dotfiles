@@ -38,7 +38,22 @@ Skills that should be installed, if not, install them.
 - `gh-axi` - operate GitHub from the CLI: issues, PRs, CI runs, releases, Projects.
 - `lavish` - turn a plan, diff, or report into a reviewable HTML artifact.
 
-This set is reinstalled from `home.nix` on every rebuild, so a fresh machine ends up with the same skills.
+These are not managed by `home.nix`, so a rebuild neither installs nor removes
+them. They are installed by hand with `npx skills add`, which writes to
+`~/.agents/skills/` and symlinks into `~/.claude/skills/`. On a fresh machine,
+run:
+
+```sh
+npx skills add shadcn-ui/ui -g -y -s shadcn -s migrate-radix-to-base
+npx skills add blader/humanizer -g -y -s humanizer
+npx skills add kunchenguid/chrome-devtools-axi -g -y -s chrome-devtools-axi
+npx skills add kunchenguid/gh-axi -g -y -s gh-axi
+npx skills add kunchenguid/lavish-axi -g -y -s lavish
+```
+
+`-s` does not take a comma-separated list; repeat the flag per skill. Ignore
+the `PromptScript does not support global skill installation` warnings, which
+come from an unrelated agent target. `npx skills update -g` upgrades them.
 
 ## Git workflow
 
