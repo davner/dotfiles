@@ -9,6 +9,8 @@ machine's configuration, not a package anyone installs a version of.
 
 ## 2026-08-14
 
+- **Fixed** test: Stop the status line windows landing on a floor boundary ([`8a8a315`](https://github.com/davner/dotfiles/commit/8a8a315eff7cda4369614a859b872f14400ea919))
+- **Docs** Regenerate the changelog ([`91a4f6b`](https://github.com/davner/dotfiles/commit/91a4f6b468544e398f0df426e21322cfcb9c30c3))
 - **Added** agents: Rule out brute force and unmaintained dependencies ([`fd5f5b9`](https://github.com/davner/dotfiles/commit/fd5f5b9e5ca45ddef1f1e59d6a705677c19de0b9))
 - **Docs** Regenerate the changelog ([`2e87f53`](https://github.com/davner/dotfiles/commit/2e87f537854b22913571b9ac27a6f03085d0be9e))
 - **Added** agents: Add review-triage for reviews arriving from GitHub ([`efeb92b`](https://github.com/davner/dotfiles/commit/efeb92b3ced59f57849a8a24e371cb8b871a4185))
