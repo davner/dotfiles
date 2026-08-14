@@ -9,6 +9,7 @@ machine's configuration, not a package anyone installs a version of.
 
 ## 2026-08-14
 
+- **Docs** Group the changelog by day instead of by release ([`f8adb10`](https://github.com/davner/dotfiles/commit/f8adb10601c8748ab1018d3741ac28abcac2abc7))
 - **Docs** Regenerate the changelog ([`180b924`](https://github.com/davner/dotfiles/commit/180b92471d6eed2db6049e2370460908ff9a03d5))
 - **CI** Regenerate the changelog on every push to main ([`99fa1d1`](https://github.com/davner/dotfiles/commit/99fa1d1122466d2d526130f5bf0b3c94ad4f92c8))
 - **Docs** Regenerate the changelog ([`02458ff`](https://github.com/davner/dotfiles/commit/02458ffa750601b5f5906bec742bcd969dd8e0e1))
