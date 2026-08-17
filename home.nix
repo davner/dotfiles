@@ -44,6 +44,21 @@ in
     syntaxHighlighting.enable = true;  # commands turn green when valid
     initContent = ''
       bindkey '^f' autosuggest-accept
+
+      # A session named after its repo, so remote control lists "dotfiles"
+      # rather than a summary of whatever the first prompt said. A second
+      # session in the same repo becomes dotfiles-2. Anything passed to cc
+      # still reaches claude, including a --name of your own: the last one
+      # on the line wins.
+      cc() {
+        local name; local -a flag
+        name="$(~/.claude/session-name.sh)"
+        # An array, not ''${name:+--name "$name"}: zsh does not split an
+        # expansion into words, so that form would hand claude one argument
+        # reading "--name dotfiles" and it would reject it.
+        [[ -n $name ]] && flag=(--name "$name")
+        claude --dangerously-skip-permissions --remote-control "''${flag[@]}" "$@"
+      }
     '';
     shellAliases = {
       ".." = "cd ..";
@@ -51,7 +66,6 @@ in
       push = "git push";
       pull = "git pull";
       m = "git switch main";
-      cc = "claude --dangerously-skip-permissions --remote-control";
       co = "codex --full-auto";
     };
   };
@@ -98,6 +112,10 @@ in
   # settings.json points at this by path, so it has to land in ~/.claude too.
   home.file.".claude/statusline.sh".source =
     config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.claude/statusline.sh";
+  # likewise the naming script: the cc function and a SessionStart hook both
+  # call it, so it has to be on disk at a path neither one has to guess.
+  home.file.".claude/session-name.sh".source =
+    config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.claude/session-name.sh";
   # the subagent roster. one file per agent, claude picks them up by name.
   home.file.".claude/agents".source =
     config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.claude/agents";

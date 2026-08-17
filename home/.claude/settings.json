@@ -4,6 +4,18 @@
     "type": "command",
     "command": "~/.claude/statusline.sh"
   },
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/session-name.sh --hook"
+          }
+        ]
+      }
+    ]
+  },
   "effortLevel": "medium",
   "skipDangerousModePermissionPrompt": true,
   "theme": "dark-ansi",
