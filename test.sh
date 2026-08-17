@@ -444,12 +444,58 @@ if grep -qF '.claude/session-name.sh' "$DIR/home.nix"; then
 else
   bad "home.nix links it into ~/.claude" "settings.json would point at a missing file"
 fi
-# The whole point of the exercise: cc has to hand the name to claude.
-cc_body="$(sed -n '/^      cc() {/,/^      }/p' "$DIR/home.nix")"
-contains "cc asks for a name" "$cc_body" "session-name.sh"
-contains "cc passes it to claude --name" "$cc_body" "--name"
-contains "cc still skips permissions and turns on remote control" "$cc_body" \
-  "--dangerously-skip-permissions --remote-control"
+# --------------------------------------------------------------------------
+section "the cc function"
+# The whole point of the exercise: cc has to hand the name to claude, as two
+# words. Run it, rather than grep it for "--name" - the string was always there
+# even when the array reached claude as the single argument "--name myrepo",
+# which is exactly the bug the comment inside the function warns about.
+FN="$DIR/home/.config/zsh/functions.zsh"
+# Its own check, because it cannot join SCRIPTS: bash -n and shellcheck both
+# reject zsh array syntax.
+if err="$(zsh -n "$FN" 2>&1)"; then ok "zsh -n functions.zsh"; else bad "zsh -n functions.zsh" "$err"; fi
+
+# Prints its arguments one per line, so a name that arrived as one word
+# containing a space is visibly different from two words.
+cat >"$STUB/claude" <<'EOF'
+#!/usr/bin/env bash
+printf '%s\n' "$@"
+EOF
+chmod +x "$STUB/claude"
+# A naming script that answers, under the throwaway $HOME built above. Without
+# one, cc's command substitution fails, the name is empty and the whole --name
+# assertion below would pass while asserting nothing.
+cat >"$STHOME/.claude/session-name.sh" <<'EOF'
+#!/usr/bin/env bash
+echo myrepo
+EOF
+chmod +x "$STHOME/.claude/session-name.sh"
+
+cc_argv() { # $HOME to run under -> the argv claude was called with
+  HOME="$1" PATH="$STUB:$PATH" zsh -c "source '$FN'; cc --foo" 2>/dev/null
+}
+eq "cc passes the name to claude as two words" "--dangerously-skip-permissions
+--remote-control
+--name
+myrepo
+--foo" "$(cc_argv "$STHOME")"
+
+# $FAKEHOME has no ~/.claude/session-name.sh, so the name comes back empty.
+# The array has to vanish entirely rather than leave claude a bare --name or an
+# empty string after it.
+eq "no name means no --name, not an empty one" "--dangerously-skip-permissions
+--remote-control
+--foo" "$(cc_argv "$FAKEHOME")"
+
+# ~/.zshrc is generated, so the only thing tying it to the file above is this
+# line. The -r guard is part of the contract: the file arrives by symlink, and
+# an unguarded source would print an error on every new shell if it dangled.
+if grep -qF '[ -r ~/.config/zsh/functions.zsh ] && source' "$DIR/home.nix"; then
+  ok "home.nix sources functions.zsh, and guards it"
+else
+  bad "home.nix sources functions.zsh, and guards it" \
+    "nothing in ~/.zshrc would load the function"
+fi
 
 # --------------------------------------------------------------------------
 section "flake evaluation"

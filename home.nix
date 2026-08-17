@@ -38,23 +38,13 @@ in
     enable = true;
     autosuggestion.enable = true;      # ghost text from history
     syntaxHighlighting.enable = true;  # commands turn green when valid
+    # Shell functions live in a real .zsh file, not in this string. The guard
+    # is not paranoia: the file arrives by out-of-store symlink, so a checkout
+    # that has moved leaves a dangling link, and an unguarded source would
+    # print an error on every new shell.
     initContent = ''
       bindkey '^f' autosuggest-accept
-
-      # A session named after its repo, so remote control lists "dotfiles"
-      # rather than a summary of whatever the first prompt said. A second
-      # session in the same repo becomes dotfiles-2. Anything passed to cc
-      # still reaches claude, including a --name of your own: the last one
-      # on the line wins.
-      cc() {
-        local name; local -a flag
-        name="$(~/.claude/session-name.sh)"
-        # An array, not ''${name:+--name "$name"}: zsh does not split an
-        # expansion into words, so that form would hand claude one argument
-        # reading "--name dotfiles" and it would reject it.
-        [[ -n $name ]] && flag=(--name "$name")
-        claude --dangerously-skip-permissions --remote-control "''${flag[@]}" "$@"
-      }
+      [ -r ~/.config/zsh/functions.zsh ] && source ~/.config/zsh/functions.zsh
     '';
     shellAliases = {
       ".." = "cd ..";
@@ -101,6 +91,9 @@ in
   # Edit-in-place: the real file stays in my repo, ~/.config just points at it.
   home.file.".config/wezterm".source =
     config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.config/wezterm";
+  # the shell functions the generated ~/.zshrc sources at the end of its init.
+  home.file.".config/zsh/functions.zsh".source =
+    config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.config/zsh/functions.zsh";
   home.file.".claude/settings.json".source =
     config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.claude/settings.json";
   # settings.json points at this by path, so it has to land in ~/.claude too.
