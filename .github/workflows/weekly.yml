@@ -11,18 +11,25 @@ on:
 
 permissions:
   contents: read
+  id-token: write # magic-nix-cache authenticates with an OIDC token
 
 jobs:
   full:
     runs-on: macos-latest
     timeout-minutes: 90
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
         with:
           # test.sh renders the changelog template, which needs the history.
           fetch-depth: 0
 
       - uses: DeterminateSystems/nix-installer-action@main
+
+      # Both configurations' closures are built from a cold store below, which
+      # is most of the 90 minutes. The cache is backed by the GitHub Actions
+      # cache and its 10GB per-repo limit, which two darwin closures may not
+      # fit inside; if the hit rate turns out to be near zero, drop this.
+      - uses: DeterminateSystems/magic-nix-cache-action@main
 
       - name: ./test.sh
         run: nix develop --command ./test.sh
