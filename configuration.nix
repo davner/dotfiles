@@ -27,8 +27,10 @@
       NSAutomaticDashSubstitutionEnabled = false;
       NSWindowShouldDragOnGesture = true;  # allow dragging windows with trackpad
       "com.apple.swipescrolldirection" = false;  # natural scrolling
+      AppleWindowTabbingMode = "always";  # prefer tabs over new windows
     };
     WindowManager.AutoHide = true;
+    WindowManager.AppWindowGroupingBehavior = true;
     dock.autohide = true;
     dock.orientation = "bottom";
     dock.minimize-to-application = true;
