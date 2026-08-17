@@ -63,6 +63,7 @@
     enable = true;
     onActivation.cleanup = "zap";  # remove anything not listed here
     onActivation.autoUpdate = true;
+    onActivation.upgrade = true;  # autoUpdate only refreshes metadata; this bumps what is installed
     onActivation.extraFlags = [ "--force" ];
     brews = [
       "herdr"
