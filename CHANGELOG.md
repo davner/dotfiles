@@ -9,6 +9,15 @@ machine's configuration, not a package anyone installs a version of.
 
 ## 2026-08-17
 
+- **Other** Merge branch 'main' of https://github.com/davner/dotfiles ([`8677e53`](https://github.com/davner/dotfiles/commit/8677e5300786c213379bf26e298873eca7efa076))
+- **Docs** Regenerate the changelog ([`231f7d0`](https://github.com/davner/dotfiles/commit/231f7d0b3ad2be6c5ca87e91eda9939cf4c59e58))
+- **Fixed** Reject a misspelled field in a user record ([`0347ea8`](https://github.com/davner/dotfiles/commit/0347ea88ffa7d1a880e0f84396359db5718fd723))
+- **Changed** zsh: Move cc out of the Nix string into a real zsh file ([`e6f2ada`](https://github.com/davner/dotfiles/commit/e6f2ada49b6859011030874c975e012e270351fb))
+- **Changed** Give each user one record instead of two half-lists ([`ebff778`](https://github.com/davner/dotfiles/commit/ebff7783712aa55d78515de46e36c57cb9800091))
+- **Tests** Assert on the brew bundle command and the Brewfile ([`7281be0`](https://github.com/davner/dotfiles/commit/7281be01f1f010d411257d6e2166eddc49d0ae4c))
+- **Docs** Correct claims that had stopped being true ([`0600a1b`](https://github.com/davner/dotfiles/commit/0600a1b047a874a08823ad4e4079ac3d5ad66aa3))
+- **CI** Cache nix builds and bump checkout to v7 ([`f5058f5`](https://github.com/davner/dotfiles/commit/f5058f57b7fda73bc9827ceec782f3fec74a4ee4))
+- **Fixed** darwin: Upgrade self-updating casks and drop redundant --force ([`f736ba2`](https://github.com/davner/dotfiles/commit/f736ba25b64753cb1dad5aec23ede2bc53ad2cd6))
 - **Chore** Drop herdr ([`e11ca24`](https://github.com/davner/dotfiles/commit/e11ca24f3aa7ffa57b0bd170e277294ba5f8a5bb))
 - **Fixed** homebrew: Upgrade installed packages on activation ([`cc3cc02`](https://github.com/davner/dotfiles/commit/cc3cc0284eb8bd06497f6245fe74d852cfa52a29))
 - **Docs** Regenerate the changelog ([`4e75338`](https://github.com/davner/dotfiles/commit/4e75338c398fbd743beea966064b14b0418dd2f3))
