@@ -587,6 +587,23 @@ $u
   contains "and says whose address is missing" "$EV_ERR" 'no git email for "new.user"'
   contains "and says where to put it" "$EV_ERR" "flake.nix's users"
 
+  # A record's fields are optional so that an empty one survives to the throw
+  # above. That tolerance is what makes a misspelled field dangerous: an
+  # ignored `sytem` is not an error, it is a silent build for the wrong
+  # platform, which is the one failure here that no later step would catch.
+  sed 's/system = "aarch64-darwin"/sytem = "aarch64-darwin"/' "$COPY" \
+    >"$FLAKECOPY/flake.nix"
+  ev 'darwinConfigurations.danavner.config.nixpkgs.hostPlatform.system'
+  if [ "$EV_RC" -eq 0 ]; then
+    bad "a misspelled field is rejected, not ignored" \
+      "sytem was accepted and the platform silently became \"$EV_OUT\""
+  else
+    ok "a misspelled field is rejected, not ignored"
+  fi
+  contains "and names the field that is wrong" "$EV_ERR" "sytem"
+  contains "and names the user it is wrong on" "$EV_ERR" '"danavner"'
+  cp "$COPY" "$FLAKECOPY/flake.nix"
+
   # ------------------------------------------------------------------------
   section "homebrew activation"
   # The homebrew options compose into one `brew bundle` invocation and one

@@ -47,9 +47,25 @@
           [ "aarch64-darwin" "x86_64-darwin" ]
       );
 
+      # A record's fields are optional, which is what lets `users.sh add` write
+      # an empty one and lets the missing-email throw be the thing that speaks.
+      # That same tolerance would swallow a typo: `sytem = "x86_64-darwin"` is
+      # not an error, it is an ignored key and a silent aarch64 build. So the
+      # keys are checked even though the values are not.
+      knownFields = [ "email" "system" ];
+      checkRecord = user: record:
+        let
+          unknown = builtins.filter (k: !(builtins.elem k knownFields))
+            (builtins.attrNames record);
+        in
+        if unknown == [ ] then record
+        else throw ''
+          flake.nix: user "${user}" has unknown field(s): ${builtins.concatStringsSep ", " unknown}.
+          A record holds only ${builtins.concatStringsSep " and " knownFields}. Check the spelling.'';
+
       # Both scopes get the username and its record: configuration.nix needs
       # the platform, home.nix needs the git address.
-      mkDarwin = user: let cfg = users.${user}; in nix-darwin.lib.darwinSystem {
+      mkDarwin = user: let cfg = checkRecord user users.${user}; in nix-darwin.lib.darwinSystem {
         specialArgs = { inherit user cfg; };
         modules = [
           ./configuration.nix
