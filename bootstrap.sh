@@ -57,18 +57,22 @@ echo "==> Step 2: symlink this repo to ~/.dotfiles"
 ln -sfn "$DIR" ~/.dotfiles
 
 echo "==> Step 3: make sure flake.nix knows this username"
-# The usernames live in a list, so a new machine is an addition rather than a
-# swap. Nothing already in the list is touched.
+# The usernames key an attrset, so a new machine is an addition rather than a
+# swap. Nothing already configured is touched.
 if "$DIR/users.sh" has "$TARGET_USER"; then
   echo "    flake.nix already builds for \"$TARGET_USER\", nothing to do."
 else
   echo "    flake.nix has no configuration for \"$TARGET_USER\" yet."
-  read -r -p "    Add \"$TARGET_USER\" to the users list in flake.nix? [y/N] " REPLY
+  read -r -p "    Add \"$TARGET_USER\" to the users attrset in flake.nix? [y/N] " REPLY
   if [ "$REPLY" = "y" ] || [ "$REPLY" = "Y" ]; then
     "$DIR/users.sh" add "$TARGET_USER"
-    echo "    Added. Review the change with: git diff flake.nix"
+    echo "    Added, with an empty record. Review it with: git diff flake.nix"
+    # Step 4 stops on this, by design, rather than committing from whichever
+    # address happened to be lying around.
+    echo "    Fill in its email before step 4, or the build will refuse to"
+    echo "    guess which address this machine commits as."
   else
-    echo "    Skipped. Add \"$TARGET_USER\" to the users list in flake.nix,"
+    echo "    Skipped. Add \"$TARGET_USER\" to the users attrset in flake.nix,"
     echo "    or re-run with --user for a username that is already listed."
     exit 1
   fi

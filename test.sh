@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Checks the things in this repo that fail silently, fail only on the other
 # machine, or fail an hour into an activation: the username -> flake attribute
-# mapping, the users list parsing, the two scripts' guard rails, and the
+# mapping, the users attrset parsing, the two scripts' guard rails, and the
 # out-of-store symlink targets.
 #
 # Nothing here needs sudo and nothing here touches the real machine. The
@@ -132,7 +132,7 @@ else
 fi
 
 # --------------------------------------------------------------------------
-section "users list"
+section "users attrset"
 markers="$(grep -cF '# end users' "$DIR/flake.nix")"
 eq "flake.nix has exactly one '# end users' marker" "1" "$markers"
 
@@ -228,7 +228,7 @@ if "$DIR/users.sh" has "$me" 2>/dev/null; then
   eq "rebuild.sh with no arguments builds the current user" \
     "darwin-rebuild switch --flake $DIR#${me//./-}" "$SUDO_ARGS"
 else
-  skip "no-argument default ($me is not in the users list)"
+  skip "no-argument default ($me is not in the users attrset)"
 fi
 
 run env -u SUDO_USER "$DIR/rebuild.sh" --user no-such-user
@@ -273,7 +273,7 @@ eq "bootstrap.sh --user $first exits 0" "0" "$RUN_RC"
 eq "bootstrap.sh builds #${first//./-} from the flake directly" \
   "$STUB/nix run github:nix-darwin/nix-darwin/nix-darwin-26.05#darwin-rebuild -- switch --flake $DIR#${first//./-}" \
   "$SUDO_ARGS"
-contains "bootstrap.sh skips a username already in the list" "$RUN_OUT" "nothing to do"
+contains "bootstrap.sh skips a username already configured" "$RUN_OUT" "nothing to do"
 
 sum_flake="$(shasum "$DIR/flake.nix" | cut -d' ' -f1)"
 run env -u SUDO_USER "$DIR/bootstrap.sh" --user brand-new-user
@@ -487,8 +487,8 @@ $u
 /Users/$u" "$got"
     fi
 
-    # home.nix throws for a username it has no address for, so this failing
-    # means a machine was added to the users list and not to gitEmails.
+    # home.nix throws for a user record with no address in it, so this failing
+    # means a machine was added to the users attrset and left without an email.
     email="$(nix eval --raw \
       "$DIR#darwinConfigurations.$attr.config.home-manager.users.\"$u\".programs.git.settings.user.email" \
       2>"$WORK/stderr")"
@@ -504,6 +504,42 @@ $u
       bad "README lists $u's address" "$email is configured but not documented"
     fi
   done <<<"$listed"
+
+  # ------------------------------------------------------------------------
+  section "a record users.sh add wrote, before anyone fills it in"
+  # This is the fresh-Mac experience: bootstrap.sh appends an empty record and
+  # then runs a switch against it. That switch has to end in the one line that
+  # says which address is missing. It only does so because configuration.nix
+  # defaults hostPlatform - pkgs is instantiated long before home.nix runs, so
+  # indexing cfg.system directly would bury the useful message under a
+  # module-system stack trace and this is the test that notices.
+  #
+  # Evaluated from a copy holding nothing but the four files a darwin
+  # configuration needs. home.nix names paths under home/ only inside
+  # mkOutOfStoreSymlink strings, which are strings at eval time, so they do not
+  # have to be there.
+  FLAKECOPY="$WORK/flakecopy"
+  mkdir -p "$FLAKECOPY"
+  cp "$COPY" "$FLAKECOPY/flake.nix"
+  cp "$DIR/flake.lock" "$DIR/configuration.nix" "$DIR/home.nix" "$FLAKECOPY/"
+
+  ev() { # attribute path -> nix eval it, with stderr captured
+    EV_RC=0
+    EV_OUT="$(nix eval --raw --no-write-lock-file "$FLAKECOPY#$1" 2>"$WORK/stderr")" || EV_RC=$?
+    EV_ERR="$(grep -v '^warning:' "$WORK/stderr")"
+  }
+
+  ev 'darwinConfigurations.new-user.config.nixpkgs.hostPlatform.system'
+  eq "an empty record still picks a platform" "aarch64-darwin" "$EV_OUT"
+
+  ev 'darwinConfigurations.new-user.config.home-manager.users."new.user".programs.git.settings.user.email'
+  if [ "$EV_RC" -eq 0 ]; then
+    bad "an empty record refuses to guess an address" "evaluated to \"$EV_OUT\""
+  else
+    ok "an empty record refuses to guess an address"
+  fi
+  contains "and says whose address is missing" "$EV_ERR" 'no git email for "new.user"'
+  contains "and says where to put it" "$EV_ERR" "flake.nix's users"
 
   # ------------------------------------------------------------------------
   section "homebrew activation"
