@@ -32,21 +32,21 @@ neovim: 0.11.2 -> 0.11.4
 
 ## Usernames
 
-`flake.nix` lists the usernames it can build for, one configuration each.
-`./users.sh list` prints them. On a Mac whose username is not listed,
-`./bootstrap.sh` offers to add it - an addition, so the other machines keep
-working.
+`flake.nix` maps each macOS username it can build for to what differs on that
+machine, one configuration each. `./users.sh list` prints them. On a Mac whose
+username is not listed, `./bootstrap.sh` offers to add it - an addition, so the
+other machines keep working.
 
-| macOS username | Flake attribute | git commits as |
-| --- | --- | --- |
-| `danavner` | `#danavner` | `ldpavner@gmail.com` |
-| `dan.avner` | `#dan-avner` | `dan.avner@noirlab.edu` |
+| macOS username | Flake attribute | git commits as | system |
+| --- | --- | --- | --- |
+| `danavner` | `#danavner` | `ldpavner@gmail.com` | `aarch64-darwin` |
+| `dan.avner` | `#dan-avner` | `dan.avner@noirlab.edu` | `aarch64-darwin` |
 
 The name on a commit is `Dan Avner` either way; only the address follows the
-machine. `home.nix` holds the mapping, and a username missing from it fails the
-build rather than quietly committing from the wrong address - so adding a Mac
-is two edits: the username list, which `./bootstrap.sh` offers, and the address
-in `home.nix`.
+machine. Adding a Mac is one edit, in `flake.nix`, and `./bootstrap.sh` makes
+it for you - it appends the username with an empty record. Fill in the address
+before the first rebuild: a record without one fails the build rather than
+quietly committing from the wrong one.
 
 Dots become dashes in the attribute name. That is not cosmetic:
 `darwin-rebuild` splits its `--flake …#attr` argument on `.`, so a literal
@@ -56,13 +56,13 @@ dotted attribute can never resolve. The scripts handle the substitution.
 
 | Path | Owns |
 | --- | --- |
-| `flake.nix` | Pinned inputs, the username list, one configuration per user, the dev shell |
+| `flake.nix` | Pinned inputs, the per-user records, one configuration per user, the dev shell |
 | `configuration.nix` | System scope: macOS defaults, Homebrew, the primary user |
 | `home.nix` | User scope: packages, zsh, starship, git, gh, and which dotfiles get linked |
 | `home/` | The real dotfiles, symlinked into `$HOME` so they stay editable in place |
 | `home/AGENTS.md` | Global coding-agent instructions, linked to `~/.claude/CLAUDE.md` and friends |
 | `AGENTS.md` | Notes for agents working *on this repo*. A different file from the one above |
-| `users.sh` | The only thing that parses the username list |
+| `users.sh` | The only thing that parses the per-user records |
 | `test.sh` | The checks below |
 | `cliff.toml` | How `CHANGELOG.md` is generated |
 
@@ -101,7 +101,8 @@ cannot check: it needs a Mac with these usernames on it.
 | Message | Meaning | Fix |
 | --- | --- | --- |
 | `primary user 'X' does not exist, aborting activation` | Building another machine's configuration | `./rebuild.sh` with no `--user` |
-| `flake.nix has no configuration for "X"` | This Mac's username is not in the list | `./bootstrap.sh`, which offers to add it |
+| `flake.nix has no configuration for "X"` | This Mac's username has no record in `flake.nix` | `./bootstrap.sh`, which offers to add it |
+| `home.nix: no git email for "X"` | `./bootstrap.sh` added the username but cannot know the address | Fill in `email` on that user's record in `flake.nix` |
 | `Existing file '…' would be clobbered` | A real dotfile sits where a managed one goes | Normally handled: it is moved to `….backup`. If the message names a `.backup`, an older one is still there - read it, then delete it |
 | `nix: command not found` under sudo, during bootstrap | sudo resets `PATH` to a secure default | Open a new terminal so Determinate can put nix on `PATH`, then re-run |
 | `$HOME … is not owned by you, falling back to '/var/root'` | nix running under sudo | Harmless |

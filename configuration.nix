@@ -1,11 +1,16 @@
-{ user, ... }:
+{ user, cfg, ... }:
 
 {
   # Determinate already manages the Nix daemon, so nix-darwin shouldn't.
   nix.enable = false;
 
   nixpkgs.config.allowUnfree = true;
-  nixpkgs.hostPlatform = "aarch64-darwin"; # use x86_64-darwin for Intel CPU
+  # The `or` is what keeps a half-filled user record survivable. hostPlatform
+  # is needed to instantiate pkgs, which happens long before home.nix can throw
+  # about a missing email, so a record of `{ }` - exactly what `users.sh add`
+  # writes - would fail here with a module-system stack trace instead of the
+  # one-line "add an email to flake.nix" message that tells you what to do.
+  nixpkgs.hostPlatform = cfg.system or "aarch64-darwin";
 
   system.primaryUser = user;
   users.users.${user} = {

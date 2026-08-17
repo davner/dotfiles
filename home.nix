@@ -1,19 +1,15 @@
-{ config, pkgs, user, ... }:
+{ config, pkgs, user, cfg, ... }:
 
 let
   dotfiles = "${config.home.homeDirectory}/.dotfiles";
 
   # Which address git commits as, per machine. Same name either way; only the
-  # address changes. A username missing from this map fails the build on
-  # purpose: committing work from the wrong address is the whole thing this
-  # map exists to prevent, and a silent default would do exactly that.
-  gitEmails = {
-    "danavner" = "ldpavner@gmail.com";
-    "dan.avner" = "dan.avner@noirlab.edu";
-  };
+  # address changes. A user record without one fails the build on purpose:
+  # committing work from the wrong address is the whole thing this exists to
+  # prevent, and a silent default would do exactly that.
   gitEmail =
-    gitEmails.${user} or (throw
-      "home.nix: no git email for \"${user}\". Add one to gitEmails.");
+    cfg.email or (throw
+      "home.nix: no git email for \"${user}\". Add one to flake.nix's users.");
 in
 
 {
