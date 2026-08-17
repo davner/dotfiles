@@ -9,6 +9,9 @@ machine's configuration, not a package anyone installs a version of.
 
 ## 2026-08-17
 
+- **Chore** Drop herdr ([`e11ca24`](https://github.com/davner/dotfiles/commit/e11ca24f3aa7ffa57b0bd170e277294ba5f8a5bb))
+- **Fixed** homebrew: Upgrade installed packages on activation ([`cc3cc02`](https://github.com/davner/dotfiles/commit/cc3cc0284eb8bd06497f6245fe74d852cfa52a29))
+- **Docs** Regenerate the changelog ([`4e75338`](https://github.com/davner/dotfiles/commit/4e75338c398fbd743beea966064b14b0418dd2f3))
 - **Added** claude: Name sessions after the repo they run in ([`86d6add`](https://github.com/davner/dotfiles/commit/86d6add6b3dcfe1aae017b40b0d7d9e4e78e8097))
 - **Chore** claude: Drop the default effort level to medium ([`45548fd`](https://github.com/davner/dotfiles/commit/45548fdba4ac181b6b65dd415ff0af3c2eaa0c47))
 - **Added** darwin: Prefer tabs and group windows by app ([`a9a4c68`](https://github.com/davner/dotfiles/commit/a9a4c68c0b552f0b954d19a6309cdf490781d195))
