@@ -76,20 +76,20 @@ between.
 | --- | --- |
 | `./test.sh` | Everything, including the flake evaluations |
 | `./test.sh --fast` | Shell-level checks only, a few seconds |
-| `nix develop --command ./test.sh` | Everything, plus shellcheck and actionlint |
+| `nix develop --command ./test.sh` | Everything, plus shellcheck, actionlint and git-cliff |
 
 No sudo, no rebuild, and no writes outside a temp directory: the build scripts
 run against a stub `sudo` and a throwaway `$HOME`, so what they *would* have run
 is asserted rather than executed. Run bare, `./test.sh` skips whichever linter is
-not on `PATH`; the dev shell supplies both at the versions `flake.lock` pins.
+not on `PATH`; the dev shell supplies all three at the versions `flake.lock` pins.
 
 ## CI
 
 | Workflow | Trigger | Runs |
 | --- | --- | --- |
-| `test.yml` | Every push and PR | `./test.sh --fast`, shellcheck, actionlint |
+| `test.yml` | Every push and PR | `./test.sh --fast` in the dev shell, so shellcheck, actionlint and git-cliff all run |
 | `changelog.yml` | Every push to `main` | Regenerates `CHANGELOG.md` and commits it if it moved |
-| `weekly.yml` | Mondays 14:00 UTC, or on demand | Full `./test.sh`, `nix flake check`, a real build of every configuration, and a changelog freshness check |
+| `weekly.yml` | Mondays 14:00 UTC, or on demand | Full `./test.sh`, `nix flake check`, and a real build of every configuration |
 | `update.yml` | Mondays 15:00 UTC, or on demand | `nix flake update`, then opens a PR if the inputs moved and everything still builds |
 
 The weekly build is what notices a package disappearing out from under a locked

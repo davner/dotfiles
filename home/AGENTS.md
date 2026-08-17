@@ -112,7 +112,9 @@ than on certainty.
   to the web.
 - **Tests.** `senior-dev` runs the suite and fixes what it broke.
   `test-writer` writes new tests, because the author of the code is the worst
-  judge of whether its tests would catch anything.
+  judge of whether its tests would catch anything. A test that fails or flakes
+  for a reason nobody has established yet is `debugger`'s, not `test-writer`'s:
+  the cause has to be known before a test can be the answer.
 - **Review, in and out.** `code-reviewer` produces findings on code written in
   this session. `review-triage` reads a review that arrived from a PR on GitHub
   and turns it into a plan, which makes it the only agent that reads state from
@@ -133,8 +135,11 @@ Skills that should be installed, if not, install them.
 - `lavish` - turn a plan, diff, or report into a reviewable HTML artifact.
 
 These are not managed by `home.nix`, so a rebuild neither installs nor removes
-them. They are installed by hand with `npx skills add`, which writes to
-`~/.agents/skills/` and symlinks into `~/.claude/skills/`. On a fresh machine,
+them. They are installed by hand with `npx skills add`, which normally writes to
+`~/.agents/skills/` and symlinks into `~/.claude/skills/`. Do not rely on that
+layout when looking for one: `shadcn` and `migrate-radix-to-base` are real
+directories under `~/.claude/skills/` with no `~/.agents/` entry at all, and
+only the other four are symlinks. Check both locations. On a fresh machine,
 run:
 
 ```sh
@@ -149,7 +154,18 @@ npx skills add kunchenguid/lavish-axi -g -y -s lavish
 the `PromptScript does not support global skill installation` warnings, which
 come from an unrelated agent target. `npx skills update -g` upgrades them.
 
+`skill-creator` and `find-skills` are also sitting in `~/.agents/skills/` but
+are not symlinked into `~/.claude/skills/`, so they are installed and inert.
+They are deliberately left out of the list above: link one only if you decide
+you want it, rather than assuming its presence on disk means it is in use.
+
 ## Git workflow
+
+`git-workflow` does the mechanics below - staging named paths, writing the
+commit message, cutting a branch - and it is the one agent nothing routes to on
+its own. Committing is the user's call, not a step that follows from finishing
+code, so it runs when it is asked for by name and not otherwise. It never
+pushes, opens a PR, or rewrites history.
 
 - Do not commit or push changes unless explicitly instructed.
 - Never use `git add .`; stage only the files relevant to the current task.
