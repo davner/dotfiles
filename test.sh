@@ -504,6 +504,54 @@ $u
       bad "README lists $u's address" "$email is configured but not documented"
     fi
   done <<<"$listed"
+
+  # ------------------------------------------------------------------------
+  section "homebrew activation"
+  # The homebrew options compose into one `brew bundle` invocation and one
+  # Brewfile, and nothing else in this suite looks at either. Both have
+  # already been wrong in ways that no test noticed: `upgrade = true` silently
+  # skipped a self-updating cask, and an `extraFlags = ["--force"]` that read
+  # as harmless was suppressing `--adopt` on every cask install. Assert on
+  # what actually gets run, not on the options that produce it.
+  first_attr="$(printf '%s\n' "$listed" | head -n1 | tr '.' '-')"
+  brewcmd="$(nix eval --raw \
+    "$DIR#darwinConfigurations.$first_attr.config.system.activationScripts.homebrew.text" \
+    2>"$WORK/stderr" | grep 'brew bundle')"
+  if [ -z "$brewcmd" ]; then
+    bad "the activation script runs brew bundle" "$(grep -v '^warning:' "$WORK/stderr" | head -3)"
+  else
+    contains "cleanup=zap reaches brew as --zap --force-cleanup" "$brewcmd" "--zap --force-cleanup"
+    # --force-cleanup is fine and is what the module emits for cleanup=zap. A
+    # bare --force is not: brew adds --adopt only when --force is absent, so
+    # passing it turns off adoption and makes every cask install an overwrite.
+    if printf '%s' "$brewcmd" | grep -qE ' --force($| )'; then
+      bad "no bare --force (it would suppress --adopt)" "$brewcmd"
+    else
+      ok "no bare --force (it would suppress --adopt)"
+    fi
+    contains "HOMEBREW_NO_* is set, since activation does not inherit the shell" \
+      "$brewcmd" "HOMEBREW_NO_ANALYTICS=1"
+  fi
+
+  brewfile="$(nix eval --raw \
+    "$DIR#darwinConfigurations.$first_attr.config.homebrew.brewfile" 2>"$WORK/stderr")"
+  if [ -z "$brewfile" ]; then
+    bad "the Brewfile evaluates" "$(grep -v '^warning:' "$WORK/stderr" | head -3)"
+  else
+    # A cask marked auto_updates is never "outdated" to brew bundle, so
+    # onActivation.upgrade skips it unless the entry is greedy. miniforge is
+    # the only one of these that self-updates; greedy on the others would race
+    # their updaters for no reason.
+    contains "miniforge is greedy, or upgrade silently skips it" \
+      "$brewfile" 'cask "miniforge", greedy: true'
+    for c in wezterm claude-code; do
+      if printf '%s' "$brewfile" | grep -qE "cask \"$c\".*greedy"; then
+        bad "$c is not greedy" "greedy on a cask that does not self-update races its own updater"
+      else
+        ok "$c is not greedy"
+      fi
+    done
+  fi
 fi
 
 # --------------------------------------------------------------------------
