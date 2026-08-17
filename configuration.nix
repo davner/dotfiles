@@ -18,7 +18,7 @@
       AppleInterfaceStyle = "Dark";
       KeyRepeat = 2;          # fast key repeat
       InitialKeyRepeat = 15;  # short delay before repeat
-      _HIHideMenuBar = false; # auto-hide the menu bar
+      _HIHideMenuBar = false; # keep the menu bar always visible
       AppleShowAllExtensions = true;
       AppleEnableMouseSwipeNavigateWithScrolls = true;  # swipe to go back/forward in browsers
       AppleEnableSwipeNavigateWithScrolls = true;       # swipe to go back/forward in browsers
@@ -64,11 +64,21 @@
     onActivation.cleanup = "zap";  # remove anything not listed here
     onActivation.autoUpdate = true;
     onActivation.upgrade = true;  # autoUpdate only refreshes metadata; this bumps what is installed
-    onActivation.extraFlags = [ "--force" ];
+    # Activation runs as root, so nothing from the interactive shell's
+    # environment is in scope here. These have to be set explicitly.
+    onActivation.extraEnv = {
+      HOMEBREW_NO_ANALYTICS = "1";
+      HOMEBREW_NO_ENV_HINTS = "1";
+    };
     casks = [
       "wezterm"
       "claude-code"
-      "miniforge"
+      # A cask that updates itself is never "outdated" to `brew bundle`, so
+      # `upgrade = true` above skips it silently. `greedy` is what actually
+      # upgrades it. Only miniforge needs this - the other two are not
+      # self-updating, and greedy on an app that updates itself can race its
+      # own updater.
+      { name = "miniforge"; greedy = true; }
     ];
   };
 }
