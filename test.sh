@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Checks the things in this repo that fail silently, fail only on the other
 # machine, or fail an hour into an activation: the username -> flake attribute
-# mapping, the users list parsing, the two scripts' guard rails, and the
+# mapping, the users attrset parsing, the two scripts' guard rails, and the
 # out-of-store symlink targets.
 #
 # Nothing here needs sudo and nothing here touches the real machine. The
@@ -132,7 +132,7 @@ else
 fi
 
 # --------------------------------------------------------------------------
-section "users list"
+section "users attrset"
 markers="$(grep -cF '# end users' "$DIR/flake.nix")"
 eq "flake.nix has exactly one '# end users' marker" "1" "$markers"
 
@@ -228,7 +228,7 @@ if "$DIR/users.sh" has "$me" 2>/dev/null; then
   eq "rebuild.sh with no arguments builds the current user" \
     "darwin-rebuild switch --flake $DIR#${me//./-}" "$SUDO_ARGS"
 else
-  skip "no-argument default ($me is not in the users list)"
+  skip "no-argument default ($me is not in the users attrset)"
 fi
 
 run env -u SUDO_USER "$DIR/rebuild.sh" --user no-such-user
@@ -273,7 +273,7 @@ eq "bootstrap.sh --user $first exits 0" "0" "$RUN_RC"
 eq "bootstrap.sh builds #${first//./-} from the flake directly" \
   "$STUB/nix run github:nix-darwin/nix-darwin/nix-darwin-26.05#darwin-rebuild -- switch --flake $DIR#${first//./-}" \
   "$SUDO_ARGS"
-contains "bootstrap.sh skips a username already in the list" "$RUN_OUT" "nothing to do"
+contains "bootstrap.sh skips a username already configured" "$RUN_OUT" "nothing to do"
 
 sum_flake="$(shasum "$DIR/flake.nix" | cut -d' ' -f1)"
 run env -u SUDO_USER "$DIR/bootstrap.sh" --user brand-new-user
@@ -444,12 +444,58 @@ if grep -qF '.claude/session-name.sh' "$DIR/home.nix"; then
 else
   bad "home.nix links it into ~/.claude" "settings.json would point at a missing file"
 fi
-# The whole point of the exercise: cc has to hand the name to claude.
-cc_body="$(sed -n '/^      cc() {/,/^      }/p' "$DIR/home.nix")"
-contains "cc asks for a name" "$cc_body" "session-name.sh"
-contains "cc passes it to claude --name" "$cc_body" "--name"
-contains "cc still skips permissions and turns on remote control" "$cc_body" \
-  "--dangerously-skip-permissions --remote-control"
+# --------------------------------------------------------------------------
+section "the cc function"
+# The whole point of the exercise: cc has to hand the name to claude, as two
+# words. Run it, rather than grep it for "--name" - the string was always there
+# even when the array reached claude as the single argument "--name myrepo",
+# which is exactly the bug the comment inside the function warns about.
+FN="$DIR/home/.config/zsh/functions.zsh"
+# Its own check, because it cannot join SCRIPTS: bash -n and shellcheck both
+# reject zsh array syntax.
+if err="$(zsh -n "$FN" 2>&1)"; then ok "zsh -n functions.zsh"; else bad "zsh -n functions.zsh" "$err"; fi
+
+# Prints its arguments one per line, so a name that arrived as one word
+# containing a space is visibly different from two words.
+cat >"$STUB/claude" <<'EOF'
+#!/usr/bin/env bash
+printf '%s\n' "$@"
+EOF
+chmod +x "$STUB/claude"
+# A naming script that answers, under the throwaway $HOME built above. Without
+# one, cc's command substitution fails, the name is empty and the whole --name
+# assertion below would pass while asserting nothing.
+cat >"$STHOME/.claude/session-name.sh" <<'EOF'
+#!/usr/bin/env bash
+echo myrepo
+EOF
+chmod +x "$STHOME/.claude/session-name.sh"
+
+cc_argv() { # $HOME to run under -> the argv claude was called with
+  HOME="$1" PATH="$STUB:$PATH" zsh -c "source '$FN'; cc --foo" 2>/dev/null
+}
+eq "cc passes the name to claude as two words" "--dangerously-skip-permissions
+--remote-control
+--name
+myrepo
+--foo" "$(cc_argv "$STHOME")"
+
+# $FAKEHOME has no ~/.claude/session-name.sh, so the name comes back empty.
+# The array has to vanish entirely rather than leave claude a bare --name or an
+# empty string after it.
+eq "no name means no --name, not an empty one" "--dangerously-skip-permissions
+--remote-control
+--foo" "$(cc_argv "$FAKEHOME")"
+
+# ~/.zshrc is generated, so the only thing tying it to the file above is this
+# line. The -r guard is part of the contract: the file arrives by symlink, and
+# an unguarded source would print an error on every new shell if it dangled.
+if grep -qF '[ -r ~/.config/zsh/functions.zsh ] && source' "$DIR/home.nix"; then
+  ok "home.nix sources functions.zsh, and guards it"
+else
+  bad "home.nix sources functions.zsh, and guards it" \
+    "nothing in ~/.zshrc would load the function"
+fi
 
 # --------------------------------------------------------------------------
 section "flake evaluation"
@@ -487,8 +533,8 @@ $u
 /Users/$u" "$got"
     fi
 
-    # home.nix throws for a username it has no address for, so this failing
-    # means a machine was added to the users list and not to gitEmails.
+    # home.nix throws for a user record with no address in it, so this failing
+    # means a machine was added to the users attrset and left without an email.
     email="$(nix eval --raw \
       "$DIR#darwinConfigurations.$attr.config.home-manager.users.\"$u\".programs.git.settings.user.email" \
       2>"$WORK/stderr")"
@@ -504,6 +550,107 @@ $u
       bad "README lists $u's address" "$email is configured but not documented"
     fi
   done <<<"$listed"
+
+  # ------------------------------------------------------------------------
+  section "a record users.sh add wrote, before anyone fills it in"
+  # This is the fresh-Mac experience: bootstrap.sh appends an empty record and
+  # then runs a switch against it. That switch has to end in the one line that
+  # says which address is missing. It only does so because configuration.nix
+  # defaults hostPlatform - pkgs is instantiated long before home.nix runs, so
+  # indexing cfg.system directly would bury the useful message under a
+  # module-system stack trace and this is the test that notices.
+  #
+  # Evaluated from a copy holding nothing but the four files a darwin
+  # configuration needs. home.nix names paths under home/ only inside
+  # mkOutOfStoreSymlink strings, which are strings at eval time, so they do not
+  # have to be there.
+  FLAKECOPY="$WORK/flakecopy"
+  mkdir -p "$FLAKECOPY"
+  cp "$COPY" "$FLAKECOPY/flake.nix"
+  cp "$DIR/flake.lock" "$DIR/configuration.nix" "$DIR/home.nix" "$FLAKECOPY/"
+
+  ev() { # attribute path -> nix eval it, with stderr captured
+    EV_RC=0
+    EV_OUT="$(nix eval --raw --no-write-lock-file "$FLAKECOPY#$1" 2>"$WORK/stderr")" || EV_RC=$?
+    EV_ERR="$(grep -v '^warning:' "$WORK/stderr")"
+  }
+
+  ev 'darwinConfigurations.new-user.config.nixpkgs.hostPlatform.system'
+  eq "an empty record still picks a platform" "aarch64-darwin" "$EV_OUT"
+
+  ev 'darwinConfigurations.new-user.config.home-manager.users."new.user".programs.git.settings.user.email'
+  if [ "$EV_RC" -eq 0 ]; then
+    bad "an empty record refuses to guess an address" "evaluated to \"$EV_OUT\""
+  else
+    ok "an empty record refuses to guess an address"
+  fi
+  contains "and says whose address is missing" "$EV_ERR" 'no git email for "new.user"'
+  contains "and says where to put it" "$EV_ERR" "flake.nix's users"
+
+  # A record's fields are optional so that an empty one survives to the throw
+  # above. That tolerance is what makes a misspelled field dangerous: an
+  # ignored `sytem` is not an error, it is a silent build for the wrong
+  # platform, which is the one failure here that no later step would catch.
+  sed 's/system = "aarch64-darwin"/sytem = "aarch64-darwin"/' "$COPY" \
+    >"$FLAKECOPY/flake.nix"
+  ev 'darwinConfigurations.danavner.config.nixpkgs.hostPlatform.system'
+  if [ "$EV_RC" -eq 0 ]; then
+    bad "a misspelled field is rejected, not ignored" \
+      "sytem was accepted and the platform silently became \"$EV_OUT\""
+  else
+    ok "a misspelled field is rejected, not ignored"
+  fi
+  contains "and names the field that is wrong" "$EV_ERR" "sytem"
+  contains "and names the user it is wrong on" "$EV_ERR" '"danavner"'
+  cp "$COPY" "$FLAKECOPY/flake.nix"
+
+  # ------------------------------------------------------------------------
+  section "homebrew activation"
+  # The homebrew options compose into one `brew bundle` invocation and one
+  # Brewfile, and nothing else in this suite looks at either. Both have
+  # already been wrong in ways that no test noticed: `upgrade = true` silently
+  # skipped a self-updating cask, and an `extraFlags = ["--force"]` that read
+  # as harmless was suppressing `--adopt` on every cask install. Assert on
+  # what actually gets run, not on the options that produce it.
+  first_attr="$(printf '%s\n' "$listed" | head -n1 | tr '.' '-')"
+  brewcmd="$(nix eval --raw \
+    "$DIR#darwinConfigurations.$first_attr.config.system.activationScripts.homebrew.text" \
+    2>"$WORK/stderr" | grep 'brew bundle')"
+  if [ -z "$brewcmd" ]; then
+    bad "the activation script runs brew bundle" "$(grep -v '^warning:' "$WORK/stderr" | head -3)"
+  else
+    contains "cleanup=zap reaches brew as --zap --force-cleanup" "$brewcmd" "--zap --force-cleanup"
+    # --force-cleanup is fine and is what the module emits for cleanup=zap. A
+    # bare --force is not: brew adds --adopt only when --force is absent, so
+    # passing it turns off adoption and makes every cask install an overwrite.
+    if printf '%s' "$brewcmd" | grep -qE ' --force($| )'; then
+      bad "no bare --force (it would suppress --adopt)" "$brewcmd"
+    else
+      ok "no bare --force (it would suppress --adopt)"
+    fi
+    contains "HOMEBREW_NO_* is set, since activation does not inherit the shell" \
+      "$brewcmd" "HOMEBREW_NO_ANALYTICS=1"
+  fi
+
+  brewfile="$(nix eval --raw \
+    "$DIR#darwinConfigurations.$first_attr.config.homebrew.brewfile" 2>"$WORK/stderr")"
+  if [ -z "$brewfile" ]; then
+    bad "the Brewfile evaluates" "$(grep -v '^warning:' "$WORK/stderr" | head -3)"
+  else
+    # A cask marked auto_updates is never "outdated" to brew bundle, so
+    # onActivation.upgrade skips it unless the entry is greedy. miniforge is
+    # the only one of these that self-updates; greedy on the others would race
+    # their updaters for no reason.
+    contains "miniforge is greedy, or upgrade silently skips it" \
+      "$brewfile" 'cask "miniforge", greedy: true'
+    for c in wezterm claude-code; do
+      if printf '%s' "$brewfile" | grep -qE "cask \"$c\".*greedy"; then
+        bad "$c is not greedy" "greedy on a cask that does not self-update races its own updater"
+      else
+        ok "$c is not greedy"
+      fi
+    done
+  fi
 fi
 
 # --------------------------------------------------------------------------

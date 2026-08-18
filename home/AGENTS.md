@@ -123,10 +123,13 @@ than on certainty.
   already handled, so their tests pass the moment they are written. The line is
   who decides what a test asserts, not who may open a test file - `senior-dev`
   still updates tests its change legitimately invalidated, a renamed symbol or a
-  changed signature, and reports which and why. `debugger` is the one exception:
-  its regression test came from a reproduction that predates the fix, so it can
-  be shown failing against the old code. That is the whole of the exception. A
-  test written after the fix, never watched failing, does not qualify.
+  changed signature, and reports which and why. A test that fails or flakes for
+  a reason nobody has established yet is `debugger`'s rather than
+  `test-writer`'s, because the cause has to be known before a test can be the
+  answer. `debugger` is also the one exception to who authors coverage: its
+  regression test came from a reproduction that predates the fix, so it can be
+  shown failing against the old code. That is the whole of the exception. A test
+  written after the fix, never watched failing, does not qualify.
 - **Review, in and out.** `code-reviewer` produces findings on code written in
   this session. `review-triage` reads a review that arrived from a PR on GitHub
   and turns it into a plan, which makes it the only agent that reads state from
@@ -150,9 +153,12 @@ Skills that should be installed, if not, install them.
   goes through it; see "Design work" below.
 
 These are not managed by `home.nix`, so a rebuild neither installs nor removes
-them. They are installed by hand with `npx skills add`, which writes to
-`~/.agents/skills/` and symlinks into `~/.claude/skills/`. On a fresh machine,
-run:
+them. Every one but `impeccable` is installed by hand with `npx skills add`,
+which writes to `~/.agents/skills/` and symlinks into `~/.claude/skills/`.
+`impeccable` has its own installer and lands as a real directory under
+`~/.claude/skills/` with no `~/.agents/` entry at all, so do not assume the
+symlink layout when looking for a skill - check both locations. On a fresh
+machine, run:
 
 ```sh
 npx skills add shadcn-ui/ui -g -y -s shadcn -s migrate-radix-to-base
@@ -190,6 +196,12 @@ free-form `/impeccable <description>`. Two setup rules:
   exists, init has been run - skip it.
 
 ## Git workflow
+
+`git-workflow` does the mechanics below - staging named paths, writing the
+commit message, cutting a branch - and it is the one agent nothing routes to on
+its own. Committing is the user's call, not a step that follows from finishing
+code, so it runs when it is asked for by name and not otherwise. It never
+pushes, opens a PR, or rewrites history.
 
 - Do not commit or push changes unless explicitly instructed.
 - Never use `git add .`; stage only the files relevant to the current task.

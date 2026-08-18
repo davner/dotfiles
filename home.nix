@@ -1,19 +1,15 @@
-{ config, pkgs, user, ... }:
+{ config, pkgs, user, cfg, ... }:
 
 let
   dotfiles = "${config.home.homeDirectory}/.dotfiles";
 
   # Which address git commits as, per machine. Same name either way; only the
-  # address changes. A username missing from this map fails the build on
-  # purpose: committing work from the wrong address is the whole thing this
-  # map exists to prevent, and a silent default would do exactly that.
-  gitEmails = {
-    "danavner" = "ldpavner@gmail.com";
-    "dan.avner" = "dan.avner@noirlab.edu";
-  };
+  # address changes. A user record without one fails the build on purpose:
+  # committing work from the wrong address is the whole thing this exists to
+  # prevent, and a silent default would do exactly that.
   gitEmail =
-    gitEmails.${user} or (throw
-      "home.nix: no git email for \"${user}\". Add one to gitEmails.");
+    cfg.email or (throw
+      "home.nix: no git email for \"${user}\". Add one to flake.nix's users.");
 in
 
 {
@@ -42,23 +38,13 @@ in
     enable = true;
     autosuggestion.enable = true;      # ghost text from history
     syntaxHighlighting.enable = true;  # commands turn green when valid
+    # Shell functions live in a real .zsh file, not in this string. The guard
+    # is not paranoia: the file arrives by out-of-store symlink, so a checkout
+    # that has moved leaves a dangling link, and an unguarded source would
+    # print an error on every new shell.
     initContent = ''
       bindkey '^f' autosuggest-accept
-
-      # A session named after its repo, so remote control lists "dotfiles"
-      # rather than a summary of whatever the first prompt said. A second
-      # session in the same repo becomes dotfiles-2. Anything passed to cc
-      # still reaches claude, including a --name of your own: the last one
-      # on the line wins.
-      cc() {
-        local name; local -a flag
-        name="$(~/.claude/session-name.sh)"
-        # An array, not ''${name:+--name "$name"}: zsh does not split an
-        # expansion into words, so that form would hand claude one argument
-        # reading "--name dotfiles" and it would reject it.
-        [[ -n $name ]] && flag=(--name "$name")
-        claude --dangerously-skip-permissions --remote-control "''${flag[@]}" "$@"
-      }
+      [ -r ~/.config/zsh/functions.zsh ] && source ~/.config/zsh/functions.zsh
     '';
     shellAliases = {
       ".." = "cd ..";
@@ -105,8 +91,9 @@ in
   # Edit-in-place: the real file stays in my repo, ~/.config just points at it.
   home.file.".config/wezterm".source =
     config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.config/wezterm";
-  home.file.".config/herdr".source =
-    config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.config/herdr";
+  # the shell functions the generated ~/.zshrc sources at the end of its init.
+  home.file.".config/zsh/functions.zsh".source =
+    config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.config/zsh/functions.zsh";
   home.file.".claude/settings.json".source =
     config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.claude/settings.json";
   # settings.json points at this by path, so it has to land in ~/.claude too.

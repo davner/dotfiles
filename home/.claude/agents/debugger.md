@@ -4,7 +4,9 @@ description: >
   Diagnoses a bug, a runtime error, a build failure, or a flaky test. Use
   whenever something is broken and the cause is not already known. Reproduces
   the failure end to end first, traces it to the root cause with evidence, then
-  fixes the cause and proves the reproduction now passes.
+  fixes the cause and proves the reproduction now passes. Takes a flaky test
+  when the flake is unexplained; `test-writer` takes it when the cause is
+  already known to be the test itself.
 model: inherit
 color: yellow
 ---

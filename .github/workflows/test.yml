@@ -1,6 +1,6 @@
 name: test
 
-# Everything here is quick: the shell-level half of ./test.sh, plus the two
+# Everything here is quick: the shell-level half of ./test.sh, plus the
 # linters. The flake evaluations and the actual system builds are slow enough
 # to live in weekly.yml instead.
 on: [push, pull_request]
@@ -19,14 +19,14 @@ jobs:
     runs-on: macos-latest
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
         with:
           # test.sh renders the changelog template, which needs the history.
           fetch-depth: 0
 
       - uses: DeterminateSystems/nix-installer-action@main
 
-      # nix develop supplies shellcheck and actionlint at the versions
-      # flake.lock pins, so nothing in test.sh has to skip.
+      # nix develop supplies shellcheck, actionlint and git-cliff at the
+      # versions flake.lock pins, so nothing in test.sh has to skip.
       - name: ./test.sh --fast
         run: nix develop --command ./test.sh --fast

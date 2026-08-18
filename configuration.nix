@@ -1,11 +1,16 @@
-{ user, ... }:
+{ user, cfg, ... }:
 
 {
   # Determinate already manages the Nix daemon, so nix-darwin shouldn't.
   nix.enable = false;
 
   nixpkgs.config.allowUnfree = true;
-  nixpkgs.hostPlatform = "aarch64-darwin"; # use x86_64-darwin for Intel CPU
+  # The `or` is what keeps a half-filled user record survivable. hostPlatform
+  # is needed to instantiate pkgs, which happens long before home.nix can throw
+  # about a missing email, so a record of `{ }` - exactly what `users.sh add`
+  # writes - would fail here with a module-system stack trace instead of the
+  # one-line "add an email to flake.nix" message that tells you what to do.
+  nixpkgs.hostPlatform = cfg.system or "aarch64-darwin";
 
   system.primaryUser = user;
   users.users.${user} = {
@@ -18,7 +23,7 @@
       AppleInterfaceStyle = "Dark";
       KeyRepeat = 2;          # fast key repeat
       InitialKeyRepeat = 15;  # short delay before repeat
-      _HIHideMenuBar = false; # auto-hide the menu bar
+      _HIHideMenuBar = false; # keep the menu bar always visible
       AppleShowAllExtensions = true;
       AppleEnableMouseSwipeNavigateWithScrolls = true;  # swipe to go back/forward in browsers
       AppleEnableSwipeNavigateWithScrolls = true;       # swipe to go back/forward in browsers
@@ -63,14 +68,22 @@
     enable = true;
     onActivation.cleanup = "zap";  # remove anything not listed here
     onActivation.autoUpdate = true;
-    onActivation.extraFlags = [ "--force" ];
-    brews = [
-      "herdr"
-    ];
+    onActivation.upgrade = true;  # autoUpdate only refreshes metadata; this bumps what is installed
+    # Activation runs as root, so nothing from the interactive shell's
+    # environment is in scope here. These have to be set explicitly.
+    onActivation.extraEnv = {
+      HOMEBREW_NO_ANALYTICS = "1";
+      HOMEBREW_NO_ENV_HINTS = "1";
+    };
     casks = [
       "wezterm"
       "claude-code"
-      "miniforge"
+      # A cask that updates itself is never "outdated" to `brew bundle`, so
+      # `upgrade = true` above skips it silently. `greedy` is what actually
+      # upgrades it. Only miniforge needs this - the other two are not
+      # self-updating, and greedy on an app that updates itself can race its
+      # own updater.
+      { name = "miniforge"; greedy = true; }
     ];
   };
 }

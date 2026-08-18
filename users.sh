@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# The one place that reads and extends flake.nix's users list. bootstrap.sh and
-# rebuild.sh both go through this, so the list is parsed exactly one way and
+# The one place that reads and extends flake.nix's users attrset. bootstrap.sh
+# and rebuild.sh both go through this, so it is parsed exactly one way and
 # there is a single thing for test.sh to hold to the format.
 #
 # usage: ./users.sh list [FLAKE]          print every configured username
@@ -24,14 +24,17 @@ FLAKE defaults to this repo's flake.nix.
 EOF
 }
 
-# Every quoted string between the list opening and its end marker.
+# Every quoted string opening a record between the attrset and its end marker.
+# The range anchor is /users = [{]/ and not /users = \{/: a backslashed brace
+# is undefined in a POSIX ERE, while a bracket expression is a literal in
+# every one of them.
 extract() {
   local out
-  out="$(sed -nE '/users = \[/,/# end users/ s/^[[:space:]]*"([^"]+)".*/\1/p' "$1")"
+  out="$(sed -nE '/users = [{]/,/# end users/ s/^[[:space:]]*"([^"]+)".*/\1/p' "$1")"
   if [ -z "$out" ]; then
     echo "${0##*/}: found no usernames in $1" >&2
-    echo "  The list has to stay one quoted username per line between" >&2
-    echo "  'users = [' and the '# end users' marker." >&2
+    echo "  The attrset has to stay one quoted username per line, each opening" >&2
+    echo "  a record, between 'users = {' and the '# end users' marker." >&2
     return 1
   fi
   printf '%s\n' "$out"
@@ -67,13 +70,18 @@ case "$cmd" in
       echo "${0##*/}: no '# end users' marker in $flake, nowhere to append" >&2
       exit 1
     fi
-    # Indent to match the marker line, so this survives the list being
+    # The record goes in empty on purpose. This runs on a machine where nix
+    # may not work yet, so it cannot know an email, and an empty record still
+    # evaluates: configuration.nix defaults hostPlatform, and home.nix then
+    # throws one readable line naming the address that is missing.
+    #
+    # Indent to match the marker line, so this survives the attrset being
     # reindented. Rewrite through a variable rather than a temp file and mv,
     # which would leave flake.nix owned by mktemp's 0600.
     updated="$(awk -v u="$name" '
       /# end users/ && !added {
         match($0, /^[ \t]*/)
-        printf "%s  \"%s\"\n", substr($0, 1, RLENGTH), u
+        printf "%s  \"%s\" = { };\n", substr($0, 1, RLENGTH), u
         added = 1
       }
       { print }
