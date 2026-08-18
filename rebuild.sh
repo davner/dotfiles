@@ -46,7 +46,7 @@ done
 # "primary user does not exist" at activation time.
 if ! "$DIR/users.sh" has "$TARGET_USER"; then
   echo "flake.nix has no configuration for \"$TARGET_USER\"." >&2
-  echo "Add it to the users list in flake.nix (./bootstrap.sh offers to)," >&2
+  echo "Add it to the users attrset in flake.nix (./bootstrap.sh offers to)," >&2
   echo "or pass --user with one of these:" >&2
   "$DIR/users.sh" list | sed 's/^/  /' >&2
   exit 1

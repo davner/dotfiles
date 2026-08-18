@@ -2,7 +2,7 @@
 # The Claude Code status line: model, context window, and how much of the
 # 5-hour and weekly rate limits is gone.
 #
-#   Opus 5 · ctx 8% · 5h 24% · wk 41% (2d)
+#   Opus 5 · ctx 8% · 5h 24% (2h00m) · wk 41% (3d)
 #
 # Claude Code pipes one JSON object in on stdin; the fields are documented at
 # https://code.claude.com/docs/en/statusline. Almost all of them are optional:

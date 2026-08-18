@@ -13,18 +13,23 @@ on:
 permissions:
   contents: write
   pull-requests: write
+  id-token: write # magic-nix-cache authenticates with an OIDC token
 
 jobs:
   flake-update:
     runs-on: macos-latest
     timeout-minutes: 90
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
         with:
           # test.sh renders the changelog template, which needs the history.
           fetch-depth: 0
 
       - uses: DeterminateSystems/nix-installer-action@main
+
+      # See weekly.yml: same cold-closure build, same caveat about the 10GB
+      # Actions cache limit.
+      - uses: DeterminateSystems/magic-nix-cache-action@main
 
       - name: nix flake update
         run: nix flake update

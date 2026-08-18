@@ -16,15 +16,22 @@
 
   outputs = inputs@{ self, nix-darwin, nix-homebrew, home-manager, nixpkgs }:
     let
-      # Every macOS username this repo can build for. This is a list, not a
+      # Every macOS username this repo can build for. This is an attrset, not a
       # single value, so one checkout serves the work machine and the personal
       # machine at once - switching between them is a matter of which entry
       # gets built, not an edit to this file that has to be undone later.
       # bootstrap.sh and rebuild.sh pick the entry matching whoever runs them.
-      users = [
-        "danavner"
-        "dan.avner"
-      ]; # end users - bootstrap.sh appends new usernames above this line
+      #
+      # A record holds only what genuinely differs from one machine to the
+      # next, so it does not turn into the place every new option gets parked:
+      # anything the machines agree on belongs in configuration.nix or home.nix
+      # where it is stated once. Note that weekly.yml and update.yml build
+      # every entry on macos-latest, which is arm64 - an x86_64-darwin record
+      # would fail CI with no builder available.
+      users = {
+        "danavner"  = { email = "ldpavner@gmail.com";    system = "aarch64-darwin"; };
+        "dan.avner" = { email = "dan.avner@noirlab.edu"; system = "aarch64-darwin"; };
+      }; # end users - bootstrap.sh appends new usernames above this line
 
       # darwin-rebuild splits its flake attribute on ".", so a username
       # containing a dot cannot be an attribute name: `#darwinConfigurations
@@ -33,15 +40,33 @@
       # which configuration to build.
       attrFor = user: builtins.replaceStrings [ "." ] [ "-" ] user;
 
-      # configuration.nix builds for aarch64-darwin, but the dev shell is
+      # Every configured machine is aarch64-darwin today, but the dev shell is
       # useful on either Mac.
       forEachDarwin = f: builtins.listToAttrs (
         map (system: { name = system; value = f nixpkgs.legacyPackages.${system}; })
           [ "aarch64-darwin" "x86_64-darwin" ]
       );
 
-      mkDarwin = user: nix-darwin.lib.darwinSystem {
-        specialArgs = { inherit user; };
+      # A record's fields are optional, which is what lets `users.sh add` write
+      # an empty one and lets the missing-email throw be the thing that speaks.
+      # That same tolerance would swallow a typo: `sytem = "x86_64-darwin"` is
+      # not an error, it is an ignored key and a silent aarch64 build. So the
+      # keys are checked even though the values are not.
+      knownFields = [ "email" "system" ];
+      checkRecord = user: record:
+        let
+          unknown = builtins.filter (k: !(builtins.elem k knownFields))
+            (builtins.attrNames record);
+        in
+        if unknown == [ ] then record
+        else throw ''
+          flake.nix: user "${user}" has unknown field(s): ${builtins.concatStringsSep ", " unknown}.
+          A record holds only ${builtins.concatStringsSep " and " knownFields}. Check the spelling.'';
+
+      # Both scopes get the username and its record: configuration.nix needs
+      # the platform, home.nix needs the git address.
+      mkDarwin = user: let cfg = checkRecord user users.${user}; in nix-darwin.lib.darwinSystem {
+        specialArgs = { inherit user cfg; };
         modules = [
           ./configuration.nix
           nix-homebrew.darwinModules.nix-homebrew
@@ -49,7 +74,7 @@
           {
             home-manager.useGlobalPkgs = true;
             home-manager.useUserPackages = true;
-            home-manager.extraSpecialArgs = { inherit user; };
+            home-manager.extraSpecialArgs = { inherit user cfg; };
             home-manager.users.${user} = import ./home.nix;
             # A dotfile that already exists and that this config also manages
             # gets moved to <name>.backup rather than failing the activation.
@@ -64,7 +89,8 @@
     {
       # One configuration per username, e.g. `#danavner` and `#dan-avner`.
       darwinConfigurations = builtins.listToAttrs (
-        map (user: { name = attrFor user; value = mkDarwin user; }) users
+        map (user: { name = attrFor user; value = mkDarwin user; })
+          (builtins.attrNames users)
       );
 
       # What ./test.sh lints with and what regenerates CHANGELOG.md, pinned by
