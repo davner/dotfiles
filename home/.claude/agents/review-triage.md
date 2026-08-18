@@ -113,8 +113,9 @@ Flag what each item will need once the fix lands. You know what it touches and
 An item whose fix changes behavior needs a regression test, and that is
 `test-writer`'s job rather than the job of whoever wrote the fix. An item that
 is really a request for a test, not a code change, skips `senior-dev`
-altogether. Frontend items need `ui-verifier`, schema and backfill items need
-`migration-safety`, and items that only touch docs go to `docs-writer`.
+altogether. Frontend items need `ui-verifier` and `a11y-auditor`, schema and
+backfill items need `migration-safety`, and items that only touch docs go to
+`docs-writer`.
 
 Do not flag a test for an item that only renames, retypes, or reformats. A test
 that asserts nothing costs more than it catches, and every review response is a

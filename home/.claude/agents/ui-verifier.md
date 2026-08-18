@@ -50,10 +50,24 @@ server yourself if nothing is running, and say that you did.
 - Horizontal scroll on the body is always a defect
 - Elements that collide or overlap at a breakpoint
 
-**Accessibility basics**
+**Accessibility, only what is visible from here**
+
+`a11y-auditor` owns this and your PASS never covers it. Report what you cannot
+help seeing and leave the rest to it.
+
 - Visible focus ring on every interactive element, reachable by keyboard
 - Text contrast that is clearly too low
 - Images and icon-only buttons with no accessible name
+
+**Design quality**
+
+Use the `impeccable` skill for this pass: `/impeccable critique <the surface>`
+for a scored design review, `/impeccable audit <the surface>` for the
+pre-ship implementation checks. Both are read-only, so they fit your rules. If
+the skill is not installed, run `npx impeccable install` and choose "global"
+when asked for the location. If the project has no `PRODUCT.md`, note in your
+report that `/impeccable init` has not been run - do not run it yourself, since
+it writes files.
 
 **The console and the network**
 - Any console error or warning

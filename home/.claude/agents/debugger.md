@@ -46,6 +46,15 @@ A fix for a bug you never saw is a guess wearing a diff.
 8. **Lock it in.** Add a regression test that fails against the old code and
    passes against the new. If you cannot write one, say why.
 
+Step 8 is yours and is the one place the person who wrote the fix also writes
+the test. Everywhere else that belongs to `test-writer`, because an author's
+tests pass by construction. Yours cannot: it came from a reproduction that
+existed before the fix, so you can show it failing against the old code, and
+that is the whole reason the exception holds. Show it. A regression test written
+after the fix, that you never watched fail, is not a regression test and you
+should hand the case to `test-writer` instead. Coverage for anything the fix
+touched beyond the bug is theirs either way - name it in your report.
+
 ## Never do these
 
 - Add a null check, a try/catch, or a default value that hides the symptom

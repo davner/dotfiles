@@ -39,9 +39,10 @@ Three habits the descriptions cannot express on their own:
 - Nothing self-certifies, including the plan. `architect`'s plan goes to
   `plan-reviewer` before code is written against it, and revisions go back to
   `architect`. Code that `senior-dev` wrote goes to `code-reviewer` before it is
-  called done, frontend work goes to `ui-verifier`, and any schema change or
-  backfill goes to `migration-safety`. Fixes go back to the agent that writes,
-  never to the reviewer, which is why the reviewing agents cannot write files.
+  called done, frontend work goes to `ui-verifier` and `a11y-auditor`, and any
+  schema change or backfill goes to `migration-safety`. Fixes go back to the
+  agent that writes, never to the reviewer, which is why the reviewing agents
+  cannot write files.
   The ones that only find are unconditional wherever they apply, because they
   cost time and nothing else and no diff is small enough to be worth skipping
   them for. The ones that write are conditional, because what they add is
@@ -107,12 +108,25 @@ than on certainty.
 - **Migrations.** `code-reviewer` reads a migration as code and its APPROVE
   never covers it. `migration-safety` runs it. A diff with a migration needs
   both, and they can run at the same time.
+- **The rendered page.** `ui-verifier` checks what it looks like: layout,
+  spacing, states, breakpoints, the console. `a11y-auditor` checks what it does
+  for someone who is not looking at it: keyboard, the accessibility tree, WCAG
+  conformance. `ui-verifier` flags the loud accessibility defects it happens to
+  see, and its PASS never covers accessibility. Frontend work needs both, and
+  they can run at the same time.
 - **Searching.** `researcher` is for answers that are not in the repo. The
   built-in `Explore` is for answers that are. Do not send a codebase question
   to the web.
-- **Tests.** `senior-dev` runs the suite and fixes what it broke.
-  `test-writer` writes new tests, because the author of the code is the worst
-  judge of whether its tests would catch anything.
+- **Tests.** `senior-dev` runs the suite and fixes what it broke. `test-writer`
+  writes new tests, because the author of the code is the worst judge of whether
+  its tests would catch anything: the cases that occur to them are the ones they
+  already handled, so their tests pass the moment they are written. The line is
+  who decides what a test asserts, not who may open a test file - `senior-dev`
+  still updates tests its change legitimately invalidated, a renamed symbol or a
+  changed signature, and reports which and why. `debugger` is the one exception:
+  its regression test came from a reproduction that predates the fix, so it can
+  be shown failing against the old code. That is the whole of the exception. A
+  test written after the fix, never watched failing, does not qualify.
 - **Review, in and out.** `code-reviewer` produces findings on code written in
   this session. `review-triage` reads a review that arrived from a PR on GitHub
   and turns it into a plan, which makes it the only agent that reads state from
@@ -131,6 +145,9 @@ Skills that should be installed, if not, install them.
 - `chrome-devtools-axi` - drive a real Chrome session: navigate, inspect, screenshot, and debug a page.
 - `gh-axi` - operate GitHub from the CLI: issues, PRs, CI runs, releases, Projects.
 - `lavish` - turn a plan, diff, or report into a reviewable HTML artifact.
+- `impeccable` - design-quality passes on frontend work: polish, critique,
+  audit, and full design flows via `/impeccable <command>`. Any UI design work
+  goes through it; see "Design work" below.
 
 These are not managed by `home.nix`, so a rebuild neither installs nor removes
 them. They are installed by hand with `npx skills add`, which writes to
@@ -148,6 +165,29 @@ npx skills add kunchenguid/lavish-axi -g -y -s lavish
 `-s` does not take a comma-separated list; repeat the flag per skill. Ignore
 the `PromptScript does not support global skill installation` warnings, which
 come from an unrelated agent target. `npx skills update -g` upgrades them.
+
+`impeccable` uses its own installer, not `npx skills add`. On a fresh machine:
+
+```sh
+npx impeccable install   # when prompted for location, choose "global"
+```
+
+The global install writes the skill to `~/.claude/skills/impeccable`. It is not
+covered by `npx skills update -g`; upgrade it with `npx impeccable update` (and
+`npx impeccable check` says whether you are behind).
+
+### Design work
+
+Any task that designs or visually changes a UI goes through the `impeccable`
+skill - `/impeccable polish`, `/impeccable critique`, `/impeccable audit`, or a
+free-form `/impeccable <description>`. Two setup rules:
+
+- If the skill is missing, install it first: `npx impeccable install` (choose
+  "global").
+- The first design task in a project runs `/impeccable init` before anything
+  else. It writes `PRODUCT.md` at the project root, and every later impeccable
+  command reads it; without it the output is generic. If `PRODUCT.md` already
+  exists, init has been run - skip it.
 
 ## Git workflow
 
