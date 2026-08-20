@@ -9,6 +9,9 @@ machine's configuration, not a package anyone installs a version of.
 
 ## 2026-08-20
 
+- **Other** Merge remote-tracking branch 'origin/main' ([`46a87b7`](https://github.com/davner/dotfiles/commit/46a87b706915bf4c742e692885e8110c5c2708a2))
+- **Docs** Regenerate the changelog ([`19ce5c2`](https://github.com/davner/dotfiles/commit/19ce5c2031fffc3d85ed4d9021df7f3a03d28c55))
+- **Chore** claude: Drop the default effort level to high ([`60e56e3`](https://github.com/davner/dotfiles/commit/60e56e3c49f984b2b186e893d842db617a9d43ac))
 - **Other** Merge remote-tracking branch 'origin/main' ([`d6bd808`](https://github.com/davner/dotfiles/commit/d6bd80807add605996abad8aadeff1c3c8de2368))
 
 ## 2026-08-18
