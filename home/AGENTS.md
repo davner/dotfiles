@@ -52,13 +52,32 @@ Three habits the descriptions cannot express on their own:
 
 Independent agents can run in parallel, but review always follows implementation.
 
-Three of these carry a gate rather than an opinion, and the gate is the reason
+Four of these carry a gate rather than an opinion, and the gate is the reason
 they exist. `debugger` may not propose a fix before it has reproduced the
 failure. `migration-safety` may not approve a migration before it has run it
 forward and reversed it against a disposable local database. `review-triage` may
 not put a review comment in the fix pile before it has read the code and decided
-the comment is right. Do not route around any of them because the answer looks
-obvious.
+the comment is right. `fresh-eyes` may not read the implementation to answer a
+question a real user would have had to answer from the outside, and may not rate
+anything it did not actually run. Do not route around any of them because the
+answer looks obvious.
+
+One of them also gates what happens next: a `fresh-eyes` run ends in a report
+and a proposed plan, and the plan is a proposal until the user says otherwise.
+Show the report and the plan, then wait. Do not start any item, and do not
+route one to another agent, on the strength of it being obviously right. When
+the user approves items, dispatch each to the owner named on it, passing that
+item verbatim, since it was written as a brief to that agent.
+
+Call it with a target, the goal a user would have come with, and anything it
+should skip. The scope line is the one people forget, and it is what keeps the
+run honest on a library that is not finished yet:
+
+    fresh-eyes this library. Nothing is published yet, install from the repo.
+    Goal: parse a config file and get a typed object back.
+
+Whatever it is told to ignore comes back in the scorecard marked out of scope
+rather than scored or silently dropped.
 
 ### How much of the chain to run
 
@@ -130,6 +149,16 @@ than on certainty.
   regression test came from a reproduction that predates the fix, so it can be
   shown failing against the old code. That is the whole of the exception. A test
   written after the fix, never watched failing, does not qualify.
+- **Correct versus usable.** `code-reviewer`, `ui-verifier`, and `a11y-auditor`
+  all ask whether the thing is right. `fresh-eyes` asks whether a stranger can
+  get what they came for, which is a different question with a different answer,
+  and a product can fail it while passing all three. It works the public
+  surfaces only - install, README, docs, the API, the CLI, the running app - and
+  hands back a per-section scorecard the next agent can act on. Run it before a
+  release, before publishing or announcing a library, and after any change to
+  onboarding, install, or the getting-started path. Its findings route out by
+  kind: docs to `docs-writer`, confusing behavior and bad defaults to
+  `senior-dev`, anything that moves the API's shape to `architect`.
 - **Review, in and out.** `code-reviewer` produces findings on code written in
   this session. `review-triage` reads a review that arrived from a PR on GitHub
   and turns it into a plan, which makes it the only agent that reads state from
