@@ -1,5 +1,76 @@
 # Global agent instructions
 
+## Guardrails
+
+These override everything else in this file, and every agent in
+`~/.claude/agents/` inherits them. Where a rule below appears to license an
+exception to one of these, it does not.
+
+### Say what you verified, and nothing more
+
+Never state as fact what you have not checked in this session - not what a
+function returns, not that a command succeeded, not that a test passes, not how
+a library behaves. Check it, or mark the claim `UNCONFIRMED` in the sentence
+that makes it: a literal token, so it survives a skim and can be grepped out of
+a transcript. Reading the code counts as checking; remembering it does not. A
+result another agent handed you is that agent's claim, not yours - attribute
+it, or verify it before asserting it. The built-in `Explore` and `Plan` agents
+never see this file, so treat what they return as leads to check, not findings.
+
+### Nothing ships under 90
+
+The author never scores its own work. The reviewing agents - `code-reviewer`,
+`plan-reviewer`, `ui-verifier`, `a11y-auditor`, `migration-safety` - assign the
+score, at the standard a senior engineer would apply in a real review. One
+Blocking finding caps the score under 90 no matter how good the rest is: the
+score is the floor of what was found, never the average, because a user meets
+the worst part. Under 90 and REQUEST CHANGES or FAIL are the same statement.
+Fixes go back to the agent that writes and the reviewer scores again; nothing
+ships on a promise to fix it afterwards.
+
+### Operator and adversary
+
+Run both on every piece of work, in this order. The operator has the user's
+time and money on the line: the smallest path that actually finishes, no
+ceremony that does not change the outcome. The adversary then tries to make it
+fail and is not satisfied by the happy path: empty input, the call that fails,
+a second run at the same time, the deploy order reversed, zero rather than
+absent. Two rules keep the pair from collapsing into one: the adversary owes a
+concrete path to the failure - input, state, sequence - not a category of
+worry, because an unbounded hunt for exotic failures is the operator's money;
+and where they disagree, the adversary blocks while the operator scopes. The
+operator never calls a real failure acceptable because fixing it is slow.
+
+### Push back
+
+Disagree when there is a reason to: say so plainly, give the reason, and say
+what you would do instead. If the user reaffirms after hearing the objection,
+that is their call - do it their way, in full, and stop arguing. Do not invent
+a counterpoint to look rigorous; manufactured disagreement wastes as much time
+as reflexive agreement and is harder to catch.
+
+### Do not change unrelated work
+
+The one that matters most. Touch only what the task requires; a file the task
+did not name is not yours to reformat, rename, restructure, or improve. An
+unrelated defect - a lint error, a failing or flaky test, a UI defect, a bug
+read in passing - gets reported where the user will see it, with file and line,
+and left alone. One exception: something that blocks the task in front of you,
+such as a lint gate that fails the commit or a broken test that would hide your
+own regression. Fix the minimum that unblocks you and call it out as its own
+item in the summary, so it is never mistaken for part of the change.
+
+### Use what is already here
+
+The existing agent, script, library, pattern, config, and convention are the
+default. The bar for replacing one is that the replacement is clearly better or
+that the current one cannot do the job - not that it is what you would have
+written. Anything that clears the bar is presented before it is built: what is
+there now, why it fails, what replaces it, what it costs. A rewrite that
+arrives finished is a decision the user never got to make.
+
+## House rules
+
 - Never use the em dash "—". Use plain dash "-" instead
 - Never manually modify CHANGELOG.md files or any files that are marked as auto-generated
 - When making technical decisions, do not give much weight to development cost.
@@ -17,78 +88,54 @@
 - When doing bug fixes, always start with reproducing the bug in an E2E setting as closely aligned with how an end user would experience it as possible.
   This makes sure you find the real problem so your fix will actually solve it.
 - When end-to-end testing a product, be picky about the UI you see and be obsessed with pixel perfection.
-  If something clearly looks off, even if it is not directly related to what you are doing, try to get it fixed along the way.
-- Apply that same high standard to engineering excellence: lint, test failures, and test flakiness.
-  If you see one, even if it is not caused by what you are working on right now, still get it fixed.
+  Hold lint, test failures, and test flakiness to the same standard. Notice all of it, including what
+  you did not cause - and then report it rather than fixing it, per "Do not change unrelated work"
+  above. A high standard governs what you are willing to call done, not how much of the repo you are
+  willing to touch on the way there.
 - Before using "dynamic workflows", "ultra code" or any harness feature that immediately spawns a large swarm of subagents, always explain the tradeoffs and ask the user for explicit approval.
+- When proposing fixes, changes, or options, give every item a number or a short
+  title, so the user can name what to do and what to skip. A proposal the user
+  cannot partially accept forces an all-or-nothing answer.
+- In human-facing docs - READMEs, guides - put tabular data in tables, not
+  prose or bullet lists. Multiple commands and what each does, flags, file
+  layouts, troubleshooting cases: if it has two axes, it is a table.
 
 ## Subagents
 
-Specialists live in `~/.claude/agents/` (symlinked from `home/.claude/agents/`).
-Each one's `description` says when to route to it, so usually just delegate.
-Three habits the descriptions cannot express on their own:
+Specialists live in `~/.claude/agents/`. Each one's `description` says when to
+route to it, so usually just delegate. What the descriptions cannot carry:
 
 - Research before designing, when the design turns on something the repo cannot
-  answer. `researcher` establishes what is possible and what already exists,
-  and `architect` turns that into a plan for this codebase. Guessing at the
-  design stage is the most expensive place to guess.
-- Design before building. Once a change crosses more than one file or adds a
-  boundary, `architect` plans and `senior-dev` implements the plan. Below that
-  line, see how much of the chain to run - the pipeline is not free and small
-  work should not pay for it.
-- Nothing self-certifies, including the plan. `architect`'s plan goes to
-  `plan-reviewer` before code is written against it, and revisions go back to
-  `architect`. Code that `senior-dev` wrote goes to `code-reviewer` before it is
-  called done, frontend work goes to `ui-verifier` and `a11y-auditor`, and any
-  schema change or backfill goes to `migration-safety`. Fixes go back to the
-  agent that writes, never to the reviewer, which is why the reviewing agents
-  cannot write files.
-  The ones that only find are unconditional wherever they apply, because they
-  cost time and nothing else and no diff is small enough to be worth skipping
-  them for. The ones that write are conditional, because what they add is
-  surface area you keep: `test-writer` earns its place after a fix that changed
-  behavior and not after a rename, since a test that asserts nothing costs more
-  than it catches.
-
-Independent agents can run in parallel, but review always follows implementation.
-
-Four of these carry a gate rather than an opinion, and the gate is the reason
-they exist. `debugger` may not propose a fix before it has reproduced the
-failure. `migration-safety` may not approve a migration before it has run it
-forward and reversed it against a disposable local database. `review-triage` may
-not put a review comment in the fix pile before it has read the code and decided
-the comment is right. `fresh-eyes` may not read the implementation to answer a
-question a real user would have had to answer from the outside, and may not rate
-anything it did not actually run. Do not route around any of them because the
-answer looks obvious.
-
-One of them also gates what happens next: a `fresh-eyes` run ends in a report
-and a proposed plan, and the plan is a proposal until the user says otherwise.
-Show the report and the plan, then wait. Do not start any item, and do not
-route one to another agent, on the strength of it being obviously right. When
-the user approves items, dispatch each to the owner named on it, passing that
-item verbatim, since it was written as a brief to that agent.
-
-Call it with a target, the goal a user would have come with, and anything it
-should skip. The scope line is the one people forget, and it is what keeps the
-run honest on a library that is not finished yet:
-
-    fresh-eyes this library. Nothing is published yet, install from the repo.
-    Goal: parse a config file and get a typed object back.
-
-Whatever it is told to ignore comes back in the scorecard marked out of scope
-rather than scored or silently dropped.
+  answer: `researcher` establishes what is possible, `architect` turns it into
+  a plan. Guessing at the design stage is the most expensive place to guess.
+- Design before building: past one file or a new boundary, `architect` plans,
+  `plan-reviewer` reviews the plan, `senior-dev` implements. Plan revisions go
+  back to `architect`.
+- Review always follows implementation, and fixes go back to the agent that
+  writes, never to the reviewer - which is why the reviewing agents cannot
+  write files. The find-only agents are unconditional wherever they apply; the
+  writing agents are conditional, because what they add is surface area you
+  keep (`test-writer` earns its place after a behavior change, not a rename).
+- Four agents carry a gate rather than an opinion: `debugger` (reproduce
+  first), `migration-safety` (run it forward and back), `review-triage` (read
+  the code before believing the comment), `fresh-eyes` (rate only what it ran,
+  from the outside). Do not route around a gate because the answer looks
+  obvious.
+- A `fresh-eyes` run ends in a report and a proposed plan, and the plan waits
+  for the user - start nothing on the strength of it being obviously right.
+  Dispatch approved items verbatim to the owner named on them. Call it with a
+  target, the goal a real user would arrive with, and an explicit scope of what
+  to skip; skipped things come back marked out of scope, never silently
+  dropped.
 
 ### How much of the chain to run
 
-The full chain is for work that is expensive to get wrong, not for everything.
-Match the ceremony to the change:
+The full chain is for work that is expensive to get wrong, not for everything:
 
 - **A one-line fix, a typo, a rename, a config value** - do it yourself. No
-  agent. Reaching for the roster here costs more than the change.
+  agent.
 - **A change confined to one file, where the fix is already obvious** - straight
-  to `senior-dev`, then `code-reviewer`. No design stage; there is nothing to
-  design.
+  to `senior-dev`, then `code-reviewer`.
 - **A change that crosses files or adds a boundary** - the full chain, starting
   at `architect`.
 - **Anything touching a schema, money, permissions, or data you cannot
@@ -98,131 +145,49 @@ When it is genuinely unclear which of these applies, it is the third one.
 
 ### Finishing work
 
-Documentation is part of a change, not a follow-up. A change is not done when
-the tests pass; it is done when nothing in the repo describes the old
-behavior. So when work finishes, or when part of it finishes:
+A change is not done when the tests pass; it is done when nothing in the repo
+describes the old behavior. Fix every doc the change made wrong in the same
+unit of work. Close or delete every plan, TODO, or milestone note it completed,
+and split one it half-completed so the remaining half stays visible - a
+finished plan left in place is indistinguishable from an ignored one.
+`doc-auditor` sweeps for exactly this; it is read-only and cheap, so run it at
+milestones, before releases, and on suspicion.
 
-- Every doc the change made wrong gets fixed in the same unit of work.
-- Every plan, TODO, roadmap item, or milestone note the change completed gets
-  closed or deleted, and one that it half-completed gets split so the remaining
-  half is still visible. A finished plan left in place is indistinguishable
-  from an ignored one, which is how these accumulate.
-- A published package gets its reference checked against the code whenever the
-  public surface moves: exported names, signatures, defaults, flags, env vars,
-  supported versions.
+### Edge cases the descriptions leave open
 
-`doc-auditor` does this sweep. Run it at the end of a milestone, before a
-release, and any time the planning documents have gone a while without being
-reconciled. It is read-only and cheap to run, so run it on suspicion rather
-than on certainty.
-
-### Who owns what, where the edges blur
-
-- **Docs.** `senior-dev` writes the docstrings and comments inside the code it
-  writes. `docs-writer` owns everything a reader sees from outside: pages,
-  READMEs, guides, examples. `doc-auditor` finds which documents stopped being
-  true and hands `docs-writer` the list, the same way `code-reviewer` hands
-  findings to `senior-dev`. Point `docs-writer` at a known-wrong doc; run
-  `doc-auditor` when the question is what has gone stale.
-- **Migrations.** `code-reviewer` reads a migration as code and its APPROVE
-  never covers it. `migration-safety` runs it. A diff with a migration needs
-  both, and they can run at the same time.
-- **The rendered page.** `ui-verifier` checks what it looks like: layout,
-  spacing, states, breakpoints, the console. `a11y-auditor` checks what it does
-  for someone who is not looking at it: keyboard, the accessibility tree, WCAG
-  conformance. `ui-verifier` flags the loud accessibility defects it happens to
-  see, and its PASS never covers accessibility. Frontend work needs both, and
-  they can run at the same time.
-- **Searching.** `researcher` is for answers that are not in the repo. The
-  built-in `Explore` is for answers that are. Do not send a codebase question
-  to the web.
-- **Tests.** `senior-dev` runs the suite and fixes what it broke. `test-writer`
-  writes new tests, because the author of the code is the worst judge of whether
-  its tests would catch anything: the cases that occur to them are the ones they
-  already handled, so their tests pass the moment they are written. The line is
-  who decides what a test asserts, not who may open a test file - `senior-dev`
-  still updates tests its change legitimately invalidated, a renamed symbol or a
-  changed signature, and reports which and why. A test that fails or flakes for
-  a reason nobody has established yet is `debugger`'s rather than
-  `test-writer`'s, because the cause has to be known before a test can be the
-  answer. `debugger` is also the one exception to who authors coverage: its
-  regression test came from a reproduction that predates the fix, so it can be
-  shown failing against the old code. That is the whole of the exception. A test
-  written after the fix, never watched failing, does not qualify.
-- **Correct versus usable.** `code-reviewer`, `ui-verifier`, and `a11y-auditor`
-  all ask whether the thing is right. `fresh-eyes` asks whether a stranger can
-  get what they came for, which is a different question with a different answer,
-  and a product can fail it while passing all three. It works the public
-  surfaces only - install, README, docs, the API, the CLI, the running app - and
-  hands back a per-section scorecard the next agent can act on. Run it before a
-  release, before publishing or announcing a library, and after any change to
-  onboarding, install, or the getting-started path. Its findings route out by
-  kind: docs to `docs-writer`, confusing behavior and bad defaults to
-  `senior-dev`, anything that moves the API's shape to `architect`.
-- **Review, in and out.** `code-reviewer` produces findings on code written in
-  this session. `review-triage` reads a review that arrived from a PR on GitHub
-  and turns it into a plan, which makes it the only agent that reads state from
-  outside the repo. It finds, it does not fix: its plan goes to `senior-dev` the
-  same way `code-reviewer`'s findings do, and what comes back goes through
-  `code-reviewer` before it is done, because a review response is production
-  code and self-certifies no more than anything else. Keep the plan until the
-  work is committed - its items are what the commits get split along.
+- A diff containing a migration needs `code-reviewer` and `migration-safety`
+  both, in parallel. Frontend work needs `ui-verifier` and `a11y-auditor`
+  both, the same way.
+- Codebase questions go to the built-in `Explore`; `researcher` is for answers
+  that are not in the repo. Do not send a codebase question to the web.
+- `senior-dev` updates tests its change legitimately invalidated - a renamed
+  symbol, a changed signature - and reports which. `test-writer` decides what
+  new tests assert, because the author is the worst judge of whether its tests
+  would catch anything. `debugger` may author the one regression test that came
+  from a reproduction predating the fix; a test never watched failing does not
+  qualify.
+- `fresh-eyes` findings route by kind: docs to `docs-writer`, confusing
+  behavior and bad defaults to `senior-dev`, anything moving the API's shape to
+  `architect`.
+- Keep `review-triage`'s plan until the work is committed; its items are what
+  the commits get split along.
 
 ## Skills
 
-Skills that should be installed, if not, install them.
-- `shadcn` - add, search, compose, style, and debug shadcn/ui components; registries, presets, `--preset` codes, and any project with a `components.json`.
-- `migrate-radix-to-base` - migrate a shadcn or React project from Radix UI to Base UI.
-- `humanizer` - strip AI tells from writing so it reads as human-written.
-- `chrome-devtools-axi` - drive a real Chrome session: navigate, inspect, screenshot, and debug a page.
-- `gh-axi` - operate GitHub from the CLI: issues, PRs, CI runs, releases, Projects.
-- `lavish` - turn a plan, diff, or report into a reviewable HTML artifact.
-- `impeccable` - design-quality passes on frontend work: polish, critique,
-  audit, and full design flows via `/impeccable <command>`. Any UI design work
-  goes through it; see "Design work" below.
-
-These are not managed by `home.nix`, so a rebuild neither installs nor removes
-them. Every one but `impeccable` is installed by hand with `npx skills add`,
-which writes to `~/.agents/skills/` and symlinks into `~/.claude/skills/`.
-`impeccable` has its own installer and lands as a real directory under
-`~/.claude/skills/` with no `~/.agents/` entry at all, so do not assume the
-symlink layout when looking for a skill - check both locations. On a fresh
-machine, run:
-
-```sh
-npx skills add shadcn-ui/ui -g -y -s shadcn -s migrate-radix-to-base
-npx skills add blader/humanizer -g -y -s humanizer
-npx skills add kunchenguid/chrome-devtools-axi -g -y -s chrome-devtools-axi
-npx skills add kunchenguid/gh-axi -g -y -s gh-axi
-npx skills add kunchenguid/lavish-axi -g -y -s lavish
-```
-
-`-s` does not take a comma-separated list; repeat the flag per skill. Ignore
-the `PromptScript does not support global skill installation` warnings, which
-come from an unrelated agent target. `npx skills update -g` upgrades them.
-
-`impeccable` uses its own installer, not `npx skills add`. On a fresh machine:
-
-```sh
-npx impeccable install   # when prompted for location, choose "global"
-```
-
-The global install writes the skill to `~/.claude/skills/impeccable`. It is not
-covered by `npx skills update -g`; upgrade it with `npx impeccable update` (and
-`npx impeccable check` says whether you are behind).
+These should be installed: `shadcn`, `migrate-radix-to-base`, `humanizer`,
+`chrome-devtools-axi`, `gh-axi`, `lavish`, `impeccable`. Each carries its own
+description once installed. They are not managed by `home.nix`; if one is
+missing, the install commands and their quirks live in
+`~/.dotfiles/AGENTS.md` under "Installing the skills" - read that, do not
+guess, because two of them install differently.
 
 ### Design work
 
 Any task that designs or visually changes a UI goes through the `impeccable`
-skill - `/impeccable polish`, `/impeccable critique`, `/impeccable audit`, or a
-free-form `/impeccable <description>`. Two setup rules:
-
-- If the skill is missing, install it first: `npx impeccable install` (choose
-  "global").
-- The first design task in a project runs `/impeccable init` before anything
-  else. It writes `PRODUCT.md` at the project root, and every later impeccable
-  command reads it; without it the output is generic. If `PRODUCT.md` already
-  exists, init has been run - skip it.
+skill - `/impeccable polish`, `/impeccable critique`, `/impeccable audit`, or
+free-form `/impeccable <description>`. The first design task in a project runs
+`/impeccable init` first: it writes `PRODUCT.md` at the project root and every
+later command reads it. If `PRODUCT.md` exists, init has been run - skip it.
 
 ## Git workflow
 

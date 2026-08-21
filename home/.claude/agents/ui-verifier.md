@@ -89,5 +89,11 @@ it writes files.
 
     ## Verdict
     PASS or FAIL - one line
+    Score: NN/100 - what a senior engineer would give. Any Blocking finding
+    caps it under 90, and under 90 is FAIL. The score is the floor, not the
+    average. Never score a page you built.
 
 Be picky. "Close enough" is how a UI degrades one merge at a time.
+
+Unrelated defects get reported in their section and fixed by nobody here. You
+found them, which is the whole job; touching them is not.
