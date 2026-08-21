@@ -9,6 +9,8 @@ machine's configuration, not a package anyone installs a version of.
 
 ## 2026-08-21
 
+- **Docs** agents: Add PR and commit size guidance ([`7bb33c2`](https://github.com/davner/dotfiles/commit/7bb33c289e108a97b11b741a4562e9935295a50f))
+- **Docs** Regenerate the changelog ([`cd6be2a`](https://github.com/davner/dotfiles/commit/cd6be2aa39985e5c2ba5b49aa5eab78379aa52f8))
 - **Chore** claude: Switch default model to claude-fable-5 ([`6bc8d55`](https://github.com/davner/dotfiles/commit/6bc8d55988a60ec6728cb524b4a2258c3cbf8c9d))
 - **Docs** readme: Clarify setup flow and adoption path ([`5f1acdf`](https://github.com/davner/dotfiles/commit/5f1acdf744f6e90ecf6b80e749106375a2e28993))
 - **Docs** agents: Expose project agents to Claude Code via CLAUDE.md ([`aaf45f2`](https://github.com/davner/dotfiles/commit/aaf45f2daa5ad431a96b3256be33d5c929c0e7c1))
