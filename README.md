@@ -11,6 +11,17 @@ nothing to undo.
 
 ## Commands
 
+Start here: clone anywhere and run bootstrap. The clone's location never
+matters, because bootstrap symlinks the checkout to `~/.dotfiles` itself. On a
+Mac fresh enough to lack git, the clone is the first `git` command macOS sees
+and it prompts to install the Xcode Command Line Tools; accept, then clone.
+
+```sh
+git clone https://github.com/davner/dotfiles.git
+cd dotfiles
+./bootstrap.sh
+```
+
 | Command | When | sudo |
 | --- | --- | --- |
 | `./bootstrap.sh` | Once, on a Mac that has never run this | yes |
@@ -18,8 +29,14 @@ nothing to undo.
 | `./rebuild.sh --build` | To check a change builds, and preview what it would change | no |
 | `./test.sh` | Before committing | no |
 
-Both build scripts default to whoever runs them. `--user NAME` builds someone
-else's configuration; `--help` on either prints its options.
+`bootstrap.sh` and `rebuild.sh` default to whoever runs them, and both take:
+
+| Flag | Does |
+| --- | --- |
+| `--user NAME` | Build NAME's configuration instead of the current user's |
+| `--help` | Print the script's options |
+
+`test.sh` takes only `--fast`, covered under [Tests](#tests).
 
 A switch prints what it changed, and `--build` prints what a switch *would*
 change, as a closure diff:
@@ -48,6 +65,12 @@ it for you - it appends the username with an empty record. Fill in the address
 before the first rebuild: a record without one fails the build rather than
 quietly committing from the wrong one.
 
+Forking this? The same mechanism adopts you: `./bootstrap.sh` offers to add
+your username, and the build then stops until you fill in `email` on your
+record in `flake.nix`. Change `user.name` in `home.nix` too, or your commits
+will say Dan Avner. After that it is pruning: the packages in `home.nix` and
+the casks in `configuration.nix` are one person's taste.
+
 Dots become dashes in the attribute name. That is not cosmetic:
 `darwin-rebuild` splits its `--flake …#attr` argument on `.`, so a literal
 dotted attribute can never resolve. The scripts handle the substitution.
@@ -61,6 +84,7 @@ dotted attribute can never resolve. The scripts handle the substitution.
 | `home.nix` | User scope: packages, zsh, starship, git, gh, and which dotfiles get linked |
 | `home/` | The real dotfiles, symlinked into `$HOME` so they stay editable in place |
 | `home/AGENTS.md` | Global coding-agent instructions, linked to `~/.claude/CLAUDE.md` and friends |
+| `home/.claude/agents/` | The subagent roster, one file per agent; linked to `~/.claude/agents/`, where Claude Code picks them up by name |
 | `AGENTS.md` | Notes for agents working *on this repo*. A different file from the one above |
 | `users.sh` | The only thing that parses the per-user records |
 | `test.sh` | The checks below |
@@ -69,6 +93,11 @@ dotted attribute can never resolve. The scripts handle the substitution.
 Dotfiles under `home/` are linked, not copied: editing
 `~/.config/wezterm/wezterm.lua` edits the file in this repo, with no rebuild in
 between.
+
+The agent roster works without nix: copy `home/.claude/agents/` to
+`~/.claude/agents/`. Before editing the files, read the bullets in the root
+`AGENTS.md` on why their `memory` and `skills` frontmatter fields are
+deliberately absent.
 
 ## Tests
 
