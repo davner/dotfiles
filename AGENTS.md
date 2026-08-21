@@ -24,6 +24,32 @@ Deliberate decisions in this repo - do NOT silently revert them:
 - Those agents also deliberately omit the `skills` frontmatter field, even where a skill is obviously relevant. Skills here are hand-installed with `npx skills add` and are absent on a fresh machine, so preloading one would make the agent depend on a step the Nix rebuild does not perform. The prompts invoke skills at runtime instead, which degrades gracefully.
 - Agent prompts must stay stack-agnostic. These are user-level agents that load in every project, so they discover a repo's framework, test runner, and conventions rather than assuming a stack. They also must not restate the rules in `home/AGENTS.md`: that file is loaded into every custom subagent already.
 
+## Installing the skills
+
+`home/AGENTS.md` names the skills every machine should have and points here for
+the install steps, so this section is read on demand from any project - keep the
+heading name stable. The skills are not managed by `home.nix`; a rebuild neither
+installs nor removes them. Every one but `impeccable` is installed with `npx
+skills add`, which writes to `~/.agents/skills/` and symlinks into
+`~/.claude/skills/`. `impeccable` has its own installer and lands as a real
+directory under `~/.claude/skills/` with no `~/.agents/` entry at all, so check
+both locations before deciding a skill is missing. On a fresh machine:
+
+```sh
+npx skills add shadcn-ui/ui -g -y -s shadcn -s migrate-radix-to-base
+npx skills add blader/humanizer -g -y -s humanizer
+npx skills add kunchenguid/chrome-devtools-axi -g -y -s chrome-devtools-axi
+npx skills add kunchenguid/gh-axi -g -y -s gh-axi
+npx skills add kunchenguid/lavish-axi -g -y -s lavish
+npx impeccable install   # when prompted for location, choose "global"
+```
+
+`-s` does not take a comma-separated list; repeat the flag per skill. Ignore the
+`PromptScript does not support global skill installation` warnings, which come
+from an unrelated agent target. `npx skills update -g` upgrades everything but
+`impeccable`; that one upgrades with `npx impeccable update`, and `npx
+impeccable check` says whether you are behind.
+
 ## Maintaining this file
 
 - Keep this file for knowledge useful to almost every future agent session in this project.
