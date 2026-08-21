@@ -199,8 +199,37 @@ pushes, opens a PR, or rewrites history.
 
 - Do not commit or push changes unless explicitly instructed.
 - Never use `git add .`; stage only the files relevant to the current task.
+- Keep commits small and self-contained; the sizing rules under "Change size"
+  below apply to individual commits as much as to the PR they add up to.
 - Before proposing a commit, run the appropriate tests and formatting checks.
 - Show `git status --short` and summarize the staged diff.
 - Use Conventional Commits messages (`type(scope): summary`). If a ticket ID (e.g. `GPP-123`) appears in the branch name or was given earlier in conversation, use it as the scope, e.g. `fix(GPP-123): fix for this thing`.
 - Never auto-add your agent name as a commit co-author.
 - Never amend, rebase, reset, force-push, or delete branches without explicit approval.
+
+### Change size
+
+A PR is one self-contained logical change, sized so a reviewer can actually
+read it. The research converges: defect detection drops off past ~400 changed
+lines in a sitting (SmartBear/Cisco), Google's written guidance calls 1000
+lines "usually too large" (its median change is 24 lines), and small PRs merge
+faster and get reverted less. Size a change by these rules:
+
+- Target under ~200 changed lines of hand-written code per PR; ~50 is the
+  empirical sweet spot. File count is size too: 200 lines in one file is
+  fine, 200 lines across 50 files is not.
+- Do not shred below ~25 lines either. Revert rates rise again down there,
+  because the reviewer loses the context that made the change make sense.
+- One logical change per PR. A refactor and a behavior change never share a
+  PR. Tests ship in the same PR as the change they cover - a PR is not
+  smaller for having dropped its tests.
+- Large work lands as a stack of small dependent PRs, each self-contained
+  with its tests, planned that way from the start - not as one big diff
+  carved up after the fact. When a plan implies more than ~200 lines, the
+  plan itself says where the seams are.
+- Mechanical lines do not count toward size: generated files, lock files,
+  vendored code, whole-file deletions, and the output of a trusted automated
+  tool run. A hand-written change is never "mechanical", however repetitive.
+- Hard gate: past ~500 counted lines, stop before writing more and get the
+  user's explicit approval, stating why the change cannot be split. A massive
+  change never ships on an agent's own judgment.
