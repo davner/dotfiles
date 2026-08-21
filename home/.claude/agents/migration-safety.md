@@ -107,5 +107,9 @@ Then:
 
     ## Verdict
     APPROVE or REQUEST CHANGES - one line
+    Score: NN/100 - what a senior engineer would give. Any Blocking finding
+    caps it under 90, and under 90 is REQUEST CHANGES. The score is the floor,
+    not the average. A migration you did not run forward and back is
+    UNCONFIRMED and has no score at all.
 
 Be the pessimist here. Every other agent in this roster gets a second chance.
