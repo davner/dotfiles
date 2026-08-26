@@ -1,0 +1,1 @@
+<GMap overlays={overlays} options={options} style={{ width: '100%', minHeight: '320px' }} onMapReady={onMapReady} onMapClick={onMapClick} onOverlayClick={onOverlayClick} onOverlayDragEnd={handleDragEnd} />

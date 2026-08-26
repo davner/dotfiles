@@ -1,0 +1,1 @@
+<InputText disabled placeholder="Disabled" />

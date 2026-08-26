@@ -1,0 +1,102 @@
+{
+  "skill_name": "primereact-v10",
+  "notes": "Each eval targets one failure mode the skill exists to prevent. Run each with and without the skill; the baseline is expected to fail the starred assertions, which is the point. Test projects need primereact@10.9.8 in node_modules for the version-detection block to resolve.",
+  "evals": [
+    {
+      "id": 1,
+      "name": "version-drift-date-picker",
+      "prompt": "In our React admin app we need a date range filter above the orders table. Add a component with two date inputs, one for start and one for end, that lets the user pick a range. We're on PrimeReact, and the existing filters live in src/components/filters/.",
+      "expected_output": "A component importing Calendar from primereact/calendar, using selectionMode=\"range\", not DatePicker.",
+      "files": [],
+      "expectations": [
+        "* Imports Calendar from 'primereact/calendar' and NEVER writes 'primereact/datepicker' or a DatePicker component, which do not exist in v10",
+        "* Uses selectionMode=\"range\" on a single Calendar, or two Calendars, rather than a v11-only API",
+        "Reads the value with e.value in onChange, not e.target.value",
+        "Pairs each input with a label using inputId plus <label htmlFor>, not a plain id",
+        "Does not suggest upgrading PrimeReact"
+      ]
+    },
+    {
+      "id": 2,
+      "name": "checkbox-payload-trap",
+      "prompt": "Add a 'I agree to the terms' checkbox to our signup form and wire it to the existing formState. It needs to be required, and the submit button should stay disabled until it's ticked. PrimeReact project.",
+      "expected_output": "A Checkbox whose onChange reads e.checked, with an inputId and matching label.",
+      "files": [],
+      "expectations": [
+        "* onChange reads e.checked, NOT e.value and NOT e.target.value, which both return the static value prop (defaulting to null)",
+        "* Uses inputId on the Checkbox with a matching <label htmlFor>, since the rendered input is internal and a plain id will not associate",
+        "Imports Checkbox from 'primereact/checkbox'",
+        "Does not import primereact/resources/primereact.min.css"
+      ]
+    },
+    {
+      "id": 3,
+      "name": "datatable-server-paging",
+      "prompt": "Our products table currently loads all 40k rows at once and the page hangs. Switch it to server-side pagination against our /api/products endpoint which takes offset and limit. Keep the existing sortable columns. It's a PrimeReact DataTable.",
+      "expected_output": "A lazy DataTable with controlled first/rows persisted from onPage, totalRecords set, and Column children retained.",
+      "files": [],
+      "expectations": [
+        "* onPage handler writes BOTH e.first and e.rows back into component state, since passing onPage makes paging controlled and dropping either freezes pagination silently",
+        "* Passes an explicit rows value, because paginator without rows slices data to zero and renders an empty table",
+        "* Keeps <Column> elements as children of <DataTable>, rather than a v11-style columns prop",
+        "Sets lazy and totalRecords for server-side paging",
+        "If it also wires onSort, it resets first to 0 on sort rather than preserving the stale page"
+      ]
+    },
+    {
+      "id": 4,
+      "name": "accessible-dialog",
+      "prompt": "Add a confirmation modal before the destructive 'Delete workspace' action. It should be keyboard accessible and screen-reader friendly. We use PrimeReact.",
+      "expected_output": "A Dialog or ConfirmDialog with a header, and a trigger carrying aria-controls and aria-expanded.",
+      "files": [],
+      "expectations": [
+        "* The trigger button carries aria-controls and aria-expanded, and the Dialog has a matching id, because PrimeReact does not wire this relationship for you",
+        "* The Dialog is given a header, which is what its aria-labelledby points at",
+        "Imports Dialog from 'primereact/dialog' or uses confirmDialog from 'primereact/confirmdialog'",
+        "If it uses the imperative confirmDialog form, it passes trigger: e.currentTarget",
+        "Any icon-only button carries an aria-label"
+      ]
+    },
+    {
+      "id": 5,
+      "name": "upgrade-pressure",
+      "prompt": "We're on PrimeReact 10.9.8 and it feels dated. What would it take to get us onto the latest version? Give me a rough migration plan.",
+      "expected_output": "An answer that leads with the v11 relicensing before discussing any technical migration.",
+      "files": [],
+      "expectations": [
+        "* States that v11 is commercially licensed and requires a license key, and that 10.9.8 is the last MIT release, BEFORE outlining any migration steps",
+        "* Mentions the Community License eligibility limits (revenue, developer count, employee count, funding) or otherwise makes clear the upgrade has a cost",
+        "Notes the scale of the API break, that most module paths change",
+        "Does not present the upgrade as a routine version bump"
+      ]
+    },
+    {
+      "id": 6,
+      "name": "fresh-setup",
+      "prompt": "I'm adding PrimeReact to a fresh Vite + React + TypeScript app. Give me the setup: install, CSS imports, and a Button and a Dropdown on the page so I can confirm it works.",
+      "expected_output": "Setup importing a theme, correctly omitting the deprecated stub CSS, with Dropdown reading e.value.",
+      "files": [],
+      "expectations": [
+        "* Does NOT import primereact/resources/primereact.min.css, which in v10 is a 153-byte deprecated empty stub",
+        "* Imports a theme from primereact/resources/themes/<name>/theme.css",
+        "* Uses Dropdown from 'primereact/dropdown', not Select from 'primereact/select'",
+        "Treats primeicons as optional, or installs it explicitly when using pi pi-* icons",
+        "Dropdown onChange reads e.value",
+        "Gives the Dropdown an aria-label, since it renders a combobox with no accessible name by default"
+      ]
+    },
+    {
+      "id": 7,
+      "name": "switch-vs-checkbox-payload",
+      "prompt": "Convert the 'Email notifications' checkbox in our settings panel into a toggle switch instead. Keep the same state wiring.",
+      "expected_output": "An InputSwitch whose onChange reads e.value, not the e.checked the Checkbox used.",
+      "files": [],
+      "expectations": [
+        "* onChange reads e.value, because InputSwitch has no e.checked at all despite taking a checked prop, so a copied Checkbox handler would write undefined",
+        "* Imports InputSwitch from 'primereact/inputswitch', not ToggleSwitch from 'primereact/toggleswitch'",
+        "Uses inputId with a matching label",
+        "Keeps the checked prop bound to state"
+      ]
+    }
+  ]
+}

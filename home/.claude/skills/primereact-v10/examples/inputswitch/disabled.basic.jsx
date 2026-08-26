@@ -1,0 +1,1 @@
+<InputSwitch disabled />

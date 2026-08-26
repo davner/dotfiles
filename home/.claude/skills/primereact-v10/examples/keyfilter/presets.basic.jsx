@@ -1,0 +1,9 @@
+<InputText keyfilter="int" />
+<InputText keyfilter="pint" />
+<InputText keyfilter="num" />
+<InputText keyfilter="pnum" />
+<InputText keyfilter="money" />
+<InputText keyfilter="hex" />
+<InputText keyfilter="alpha" />
+<InputText keyfilter="alphanum" />
+<InputText keyfilter="email" />

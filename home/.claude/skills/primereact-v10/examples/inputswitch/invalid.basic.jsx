@@ -1,0 +1,1 @@
+<InputSwitch className="p-invalid" />

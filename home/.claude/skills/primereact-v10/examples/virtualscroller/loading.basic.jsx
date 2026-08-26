@@ -1,0 +1,2 @@
+<VirtualScroller items={items} itemSize={50} itemTemplate={itemTemplate} showLoader delay={250} className="border-1 surface-border border-round" style={{ width: '200px', height: '200px' }} />
+<VirtualScroller items={items} itemSize={50} itemTemplate={itemTemplate} showLoader delay={250} loadingTemplate={loadingTemplate} className="border-1 surface-border border-round" style={{ width: '200px', height: '200px' }} />

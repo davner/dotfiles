@@ -1,0 +1,20 @@
+import React, { useState, useEffect } from "react";
+import { TreeSelect, TreeSelectChangeEvent } from 'primereact/treeselect';
+import { TreeNode } from 'primereact/treenode';
+import { NodeService } from './service/NodeService';
+
+export default function FilledDemo() {
+    const [nodes, setNodes] = useState<TreeNode[] | null>(null);
+    const [selectedNodeKey, setSelectedNodeKey] = useState<string>(null);
+    
+    useEffect(() => {
+        NodeService.getTreeNodes().then((data) => setNodes(data));
+    }, []);
+
+    return (
+        <div className="card flex justify-content-center">
+            <TreeSelect variant="filled" value={selectedNodeKey} options={nodes} onChange={(e : TreeSelectChangeEvent) => setSelectedNodeKey(e.value)} 
+                className="md:w-20rem w-full" placeholder="Select Item"></TreeSelect>
+        </div>
+    );
+}

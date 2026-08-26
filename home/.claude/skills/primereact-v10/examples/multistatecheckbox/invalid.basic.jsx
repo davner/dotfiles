@@ -1,0 +1,1 @@
+<MultiStateCheckbox className="p-invalid" />

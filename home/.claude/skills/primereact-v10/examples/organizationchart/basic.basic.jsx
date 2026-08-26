@@ -1,0 +1,1 @@
+<OrganizationChart value={data} />

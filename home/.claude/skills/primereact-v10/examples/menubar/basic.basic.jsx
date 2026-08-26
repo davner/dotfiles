@@ -1,0 +1,1 @@
+<Menubar model={items} />    

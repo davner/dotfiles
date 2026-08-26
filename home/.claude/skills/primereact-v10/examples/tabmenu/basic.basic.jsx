@@ -1,0 +1,1 @@
+<TabMenu model={items} />

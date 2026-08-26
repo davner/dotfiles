@@ -1,0 +1,124 @@
+{
+  "generated_from": "primefaces/primereact@10.9.8",
+  "note": "Snippets that do not parse. \"malformed\" are upstream defects served on v10.primereact.org verbatim; do not copy them.",
+  "malformed": [
+    {
+      "file": "avatar/label.basic.jsx",
+      "kind": "malformed"
+    },
+    {
+      "file": "chart/accessibility.basic.jsx",
+      "kind": "malformed"
+    },
+    {
+      "file": "csslayer/reset.basic.jsx",
+      "kind": "malformed"
+    },
+    {
+      "file": "dataview/layout.typescript.tsx",
+      "kind": "malformed"
+    },
+    {
+      "file": "dialog/headless.basic.jsx",
+      "kind": "malformed"
+    },
+    {
+      "file": "dropdown/template.typescript.tsx",
+      "kind": "malformed"
+    },
+    {
+      "file": "galleria/advanced.typescript.tsx",
+      "kind": "malformed"
+    },
+    {
+      "file": "megamenu/command.basic.jsx",
+      "kind": "malformed"
+    },
+    {
+      "file": "megamenu/router.basic.jsx",
+      "kind": "malformed"
+    },
+    {
+      "file": "menu/command.typescript.tsx",
+      "kind": "malformed"
+    },
+    {
+      "file": "messages/closeable.typescript.tsx",
+      "kind": "malformed"
+    },
+    {
+      "file": "messages/template.typescript.tsx",
+      "kind": "malformed"
+    },
+    {
+      "file": "panel/toggleable.typescript.tsx",
+      "kind": "malformed"
+    },
+    {
+      "file": "passthrough/lifecycle.typescript.tsx",
+      "kind": "malformed"
+    },
+    {
+      "file": "stepper/header.typescript.tsx",
+      "kind": "malformed"
+    },
+    {
+      "file": "theming/scale.basic.jsx",
+      "kind": "malformed"
+    },
+    {
+      "file": "togglebutton/customized.typescript.tsx",
+      "kind": "malformed"
+    }
+  ],
+  "non_js": [
+    {
+      "file": "configuration/appendto.basic.jsx",
+      "kind": "elided"
+    },
+    {
+      "file": "configuration/csstransition.basic.jsx",
+      "kind": "elided"
+    },
+    {
+      "file": "configuration/filtermatchmode.basic.jsx",
+      "kind": "elided"
+    },
+    {
+      "file": "configuration/hideoverlays.basic.jsx",
+      "kind": "elided"
+    },
+    {
+      "file": "configuration/inputstyle.basic.jsx",
+      "kind": "elided"
+    },
+    {
+      "file": "configuration/nonce.basic.jsx",
+      "kind": "elided"
+    },
+    {
+      "file": "configuration/nullsortorder.basic.jsx",
+      "kind": "elided"
+    },
+    {
+      "file": "configuration/ripple.basic.jsx",
+      "kind": "elided"
+    },
+    {
+      "file": "configuration/setuplocale.locale.basic.jsx",
+      "kind": "elided"
+    },
+    {
+      "file": "configuration/zindex.basic.jsx",
+      "kind": "elided"
+    },
+    {
+      "file": "csslayer/tailwind.basic.jsx",
+      "kind": "css"
+    },
+    {
+      "file": "ripple/configuration.basic.jsx",
+      "kind": "elided"
+    }
+  ]
+}

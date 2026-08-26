@@ -1,0 +1,1 @@
+<Steps readOnly model={items} />
