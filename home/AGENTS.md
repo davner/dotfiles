@@ -199,7 +199,7 @@ pushes, opens a PR, or rewrites history.
 
 - Do not commit or push changes unless explicitly instructed.
 - Never use `git add .`; stage only the files relevant to the current task.
-- Keep commits small and self-contained; the sizing rules under "Change size"
+- Keep commits small and self-contained; the scoping rules under "Change scope"
   below apply to individual commits as much as to the PR they add up to.
 - Before proposing a commit, run the appropriate tests and formatting checks.
 - Show `git status --short` and summarize the staged diff.
@@ -207,29 +207,51 @@ pushes, opens a PR, or rewrites history.
 - Never auto-add your agent name as a commit co-author.
 - Never amend, rebase, reset, force-push, or delete branches without explicit approval.
 
-### Change size
+### Change scope
 
-A PR is one self-contained logical change, sized so a reviewer can actually
-read it. The research converges: defect detection drops off past ~400 changed
-lines in a sitting (SmartBear/Cisco), Google's written guidance calls 1000
-lines "usually too large" (its median change is 24 lines), and small PRs merge
-faster and get reverted less. Size a change by these rules:
+**A PR is one theme.** State it in a single sentence with no "and" in it. If the
+sentence needs an "and", it is two PRs. That sentence is also the PR
+description's opening line, so the reviewer meets the idea before the diff -
+which is the whole point: a themed PR explains itself, a size-cut PR has to be
+explained.
 
-- Target under ~200 changed lines of hand-written code per PR; ~50 is the
-  empirical sweet spot. File count is size too: 200 lines in one file is
-  fine, 200 lines across 50 files is not.
-- Do not shred below ~25 lines either. Revert rates rise again down there,
-  because the reviewer loses the context that made the change make sense.
-- One logical change per PR. A refactor and a behavior change never share a
-  PR. Tests ship in the same PR as the change they cover - a PR is not
-  smaller for having dropped its tests.
-- Large work lands as a stack of small dependent PRs, each self-contained
-  with its tests, planned that way from the start - not as one big diff
-  carved up after the fact. When a plan implies more than ~200 lines, the
-  plan itself says where the seams are.
-- Mechanical lines do not count toward size: generated files, lock files,
-  vendored code, whole-file deletions, and the output of a trusted automated
-  tool run. A hand-written change is never "mechanical", however repetitive.
+The theme is the boundary. Size is the diagnostic. When the next change you are
+about to make would need a different sentence to describe it, stop and cut the
+PR - not when a line counter says so.
+
+Size still matters, but as evidence about the theme rather than as the rule.
+The research converges: defect detection drops off past ~400 changed lines in a
+sitting (SmartBear/Cisco), Google's written guidance calls 1000 lines "usually
+too large" (its median change is 24 lines), and small PRs merge faster and get
+reverted less. Read those numbers as symptoms:
+
+- **Past ~200 lines of hand-written code, suspect the theme was drawn too
+  wide.** Say the theme out loud; usually a second sentence is hiding in it.
+  ~50 is the empirical sweet spot. File count is size too: 200 lines in one
+  file is fine, 200 lines across 50 files is not.
+- **Under ~25 lines, suspect it was drawn too narrow** and belongs with its
+  neighbour. Revert rates rise again down there, because the reviewer loses the
+  context that made the change make sense.
+- **Sometimes a wide theme is genuinely one theme.** A mechanical rename across
+  40 files is one sentence and one idea; splitting it by line count would make
+  it harder to review, not easier. Judge the sentence first, then let size
+  argue with it.
+- **A refactor and a behavior change are always two themes**, however small
+  either is. Tests ship with the change they cover - a PR is not smaller for
+  having dropped its tests, it is just incomplete.
+- **Accept a PR with nothing to demonstrate when its theme genuinely has no
+  user-visible surface** - a domain contract, a data layer. Coherence beats
+  demonstrability. Say so explicitly in the description rather than padding the
+  PR with unrelated UI to make it show something.
+- Mechanical lines are not evidence about the theme: generated files, lock
+  files, vendored code, whole-file deletions, and the output of a trusted
+  automated tool run. A hand-written change is never "mechanical", however
+  repetitive.
+- Large work lands as a stack of small dependent PRs, each with its own theme
+  and its own tests, planned that way from the start - not as one big diff
+  carved up after the fact. Write the theme sentences before writing code; the
+  seams in a plan are where the sentences change.
 - Hard gate: past ~500 counted lines, stop before writing more and get the
-  user's explicit approval, stating why the change cannot be split. A massive
-  change never ships on an agent's own judgment.
+  user's explicit approval. State the theme and why it cannot be split into
+  two. A massive change never ships on an agent's own judgment - and "it is all
+  one theme" is a claim to be defended, not an exemption to be claimed.
