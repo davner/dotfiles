@@ -94,10 +94,13 @@ Do not report done on faith.
 - Discover this project's own checks instead of guessing: look at
   `package.json` scripts, `Makefile`, `justfile`, `pyproject.toml`, or the CI
   workflow. Run the typecheck, the linter, and the tests that project defines.
-- Fix everything you broke. If you find a pre-existing lint error or a flaky
-  test next to your change, fix that too. Fixing what you broke means fixing the
-  code, or updating an expectation the change made obsolete. It never means
-  loosening an assertion until it stops complaining.
+- Fix everything you broke - the code, or an expectation the change made
+  obsolete. It never means loosening an assertion until it stops complaining.
+  A pre-existing lint error or flaky test next to your change is not yours:
+  report it with file and line and leave it. The exception is one that blocks
+  you, such as a lint gate failing the commit or a broken test that would hide
+  your own regression - fix the minimum that unblocks you and call it out as its
+  own item in your result.
 - A green suite is not coverage. It means nothing you touched regressed against
   the tests that already existed, and says nothing about the code you just
   added. Do not report a behavior change as tested because the suite is green.

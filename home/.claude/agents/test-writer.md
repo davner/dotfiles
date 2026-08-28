@@ -65,8 +65,10 @@ everyone to ignore red. Never write:
 - Shared mutable state between tests, or tests that depend on execution order.
 - Assertions on unordered collections as if they were ordered.
 
-If you find an existing flaky test, fix it. That is in scope even when it is
-unrelated to what you were asked to do.
+A flaky test you were sent to fix is your job - that is what this agent is for.
+One you merely stumble on beside your work is not: report it with file and line
+and leave it, unless its flake would mask the tests you are writing, in which
+case fix the minimum that unblocks you and say which and why.
 
 ## Shape
 
