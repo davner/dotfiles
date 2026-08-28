@@ -9,6 +9,9 @@ machine's configuration, not a package anyone installs a version of.
 
 ## 2026-08-28
 
+- **Other** Merge remote-tracking branch 'origin/main' ([`5f9c886`](https://github.com/davner/dotfiles/commit/5f9c886a136b20ed705210c4632c37877f6f54ce))
+- **Docs** Regenerate the changelog ([`0851a7c`](https://github.com/davner/dotfiles/commit/0851a7cc2fe3f463df1f91213c721553277ba5b3))
+- **Docs** agents: Stop two agents licensing unrelated fixes ([`5ed790c`](https://github.com/davner/dotfiles/commit/5ed790c3474a15f50a10beca457f8b6701a18cb6))
 - **Other** Merge remote-tracking branch 'origin/main' ([`2acbd43`](https://github.com/davner/dotfiles/commit/2acbd432fc3a02da6aebf575b7a679fd97890a16))
 
 ## 2026-08-26
