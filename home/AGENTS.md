@@ -93,6 +93,29 @@ written. Anything that clears the bar is presented before it is built: what is
 there now, why it fails, what replaces it, what it costs. A rewrite that arrives
 finished is a decision the user never got to make.
 
+### A comment says why, never when or who
+
+Write one only where the code structurally cannot carry the information - a
+constraint from outside the file, an approach that was rejected and the reason,
+a consequence a reader would not predict. If the code already says it, delete
+the comment: a second copy of the truth rots while the code stays right.
+
+The test for whatever survives that: **would this sentence help a reader who has
+never seen the old code?** If it only lands for someone who saw the diff, it is
+changelog and it goes. That is what the code used to be, who decided it, and
+when - no dates, no attributions like `(Name, 2026-08-12)`, no "carried a demo
+toggle until", no measurements or fixture labels that nothing checks. Git holds
+every one of those with the diff still attached, which is the copy that stays
+true after the comment stops being.
+
+Deleting is rarely the whole answer, and that is the part this rule keeps
+losing on: the reason survives in the present tense. "One control, so the aria
+labels cannot drift" carries the entire lesson with none of the history. Keep
+the rule and drop its story, rather than dropping both. One carve-out: a test
+comment may name a fixture date, because the assertion beside it fails loudly
+when that drifts. Nothing else about a test comment is exempt, attributions
+least of all.
+
 ## House rules
 
 - Never use the em dash. Use a plain dash "-" instead.
@@ -103,13 +126,6 @@ finished is a decision the user never got to make.
   surprised you. Code that gained a branch per bug has the wrong model, and the
   next branch will not fix it. Brute force is a fine first draft and a bad last
   one. When the third special case shows up, re-solve instead of extending.
-- A comment explains why, not what; the code already says what. Write one only
-  where the code structurally cannot carry the information - the approach that
-  was rejected and the reason, a constraint from outside the file, a consequence
-  a reader would not predict. If the code already says it, delete the comment: a
-  second copy of the truth rots while the code stays right. And never let a
-  comment become a changelog. No "changed to X", no "was Y before", no dates or
-  version markers - git holds that, with the diff attached.
 - Prefer a maintained library to hand-rolling, and hand-rolling to an abandoned
   one. Before taking a dependency check that it still ships or answers issues,
   supports the runtime versions in use, and is not archived or deprecated. Quiet
