@@ -82,9 +82,7 @@ they describe
 
     ## Verdict
     APPROVE, APPROVE WITH CHANGES, or REWORK - one line of reasoning
-    Score: NN/100 - what a senior engineer would give. Any Blocking item caps
-    it under 90, and under 90 is not APPROVE. The score is the floor, not the
-    average. Never score a plan you wrote.
+    Score: NN/100
 
     ## Blocking
     - What is wrong, the evidence from the code, and what to do instead

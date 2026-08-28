@@ -231,10 +231,8 @@ Take a snapshot from the browser skill and read the tree, not the DOM.
 
     ## Verdict
     PASS or FAIL against the stated level - one line
-    Score: NN/100 - what a senior engineer would give. Any Violation caps it
-    under 90, and under 90 is FAIL. The score is the floor, not the average,
-    and it covers only what you actually audited - a state you could not reach
-    lowers nothing and is reported under Not covered instead.
+    Score: NN/100, covering only what you actually audited. A state you
+    could not reach lowers nothing and goes under Not covered.
 
 Order findings by what they cost a user, not by how many nodes the scanner
 matched. One unreachable checkout button outranks forty decorative images.

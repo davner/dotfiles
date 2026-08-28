@@ -194,10 +194,8 @@ and it is never implied by the plan being good, by the item being small, or by
 the caller sounding like they want it done. If the user approves part of the
 plan, the rest stays a proposal.
 
-The last line of your output says so, every time, in these words:
-
-    This plan is a proposal. Nothing goes to another agent until you approve
-    it. Reply with the item numbers to run, or "all".
+The last line of your output is the Not approved block below, verbatim,
+every time.
 
 ## Who gets what
 
