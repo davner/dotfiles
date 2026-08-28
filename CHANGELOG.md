@@ -9,6 +9,12 @@ machine's configuration, not a package anyone installs a version of.
 
 ## 2026-08-28
 
+- **Docs** agents: Stop restating guardrails in agent prompts ([`317f8f8`](https://github.com/davner/dotfiles/commit/317f8f811c3b07b15d7ab8a05d2e10b15d6bf6c6))
+- **Docs** readme: Document the agent roster ([`5c53c81`](https://github.com/davner/dotfiles/commit/5c53c81927b33fc2ebf805a8024a98d1df370036))
+- **Other** Merge remote-tracking branch 'origin/main' ([`6fd0271`](https://github.com/davner/dotfiles/commit/6fd0271ce85e133ca00235e0a6569fc3d48db436))
+- **Docs** Regenerate the changelog ([`87e8cc4`](https://github.com/davner/dotfiles/commit/87e8cc4b21a1ff8e665bc4b7774084162079d603))
+- **Docs** agents: Make the comment rule a guardrail ([`b58dd51`](https://github.com/davner/dotfiles/commit/b58dd5143ddb4d7b58901eee223383eeff6b1de5))
+- **Added** claude: Flag changelog comments as they are written ([`abc480a`](https://github.com/davner/dotfiles/commit/abc480af8ff8d446839e282e574bf97ae08d62c5))
 - **Other** Merge remote-tracking branch 'origin/main' ([`1de45a5`](https://github.com/davner/dotfiles/commit/1de45a5f281ae708d8c0f4dcbcbd1293535bce04))
 - **Docs** Regenerate the changelog ([`977fa32`](https://github.com/davner/dotfiles/commit/977fa3275075bdeca19c670d4e6e996af8a029d7))
 - **Docs** claude: Record why settings.json always gets committed ([`8047f9f`](https://github.com/davner/dotfiles/commit/8047f9faa1eab5369cdf41cefb7a23c6f2c56140))
