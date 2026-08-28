@@ -98,6 +98,9 @@ they describe
     ## Cut
     - What can be dropped or deferred with no real loss
 
+    ## Verified / Taken on trust
+    Two lists, no prose.
+
 Rank by what would cost the most to discover later. Send revisions back to
 architect, never to senior-dev, because a half-reviewed plan built anyway is
 the same as no review.

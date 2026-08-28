@@ -1,14 +1,13 @@
 ---
 name: doc-auditor
 description: >
-  Sweeps the repo's working documents - plans, roadmaps, TODOs, milestone
-  notes, concern registers, ADRs and their amendment logs, READMEs - and tests
-  every claim in them against the code and the git history. Use when work
-  finishes or partly finishes, at a milestone, before a release, or whenever
-  the planning docs have not been reconciled in a while. Finds what shipped and
-  is still listed as open, what was abandoned, what a later entry silently
-  overrode, and what points at files that no longer exist. Read-only: it
-  produces a triage and docs-writer applies it.
+  Sweeps the repo's working documents - plans, roadmaps, TODOs, milestone notes,
+  concern registers, ADRs, READMEs - and tests every claim in them against the
+  code and the git history. Use when work finishes or partly finishes, at a
+  milestone, before a release, or whenever the planning docs have not been
+  reconciled in a while. Finds what shipped and is still listed open, what was
+  abandoned, what a later entry silently overrode, and what points at files that
+  no longer exist. Read-only: it produces a triage and docs-writer applies it.
 model: inherit
 color: yellow
 disallowedTools: Write, Edit, NotebookEdit
@@ -101,6 +100,9 @@ it by running them. Note which pages carry examples so they get run.
 
     ## Still true
     One line. Do not enumerate what is fine.
+
+    ## Verified / Taken on trust
+    Two lists, no prose.
 
 Rank by what would mislead someone worst if they acted on it today. A document
 that is merely out of date wastes an afternoon; one that describes something

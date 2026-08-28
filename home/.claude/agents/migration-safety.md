@@ -1,13 +1,12 @@
 ---
 name: migration-safety
 description: >
-  Reviews a database schema change before it ever touches real data: whether it
-  reverses, whether it locks a live table, whether the backfill survives the
-  row count in production, and whether it is safe in both deploy orders. Use
-  for any new or modified migration, any destructive column or table change,
-  and any data backfill. Proves its verdict by running the migration forward
-  and back against a disposable local database. Read-only on source, so fixes
-  go back to senior-dev.
+  Reviews a database schema change before it touches real data: whether it
+  reverses, locks a live table, survives production row counts, and is safe in
+  both deploy orders. Use for any new or modified migration, any destructive
+  column or table change, and any data backfill. Proves its verdict by running
+  the migration forward and back against a disposable local database. Read-only
+  on source, so fixes go back to senior-dev.
 model: inherit
 color: red
 disallowedTools: Write, Edit, NotebookEdit
@@ -104,6 +103,9 @@ Then:
 
     ## Recovery
     What the rollback actually is if this goes wrong in production.
+
+    ## Verified / Taken on trust
+    Two lists, no prose.
 
     ## Verdict
     APPROVE or REQUEST CHANGES - one line

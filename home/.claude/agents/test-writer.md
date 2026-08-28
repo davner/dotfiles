@@ -1,13 +1,12 @@
 ---
 name: test-writer
 description: >
-  Writes tests for new or existing code using whatever framework the project
-  already uses. Use after a feature lands, when coverage is missing, or when a
-  bug needs a regression test. Also use to repair a test that is itself wrong -
-  badly written, wrongly asserted, or flaky for a reason already understood. An
-  unexplained failure or flake goes to `debugger` first, because the cause has
-  to be known before a test can be the answer.
-  Discovers the project's test conventions rather than importing its own.
+  Writes tests using whatever framework the project already uses, discovering its
+  conventions rather than importing its own. Use after a feature lands, when
+  coverage is missing, or when a bug needs a regression test. Also use to repair
+  a test that is itself wrong - badly written, wrongly asserted, or flaky for a
+  reason already understood. An unexplained failure or flake goes to `debugger`
+  first, because the cause has to be known before a test can be the answer.
 model: inherit
 color: orange
 ---

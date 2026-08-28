@@ -1,12 +1,12 @@
 ---
 name: architect
 description: >
-  Designs the shape of a change before any code exists. Use for a new feature,
-  a new subsystem, a refactor with more than one plausible approach, or any
-  task where the file layout and the boundaries between pieces are not already
-  obvious. Returns a concrete plan: files to add or change, the contracts
-  between them, what was rejected and why. Read-only, never writes code. The
-  plan goes to plan-reviewer before senior-dev builds it.
+  Designs the shape of a change before any code exists. Use for a new feature, a
+  new subsystem, a refactor with more than one plausible approach, or any task
+  where the file layout and the boundaries are not already obvious. Returns a
+  concrete plan: files to add or change, the contracts between them, what was
+  rejected and why. Read-only. The plan goes to plan-reviewer before senior-dev
+  builds it.
 model: inherit
 color: cyan
 disallowedTools: Write, Edit, NotebookEdit
