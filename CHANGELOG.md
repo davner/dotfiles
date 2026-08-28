@@ -9,6 +9,9 @@ machine's configuration, not a package anyone installs a version of.
 
 ## 2026-08-28
 
+- **Other** Merge remote-tracking branch 'origin/main' ([`9577504`](https://github.com/davner/dotfiles/commit/957750469dfc768598c4ed297d80561f827006ec))
+- **Docs** Regenerate the changelog ([`da407ab`](https://github.com/davner/dotfiles/commit/da407ab8edecc1100f5dacf23d860346f96af47c))
+- **Chore** flake: Declare jq in the dev shell ([`31c571f`](https://github.com/davner/dotfiles/commit/31c571f945adec612a74c3a4a6b2d9a3037c6649))
 - **Other** Merge remote-tracking branch 'origin/main' ([`f9b3b61`](https://github.com/davner/dotfiles/commit/f9b3b616d939fce00c638a66487f901608b27c83))
 - **Docs** Regenerate the changelog ([`748ce25`](https://github.com/davner/dotfiles/commit/748ce2576ad99f96b0956a5eafb28d1486fdef98))
 - **Tests** Pin the agent roster to the README ([`9e94ccd`](https://github.com/davner/dotfiles/commit/9e94ccdc6ebfba299b66458d2ff711582e55ddbf))
