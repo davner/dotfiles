@@ -9,6 +9,10 @@ machine's configuration, not a package anyone installs a version of.
 
 ## 2026-08-28
 
+- **Other** Merge remote-tracking branch 'origin/main' ([`1de45a5`](https://github.com/davner/dotfiles/commit/1de45a5f281ae708d8c0f4dcbcbd1293535bce04))
+- **Docs** Regenerate the changelog ([`977fa32`](https://github.com/davner/dotfiles/commit/977fa3275075bdeca19c670d4e6e996af8a029d7))
+- **Docs** claude: Record why settings.json always gets committed ([`8047f9f`](https://github.com/davner/dotfiles/commit/8047f9faa1eab5369cdf41cefb7a23c6f2c56140))
+- **Chore** claude: Raise the default effort level to xhigh ([`f574ae3`](https://github.com/davner/dotfiles/commit/f574ae36aa27c8e389dd722c056a4737012a3e8f))
 - **Other** Merge remote-tracking branch 'origin/main' ([`3f939bf`](https://github.com/davner/dotfiles/commit/3f939bfc29d6b49860176e82edeae80c1f1d3a8f))
 - **Docs** Regenerate the changelog ([`4653355`](https://github.com/davner/dotfiles/commit/4653355bb85d85dbb88e074eb89edb7c24a21f3f))
 - **Docs** agents: Set a standard for code comments ([`40a5d98`](https://github.com/davner/dotfiles/commit/40a5d9853437cb9aa5562b285d296ee9f2fce38c))
