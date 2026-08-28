@@ -103,6 +103,10 @@ in
   # call it, so it has to be on disk at a path neither one has to guess.
   home.file.".claude/session-name.sh".source =
     config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.claude/session-name.sh";
+  # a PostToolUse hook, so settings.json reaches it by path the same way. it
+  # runs inside subagents too, which is where the code actually gets written.
+  home.file.".claude/comment-audit.sh".source =
+    config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.claude/comment-audit.sh";
   # the subagent roster. one file per agent, claude picks them up by name.
   home.file.".claude/agents".source =
     config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.claude/agents";

@@ -10,6 +10,19 @@
           }
         ]
       }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "[ ! -x \"$HOME/.claude/comment-audit.sh\" ] || \"$HOME/.claude/comment-audit.sh\"",
+            "timeout": 5,
+            "statusMessage": "Auditing comments"
+          }
+        ]
+      }
     ]
   },
   "statusLine": {
