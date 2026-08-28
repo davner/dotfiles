@@ -97,7 +97,8 @@ run() { # run a repo script with the stubs in place; never touches real $HOME
 }
 
 SCRIPTS=(bootstrap.sh rebuild.sh users.sh test.sh
-  home/.claude/statusline.sh home/.claude/session-name.sh)
+  home/.claude/statusline.sh home/.claude/session-name.sh
+  home/.claude/comment-audit.sh)
 
 # --------------------------------------------------------------------------
 section "syntax and lint"
@@ -297,6 +298,59 @@ else
   while read -r t; do
     if [ -e "$DIR/$t" ]; then ok "$t exists"; else bad "$t exists" "home.nix links to a path this repo does not have"; fi
   done <<<"$targets"
+fi
+
+# --------------------------------------------------------------------------
+section "comment audit hook"
+# It runs on every Write, Edit and MultiEdit in every session, so a break lands
+# everywhere at once and a false positive teaches everyone to ignore it. Both
+# failure modes are silent - settings.json invokes it behind `[ ! -x ... ] ||`,
+# so losing the executable bit disables the whole thing without a word.
+AUDIT="$DIR/home/.claude/comment-audit.sh"
+if ! command -v jq >/dev/null 2>&1; then
+  skip "comment audit behaviour (needs jq; macOS ships it at /usr/bin/jq)"
+else
+  # name, expected exit, payload. 0 is quiet, 2 is a finding on stderr.
+  audit_case() {
+    printf '%s' "$3" | "$AUDIT" >/dev/null 2>&1
+    got=$?
+    if [ "$got" = "$2" ]; then ok "$1"; else bad "$1" "expected exit $2, got $got"; fi
+  }
+  audit_case "a comment giving a reason is not flagged" 0 \
+    '{"tool_input":{"file_path":"a.ts","content":"// one control, so the labels cannot drift"}}'
+  audit_case "history narration is flagged" 2 \
+    '{"tool_input":{"file_path":"a.ts","content":"// used to be a loop"}}'
+  audit_case "an attribution stamp is flagged" 2 \
+    '{"tool_input":{"file_path":"a.ts","content":"// tuned here (Dan, 2026-08-12)"}}'
+  audit_case "a bare date in a source file is flagged" 2 \
+    '{"tool_input":{"file_path":"a.ts","content":"// added 2026-08-12"}}'
+  # The one documented carve-out: an assertion beside a fixture date fails
+  # loudly when it drifts, so the date is allowed to be named there.
+  audit_case "a fixture date in a test file is allowed" 0 \
+    '{"tool_input":{"file_path":"a.test.ts","content":"// fixture 2026-08-12"}}'
+  audit_case "a history phrase outside a comment is not flagged" 0 \
+    '{"tool_input":{"file_path":"a.ts","content":"const s = 1; // fine"}}'
+  audit_case "a non-source file is ignored" 0 \
+    '{"tool_input":{"file_path":"notes.md","content":"used to be a loop"}}'
+  audit_case "a payload with no file_path is ignored" 0 \
+    '{"tool_input":{"content":"// used to be a loop"}}'
+  audit_case "Edit new_string is read" 2 \
+    '{"tool_input":{"file_path":"a.ts","new_string":"// no longer needed"}}'
+  audit_case "MultiEdit edits[] are read" 2 \
+    '{"tool_input":{"file_path":"a.ts","edits":[{"new_string":"// formerly async"}]}}'
+  audit_case "a python docstring is read as documentation" 2 \
+    '{"tool_input":{"file_path":"a.py","content":"\"\"\"\nformerly a generator\n\"\"\""}}'
+  # A hook that dies on an unexpected payload takes the session's write with it.
+  audit_case "malformed input exits quietly" 0 'not json at all'
+fi
+
+# The hook is inert unless settings.json still registers it on the write tools.
+if grep -q 'comment-audit.sh' "$DIR/home/.claude/settings.json" &&
+  grep -q 'Write|Edit|MultiEdit' "$DIR/home/.claude/settings.json"; then
+  ok "settings.json registers the hook on Write|Edit|MultiEdit"
+else
+  bad "settings.json registers the hook on Write|Edit|MultiEdit" \
+    "the script exists but nothing calls it"
 fi
 
 # --------------------------------------------------------------------------
