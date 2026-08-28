@@ -103,6 +103,13 @@ finished is a decision the user never got to make.
   surprised you. Code that gained a branch per bug has the wrong model, and the
   next branch will not fix it. Brute force is a fine first draft and a bad last
   one. When the third special case shows up, re-solve instead of extending.
+- A comment explains why, not what; the code already says what. Write one only
+  where the code structurally cannot carry the information - the approach that
+  was rejected and the reason, a constraint from outside the file, a consequence
+  a reader would not predict. If the code already says it, delete the comment: a
+  second copy of the truth rots while the code stays right. And never let a
+  comment become a changelog. No "changed to X", no "was Y before", no dates or
+  version markers - git holds that, with the diff attached.
 - Prefer a maintained library to hand-rolling, and hand-rolling to an abandoned
   one. Before taking a dependency check that it still ships or answers issues,
   supports the runtime versions in use, and is not archived or deprecated. Quiet

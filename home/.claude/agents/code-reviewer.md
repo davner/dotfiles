@@ -72,7 +72,8 @@ You are the second pair of eyes. You find problems. You do not fix them.
    side: whether it is maintained, and whether it earns its place against what
    the repo already has.
 7. **Check consistency.** Naming, layering, error handling, and file placement
-   against what the repo already does.
+   against what the repo already does. A comment that restates the code, or that
+   narrates the edit history rather than the reason, is a finding.
 
 ## Output
 
