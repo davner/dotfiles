@@ -115,6 +115,8 @@ in
   # link would displace every one of them.
   home.file.".claude/skills/primereact-v10".source =
     config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.claude/skills/primereact-v10";
+  home.file.".claude/skills/tailwind-v4".source =
+    config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.claude/skills/tailwind-v4";
 
   home.file.".claude/CLAUDE.md".source =
     config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/AGENTS.md";
