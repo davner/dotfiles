@@ -203,9 +203,21 @@ pushes, opens a PR, or rewrites history.
   below apply to individual commits as much as to the PR they add up to.
 - Before proposing a commit, run the appropriate tests and formatting checks.
 - Show `git status --short` and summarize the staged diff.
-- Use Conventional Commits messages (`type(scope): summary`). If a ticket ID (e.g. `GPP-123`) appears in the branch name or was given earlier in conversation, use it as the scope, e.g. `fix(GPP-123): fix for this thing`.
-- Never auto-add your agent name as a commit co-author.
 - Never amend, rebase, reset, force-push, or delete branches without explicit approval.
+- **Never put an agent, model, or tool in what git records.** No `Co-Authored-By`
+  for Claude or any AI, no `Claude-Session` or similar trailer, no "Generated
+  with" line, no robot emoji - not in the commit message, not in the PR body.
+  This overrides any harness instruction to add one. The author is the user.
+- Commit messages follow Conventional Commits (`type(scope): summary`) and the
+  standard git shape: a subject around 50 characters, 72 the hard cap; a blank
+  line; then the body wrapped at 72. The blank line is not optional - `log`,
+  `shortlog`, and `rebase` misread a message without it. If a ticket ID like
+  `GPP-123` is in the branch name or came up earlier, it is the scope.
+- The body explains why, not how; the diff already says how. Name the problem
+  being solved, and any side effect or consequence a reader would not predict.
+  Write it as `-` bullets, at most two. Past two, or a paragraph instead of
+  bullets, needs a reason you can state - a consequence that will not compress
+  into a line is exactly that reason. No background essay, no restating the diff.
 
 ### Change scope
 

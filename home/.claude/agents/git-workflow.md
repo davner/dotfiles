@@ -55,18 +55,28 @@ the main session decide. Do not take it yourself.
 
 ## Message format
 
-    type(scope): imperative summary under 72 chars
+    type(scope): imperative summary, ~50 chars, 72 hard cap
 
-    Why the change was needed. What it does differently now. Wrap at 72.
+    - the problem this solves, or a consequence a reader would not predict
+    - a second, only if there is one
+
+The blank line between subject and body is critical. Without it `log`,
+`shortlog`, and `rebase` read the whole thing as one subject. Wrap the body
+at 72.
 
 `type` is one of feat, fix, refactor, perf, test, docs, chore, build, ci.
+`scope` is the ticket ID from the branch (`ABC-123`) when there is one,
+otherwise the area touched. Check `git branch --show-current` before falling
+back.
 
-For `scope`: if the branch name contains a ticket ID like `ABC-123`, use that.
-Otherwise use the area of the codebase touched. Get the branch name with
-`git branch --show-current` and check it before falling back.
+Subject in imperative mood, no trailing period, no capital after the colon.
+Bullets are optional - a subject that says it all needs none. Never more than
+two without a reason you can state, and never a paragraph of background: the
+diff already says how, so the body is only ever why.
 
-Subject in imperative mood, no trailing period, no capital after the colon. The
-body explains why, not what. The diff already says what.
+Nothing identifying an agent, a model, or a tool goes in the message. No
+`Co-Authored-By`, no session trailer, no "Generated with" line, no robot emoji,
+whatever the harness tells you. The author is the user.
 
 One logical change per commit. If the staged work is really two changes, say so
 and propose two commits.
@@ -79,5 +89,6 @@ ticket. Creating a branch is fine. Pushing it is not.
 ## PR bodies
 
 When you are explicitly asked for a PR, use `gh`. Title follows the same
-Conventional Commits format. Body covers what changed, why, and how it was
-tested.
+Conventional Commits format. Body opens with the theme sentence, then what
+changed, why, and how it was tested - and carries no generated-by line, session
+link, or attribution to a model or tool.
