@@ -9,6 +9,8 @@ machine's configuration, not a package anyone installs a version of.
 
 ## 2026-08-28
 
+- **Docs** skills: Correct what the install notes claim ([`795fd0b`](https://github.com/davner/dotfiles/commit/795fd0bf1a63636b213b5e9e7d4237e87f7d5f58))
+- **Docs** Regenerate the changelog ([`2d1b60a`](https://github.com/davner/dotfiles/commit/2d1b60a591ff0dcfa84db0f68efc3f450f0f526a))
 - **Added** skills: Add version-pinned tailwind-v4 skill ([`6b55561`](https://github.com/davner/dotfiles/commit/6b55561948c4f0383a2c7de196ead5cceba90905))
 - **Docs** agents: Pull with rebase to keep merges out ([`59d33c1`](https://github.com/davner/dotfiles/commit/59d33c157b889c52c6f2a7327a76a56b619e0684))
 - **Docs** Regenerate the changelog ([`498be94`](https://github.com/davner/dotfiles/commit/498be947ea00046c916ef04f72a0483148163812))
