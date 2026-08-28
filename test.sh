@@ -354,6 +354,51 @@ else
 fi
 
 # --------------------------------------------------------------------------
+section "agent roster"
+# Claude Code routes by the `name` in the frontmatter, not by the filename, so a
+# typo there is an agent nothing can reach and no build ever complains about.
+AGENTS_DIR="$DIR/home/.claude/agents"
+mismatched=""
+undescribed=""
+for f in "$AGENTS_DIR"/*.md; do
+  a="$(basename "$f" .md)"
+  n="$(sed -nE 's/^name: (.+)$/\1/p' "$f" | head -1)"
+  [ "$n" = "$a" ] || mismatched="$mismatched $a(name:$n)"
+  grep -q '^description: >' "$f" || undescribed="$undescribed $a"
+done
+if [ -z "$mismatched" ]; then
+  ok "every agent's name matches its filename"
+else
+  bad "every agent's name matches its filename" "$mismatched"
+fi
+if [ -z "$undescribed" ]; then
+  ok "every agent has a description block"
+else
+  bad "every agent has a description block" "no description: >:$undescribed"
+fi
+
+# The README table is how a human learns the roster exists. It is only useful
+# while it still lists what is on disk, and nothing else notices when it slips.
+on_disk="$(basename -s .md "$AGENTS_DIR"/*.md | sort)"
+# The backticks are literal markdown in the table, and sed needs \1 unexpanded,
+# so single quotes are exactly right here.
+# shellcheck disable=SC2016
+in_readme="$(sed -n '/^## Agents/,/^## Tests/p' "$DIR/README.md" |
+  sed -nE 's/^\| `([a-z0-9-]+)` \|.*/\1/p' | sort)"
+missing="$(comm -23 <(echo "$on_disk") <(echo "$in_readme") | tr '\n' ' ')"
+phantom="$(comm -13 <(echo "$on_disk") <(echo "$in_readme") | tr '\n' ' ')"
+if [ -z "${missing// /}" ]; then
+  ok "README documents every agent"
+else
+  bad "README documents every agent" "on disk but not in the table: $missing"
+fi
+if [ -z "${phantom// /}" ]; then
+  ok "the README agent table has no phantom rows"
+else
+  bad "the README agent table has no phantom rows" "in the table but not on disk: $phantom"
+fi
+
+# --------------------------------------------------------------------------
 section "status line"
 # Claude Code renders whatever this prints, so a crash costs the whole line.
 # Most of the payload is optional, and the interesting cases are the ones where
