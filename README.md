@@ -86,6 +86,7 @@ dotted attribute can never resolve. The scripts handle the substitution.
 | `home/AGENTS.md` | Global coding-agent instructions, linked to `~/.claude/CLAUDE.md` and friends |
 | `home/.claude/agents/` | The subagent roster, one file per agent; linked to `~/.claude/agents/`, where Claude Code picks them up by name |
 | `AGENTS.md` | Notes for agents working *on this repo*. A different file from the one above |
+| `home/.claude/*.sh` | Statusline, session naming, and the comment-audit hook |
 | `users.sh` | The only thing that parses the per-user records |
 | `test.sh` | The checks below |
 | `cliff.toml` | How `CHANGELOG.md` is generated |
@@ -94,10 +95,38 @@ Dotfiles under `home/` are linked, not copied: editing
 `~/.config/wezterm/wezterm.lua` edits the file in this repo, with no rebuild in
 between.
 
-The agent roster works without nix: copy `home/.claude/agents/` to
-`~/.claude/agents/`. Before editing the files, read the bullets in the root
-`AGENTS.md` on why their `memory` and `skills` frontmatter fields are
-deliberately absent.
+## Agents
+
+`home/.claude/agents/` is a roster of subagents, one file each, that Claude Code
+picks up by name. Most cannot edit files: they report findings, and a writer
+applies them. They run in every project, not just this one.
+
+| Agent | Does | Edits files |
+| --- | --- | --- |
+| `architect` | Designs a change before code exists: files, contracts, rejected options | no |
+| `plan-reviewer` | Checks that plan against the actual codebase | no |
+| `senior-dev` | Primary writer. Builds features, applies every reviewer's fixes | yes |
+| `test-writer` | Writes tests in whatever framework the project already uses | yes |
+| `debugger` | Reproduces a failure first, then fixes the cause | yes |
+| `docs-writer` | Makes docs match the code, running every example it touches | yes |
+| `code-reviewer` | Correctness bugs, error paths, drift from the repo's conventions | no |
+| `migration-safety` | Runs a migration forward and back before it meets real data | no |
+| `ui-verifier` | Loads the app in a real browser and reports what renders | no |
+| `a11y-auditor` | Audits a running UI against WCAG, by keyboard and screen reader | no |
+| `review-triage` | Turns an external PR review into a plan, checking each claim | no |
+| `doc-auditor` | Finds plans, TODOs and READMEs that stopped being true | no |
+| `fresh-eyes` | Uses the product cold and scores how far a stranger gets | no |
+| `researcher` | Answers what the repo cannot, with citations | no |
+| `git-workflow` | Staging, commit messages, branches. Git only, never code | no |
+
+Two things shape how they behave. `home/AGENTS.md` is loaded into all of them,
+so the guardrails there apply everywhere and no agent file repeats them. And
+`comment-audit.sh` runs as a hook after every write, flagging comments that
+narrate the edit history instead of the reason.
+
+Works without nix: copy `home/.claude/agents/` to `~/.claude/agents/`. Before
+editing the files, read the bullets in the root `AGENTS.md` on why their
+`memory` and `skills` frontmatter fields are deliberately absent.
 
 ## Tests
 
