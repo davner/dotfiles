@@ -9,6 +9,10 @@ machine's configuration, not a package anyone installs a version of.
 
 ## 2026-08-28
 
+- **Other** Merge remote-tracking branch 'origin/main' ([`f9b3b61`](https://github.com/davner/dotfiles/commit/f9b3b616d939fce00c638a66487f901608b27c83))
+- **Docs** Regenerate the changelog ([`748ce25`](https://github.com/davner/dotfiles/commit/748ce2576ad99f96b0956a5eafb28d1486fdef98))
+- **Tests** Pin the agent roster to the README ([`9e94ccd`](https://github.com/davner/dotfiles/commit/9e94ccdc6ebfba299b66458d2ff711582e55ddbf))
+- **Tests** Cover the comment-audit hook ([`fcc99ef`](https://github.com/davner/dotfiles/commit/fcc99efb506ae381622373f20dde140c2f5e604f))
 - **Docs** agents: Stop restating guardrails in agent prompts ([`317f8f8`](https://github.com/davner/dotfiles/commit/317f8f811c3b07b15d7ab8a05d2e10b15d6bf6c6))
 - **Docs** readme: Document the agent roster ([`5c53c81`](https://github.com/davner/dotfiles/commit/5c53c81927b33fc2ebf805a8024a98d1df370036))
 - **Other** Merge remote-tracking branch 'origin/main' ([`6fd0271`](https://github.com/davner/dotfiles/commit/6fd0271ce85e133ca00235e0a6569fc3d48db436))
