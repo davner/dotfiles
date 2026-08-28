@@ -98,7 +98,11 @@
       # ./test.sh` skips nothing.
       devShells = forEachDarwin (pkgs: {
         default = pkgs.mkShellNoCC {
-          packages = [ pkgs.shellcheck pkgs.actionlint pkgs.git-cliff ];
+          # jq is what home/.claude/comment-audit.sh parses its payload with,
+          # and test.sh skips those checks without it. macOS has shipped jq at
+          # /usr/bin/jq since Sequoia and CI runners carry one, so the tests
+          # pass either way - but neither is this flake's to promise.
+          packages = [ pkgs.shellcheck pkgs.actionlint pkgs.git-cliff pkgs.jq ];
         };
       });
     };
