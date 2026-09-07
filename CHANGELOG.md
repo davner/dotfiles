@@ -9,6 +9,8 @@ machine's configuration, not a package anyone installs a version of.
 
 ## 2026-09-07
 
+- **Added** yt-dlp: Write only the .m4r tone ([`8e420be`](https://github.com/davner/dotfiles/commit/8e420beb7aaf28d563ddea59f15a327ac24607e6))
+- **Docs** Regenerate the changelog ([`aaca279`](https://github.com/davner/dotfiles/commit/aaca279a41d35420a5150652a1b732718f5a8f40))
 - **Chore** claude: Set the effort level to high ([`ed065ee`](https://github.com/davner/dotfiles/commit/ed065ee8b2ad06c9239e189d7209b23a22eda064))
 - **Added** yt-dlp: Add youtube download aliases ([`566ef29`](https://github.com/davner/dotfiles/commit/566ef2913138088903f09eefc9ca3d982d3e569f))
 - **Fixed** homebrew: Declare openmotif as a brew, not a cask ([`f0b1476`](https://github.com/davner/dotfiles/commit/f0b147674c61f493f323a0247dc05f18def7de8e))
