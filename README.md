@@ -87,6 +87,7 @@ dotted attribute can never resolve. The scripts handle the substitution.
 | `home/.claude/agents/` | The subagent roster, one file per agent; linked to `~/.claude/agents/`, where Claude Code picks them up by name |
 | `AGENTS.md` | Notes for agents working *on this repo*. A different file from the one above |
 | `home/.claude/*.sh` | Statusline, session naming, and the comment-audit hook |
+| `home/.config/yt-dlp/` | YouTube download aliases writing into iCloud, and the tone helper. Has its own README |
 | `users.sh` | The only thing that parses the per-user records |
 | `test.sh` | The checks below |
 | `cliff.toml` | How `CHANGELOG.md` is generated |

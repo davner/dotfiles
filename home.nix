@@ -28,6 +28,10 @@ in
     nodejs
     pnpm
     uv
+    # pulling audio and video off youtube into icloud, see .config/yt-dlp/config
+    yt-dlp
+    ffmpeg    # yt-dlp merges, trims and converts through it
+    deno      # the js runtime yt-dlp runs youtube's player challenge in
     # the font everything renders in
     nerd-fonts.hack
   ];
@@ -94,6 +98,10 @@ in
   # the shell functions the generated ~/.zshrc sources at the end of its init.
   home.file.".config/zsh/functions.zsh".source =
     config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.config/zsh/functions.zsh";
+  # the download aliases and the tone helper one of them shells out to by path,
+  # linked as a directory so the two cannot drift apart.
+  home.file.".config/yt-dlp".source =
+    config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.config/yt-dlp";
   home.file.".claude/settings.json".source =
     config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.claude/settings.json";
   # settings.json points at this by path, so it has to land in ~/.claude too.

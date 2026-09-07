@@ -1,0 +1,25 @@
+# Downloads land under ~/Documents, which is the iCloud-synced folder, so the
+# phone sees them with no second copy step.
+
+# --- applies to every mode ---
+--restrict-filenames
+--trim-filenames 80
+--concurrent-fragments 4
+--retries 10
+-o "%(title)s-%(id)s.%(ext)s"
+
+# --- video for CapCut: yt-dlp --vid URL ---
+# h264+aac is the pair CapCut imports without transcoding first, and YouTube
+# serves h264 only up to 1080p, so the height cap keeps the sort inside it.
+--alias vid "-t mp4 -f bv*[height<=?1080]+ba/b[height<=?1080] --embed-metadata -P home:$HOME/Documents/YouTube/Video"
+
+# --- full-length audio: yt-dlp --aud URL ---
+--alias aud "-x --audio-format m4a --audio-quality 0 --embed-thumbnail --embed-metadata -P home:$HOME/Documents/YouTube/Audio"
+
+# --- trimmed tone: yt-dlp --tone 0:12-0:38 URL ---
+# The --exec argument carries its own quotes because an alias body is split a
+# second time, and unquoted it sheds %(filepath)q as a stray URL to download.
+# --force-keyframes-at-cuts re-encodes, which is the only way the cut lands on
+# the second asked for. Without it a 28s request can arrive as 31s, and iOS
+# refuses anything past 30s as a text tone.
+--alias tone,-T "--download-sections *{0} --force-keyframes-at-cuts -x --audio-format m4a -P home:$HOME/Documents/YouTube/Tones --exec 'after_move:$HOME/.config/yt-dlp/tone-finish.sh %(filepath)q'"
