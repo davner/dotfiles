@@ -9,6 +9,10 @@ machine's configuration, not a package anyone installs a version of.
 
 ## 2026-09-09
 
+- **Added** agents: Consult researcher mid-ticket ([`a1d0584`](https://github.com/davner/dotfiles/commit/a1d05844a0cf222cd3543cd46c44450f335cc959))
+- **Chore** nix: Adopt nixfmt as the formatter ([`0f1a50c`](https://github.com/davner/dotfiles/commit/0f1a50c2100800ecf255a16ad43bb7a819250a77))
+- **Chore** homebrew: Drop the miniforge cask ([`6260f8f`](https://github.com/davner/dotfiles/commit/6260f8f4ddda77dbdce8572d82ada8ab3f1e963a))
+- **Docs** Regenerate the changelog ([`810660d`](https://github.com/davner/dotfiles/commit/810660d5f7de34d7a0ffee5745570a2f808757ee))
 - **Other** Merge pull request #1 from davner/flake-update-2026-09-07
 
 chore(deps): nix flake update ([`44ca1f1`](https://github.com/davner/dotfiles/commit/44ca1f1d3cef8a0474e3e5f9e4f53aba374edb65))
