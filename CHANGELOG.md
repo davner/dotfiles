@@ -12,84 +12,45 @@ machine's configuration, not a package anyone installs a version of.
 - **Added** agents: Consult researcher mid-ticket ([`a1d0584`](https://github.com/davner/dotfiles/commit/a1d05844a0cf222cd3543cd46c44450f335cc959))
 - **Chore** nix: Adopt nixfmt as the formatter ([`0f1a50c`](https://github.com/davner/dotfiles/commit/0f1a50c2100800ecf255a16ad43bb7a819250a77))
 - **Chore** homebrew: Drop the miniforge cask ([`6260f8f`](https://github.com/davner/dotfiles/commit/6260f8f4ddda77dbdce8572d82ada8ab3f1e963a))
-- **Docs** Regenerate the changelog ([`810660d`](https://github.com/davner/dotfiles/commit/810660d5f7de34d7a0ffee5745570a2f808757ee))
-- **Other** Merge pull request #1 from davner/flake-update-2026-09-07
-
-chore(deps): nix flake update ([`44ca1f1`](https://github.com/davner/dotfiles/commit/44ca1f1d3cef8a0474e3e5f9e4f53aba374edb65))
+- **Added** agents: Add comment-auditor and its /comment-audit command ([`1ade5ae`](https://github.com/davner/dotfiles/commit/1ade5ae911d5109d5ef0eba482635f5fa5b32ff7))
+- **Added** agents: Route implementation work through a ticket loop ([`edc1f5d`](https://github.com/davner/dotfiles/commit/edc1f5dd34b5d9d25352ace36bf0110c7bdbc311))
 
 ## 2026-09-07
 
+- **Added** yt-dlp: Write only the .m4r tone ([`8e420be`](https://github.com/davner/dotfiles/commit/8e420beb7aaf28d563ddea59f15a327ac24607e6))
+- **Added** yt-dlp: Add youtube download aliases ([`566ef29`](https://github.com/davner/dotfiles/commit/566ef2913138088903f09eefc9ca3d982d3e569f))
+- **Chore** claude: Set the effort level to high ([`ed065ee`](https://github.com/davner/dotfiles/commit/ed065ee8b2ad06c9239e189d7209b23a22eda064))
+- **Fixed** homebrew: Declare openmotif as a brew, not a cask ([`f0b1476`](https://github.com/davner/dotfiles/commit/f0b147674c61f493f323a0247dc05f18def7de8e))
 - **Chore** deps: Nix flake update ([`dee9699`](https://github.com/davner/dotfiles/commit/dee9699f17cfd772c109de0d24a51bae07797633))
 
-## 2026-09-09
-
-- **Docs** Regenerate the changelog ([`43f9af3`](https://github.com/davner/dotfiles/commit/43f9af31027c171c155fcd58bd734a20229961e3))
-- **Added** agents: Route implementation work through a ticket loop ([`edc1f5d`](https://github.com/davner/dotfiles/commit/edc1f5dd34b5d9d25352ace36bf0110c7bdbc311))
-- **Added** agents: Add comment-auditor and its /comment-audit command ([`1ade5ae`](https://github.com/davner/dotfiles/commit/1ade5ae911d5109d5ef0eba482635f5fa5b32ff7))
-
-## 2026-09-07
-
-- **Docs** Regenerate the changelog ([`da65780`](https://github.com/davner/dotfiles/commit/da6578021917393e32f4f174fcf1206ae46ee4e9))
-- **Added** yt-dlp: Write only the .m4r tone ([`8e420be`](https://github.com/davner/dotfiles/commit/8e420beb7aaf28d563ddea59f15a327ac24607e6))
-- **Docs** Regenerate the changelog ([`aaca279`](https://github.com/davner/dotfiles/commit/aaca279a41d35420a5150652a1b732718f5a8f40))
-- **Chore** claude: Set the effort level to high ([`ed065ee`](https://github.com/davner/dotfiles/commit/ed065ee8b2ad06c9239e189d7209b23a22eda064))
-- **Added** yt-dlp: Add youtube download aliases ([`566ef29`](https://github.com/davner/dotfiles/commit/566ef2913138088903f09eefc9ca3d982d3e569f))
-- **Fixed** homebrew: Declare openmotif as a brew, not a cask ([`f0b1476`](https://github.com/davner/dotfiles/commit/f0b147674c61f493f323a0247dc05f18def7de8e))
-
 ## 2026-08-28
 
-- **Docs** Regenerate the changelog ([`197f1d8`](https://github.com/davner/dotfiles/commit/197f1d892c427947847b6871308733fc6d5d8d91))
 - **Docs** skills: Correct what the install notes claim ([`795fd0b`](https://github.com/davner/dotfiles/commit/795fd0bf1a63636b213b5e9e7d4237e87f7d5f58))
-- **Docs** Regenerate the changelog ([`2d1b60a`](https://github.com/davner/dotfiles/commit/2d1b60a591ff0dcfa84db0f68efc3f450f0f526a))
 - **Added** skills: Add version-pinned tailwind-v4 skill ([`6b55561`](https://github.com/davner/dotfiles/commit/6b55561948c4f0383a2c7de196ead5cceba90905))
 - **Docs** agents: Pull with rebase to keep merges out ([`59d33c1`](https://github.com/davner/dotfiles/commit/59d33c157b889c52c6f2a7327a76a56b619e0684))
-- **Docs** Regenerate the changelog ([`498be94`](https://github.com/davner/dotfiles/commit/498be947ea00046c916ef04f72a0483148163812))
-- **Docs** Regenerate the changelog ([`f402377`](https://github.com/davner/dotfiles/commit/f4023779e95ea738cd15a4ffa023284c2a6bc4eb))
-- **Other** Merge remote-tracking branch 'origin/main' ([`f5dd1e3`](https://github.com/davner/dotfiles/commit/f5dd1e3f25df60e089077ff6508ac63aba220f12))
-- **Docs** Regenerate the changelog ([`8190dc1`](https://github.com/davner/dotfiles/commit/8190dc153b5972b5b45fc66f642eab8c9da20565))
 - **Chore** flake: Declare jq in the dev shell ([`19d7569`](https://github.com/davner/dotfiles/commit/19d75690ee94efd8db59fe450158f540e9221fbf))
-- **Other** Merge remote-tracking branch 'origin/main' ([`8403580`](https://github.com/davner/dotfiles/commit/840358081594eab9a2b4bc645cf0c5696324a5b3))
-- **Docs** Regenerate the changelog ([`fd8f9fa`](https://github.com/davner/dotfiles/commit/fd8f9fa4eb4751a82e7b620fc74b33c9e3cf874c))
 - **Tests** Pin the agent roster to the README ([`0ed0827`](https://github.com/davner/dotfiles/commit/0ed0827f8578acd34150d6f32c2f9346cef8a517))
 - **Tests** Cover the comment-audit hook ([`7752158`](https://github.com/davner/dotfiles/commit/7752158b1153bc72726d2a90039ef2ed21a48fac))
-- **Docs** agents: Stop restating guardrails in agent prompts ([`966dad9`](https://github.com/davner/dotfiles/commit/966dad948a3cda4b6f014587084d401ca0168c58))
 - **Docs** readme: Document the agent roster ([`f2b054e`](https://github.com/davner/dotfiles/commit/f2b054ec76c8b86800b02fc0ff7060e337519354))
-- **Other** Merge remote-tracking branch 'origin/main' ([`c5d5f21`](https://github.com/davner/dotfiles/commit/c5d5f214ca668055d84162722f480f0e8c6bb041))
-- **Docs** Regenerate the changelog ([`e2d7d7d`](https://github.com/davner/dotfiles/commit/e2d7d7d31090f04d40299265a7038824e2b487cb))
+- **Docs** agents: Stop restating guardrails in agent prompts ([`966dad9`](https://github.com/davner/dotfiles/commit/966dad948a3cda4b6f014587084d401ca0168c58))
 - **Docs** agents: Make the comment rule a guardrail ([`29b4218`](https://github.com/davner/dotfiles/commit/29b4218178bb94f2beecfc5159d9621a9fd103f8))
 - **Added** claude: Flag changelog comments as they are written ([`c6dcad7`](https://github.com/davner/dotfiles/commit/c6dcad784548e5fa9dd2b259411a85e099640943))
-- **Other** Merge remote-tracking branch 'origin/main' ([`c18ab01`](https://github.com/davner/dotfiles/commit/c18ab013f62aac5fe417700cf80e846f33a17c71))
-- **Docs** Regenerate the changelog ([`59081cd`](https://github.com/davner/dotfiles/commit/59081cd181b06a876b88e7c25b995d964e9347b0))
-- **Docs** claude: Record why settings.json always gets committed ([`baa7e56`](https://github.com/davner/dotfiles/commit/baa7e5628918a15d130243b2e1ca82ba92fc3ff0))
 - **Chore** claude: Raise the default effort level to xhigh ([`ab6e458`](https://github.com/davner/dotfiles/commit/ab6e458efcfd7defbef4ce9564b8936bc8505a2e))
-- **Other** Merge remote-tracking branch 'origin/main' ([`2e7a2a8`](https://github.com/davner/dotfiles/commit/2e7a2a85b4f55e135259bd1996c88af6e3183838))
-- **Docs** Regenerate the changelog ([`c147e6c`](https://github.com/davner/dotfiles/commit/c147e6c0cf208637b5a79d480781a741691479cd))
+- **Docs** claude: Record why settings.json always gets committed ([`baa7e56`](https://github.com/davner/dotfiles/commit/baa7e5628918a15d130243b2e1ca82ba92fc3ff0))
 - **Docs** agents: Set a standard for code comments ([`74d8a94`](https://github.com/davner/dotfiles/commit/74d8a9433a5d3c01a8b69b9fca3878b5b1d1469f))
-- **Other** Merge remote-tracking branch 'origin/main' ([`84b5b8e`](https://github.com/davner/dotfiles/commit/84b5b8edc55f0770176ecc5109c8780e73262204))
-- **Docs** Regenerate the changelog ([`221881d`](https://github.com/davner/dotfiles/commit/221881d1542eba255031d2aa9ddabb50a0c6985e))
 - **Docs** agents: Stop two agents licensing unrelated fixes ([`31e3baa`](https://github.com/davner/dotfiles/commit/31e3baaf49673df3ec08e1cd272e27784e39a0e8))
-- **Other** Merge remote-tracking branch 'origin/main' ([`25c18cc`](https://github.com/davner/dotfiles/commit/25c18cc57a186b27e1dd9ecec3fd56985838180d))
-
-## 2026-08-26
-
-- **Docs** Regenerate the changelog ([`3929ac3`](https://github.com/davner/dotfiles/commit/3929ac3fb28b50c7d954bb70e81a29d7b5a1e8e8))
-
-## 2026-08-28
-
 - **Docs** agents: Tighten the prompts and centralize the ledger ([`e063641`](https://github.com/davner/dotfiles/commit/e0636410dae3b7b819d255aa5493464f0ec226d3))
 - **Docs** agents: Constrain what a commit message contains ([`e8ae85f`](https://github.com/davner/dotfiles/commit/e8ae85f322b352d7d77012b43d092b051f8e0b6e))
 
 ## 2026-08-26
 
 - **Added** skills: Add version-pinned primereact-v10 skill ([`5816411`](https://github.com/davner/dotfiles/commit/5816411715880a530f00aae39e6c07f42a263223))
-- **Docs** agents: Reframe PR sizing as theme-based scoping ([`a17c2ce`](https://github.com/davner/dotfiles/commit/a17c2ce7410887157c596f2dcf51055c2e951a03))
 - **Chore** claude: Switch default model to opus ([`e5ec1c5`](https://github.com/davner/dotfiles/commit/e5ec1c50bf9116e76bdf2da554c855213004fec0))
+- **Docs** agents: Reframe PR sizing as theme-based scoping ([`a17c2ce`](https://github.com/davner/dotfiles/commit/a17c2ce7410887157c596f2dcf51055c2e951a03))
 
 ## 2026-08-21
 
-- **Docs** Regenerate the changelog ([`7f68e1e`](https://github.com/davner/dotfiles/commit/7f68e1ee2483662c175e7e979ca9c33d060705fc))
 - **Docs** agents: Add PR and commit size guidance ([`7ce85ab`](https://github.com/davner/dotfiles/commit/7ce85abc0803989413e3dd372b04a36aaef6f0a2))
-- **Docs** Regenerate the changelog ([`3ca89ae`](https://github.com/davner/dotfiles/commit/3ca89aed50daa273decefcd12fb93e7e9a1d20e0))
 - **Chore** claude: Switch default model to claude-fable-5 ([`ec0101f`](https://github.com/davner/dotfiles/commit/ec0101fc0a29c1bb900d92d78ba9809c47b44d55))
 - **Docs** readme: Clarify setup flow and adoption path ([`d8f69ea`](https://github.com/davner/dotfiles/commit/d8f69ea2550f9e31db18300f4a8b230fa3ea5b42))
 - **Docs** agents: Expose project agents to Claude Code via CLAUDE.md ([`b834ff6`](https://github.com/davner/dotfiles/commit/b834ff63853f1f8fc26e60b29b9291431d3cd78e))
@@ -97,44 +58,16 @@ chore(deps): nix flake update ([`44ca1f1`](https://github.com/davner/dotfiles/co
 
 ## 2026-08-20
 
-- **Docs** Regenerate the changelog ([`82d7b7e`](https://github.com/davner/dotfiles/commit/82d7b7e46f61f9a4aa57de4b057e97cab3058933))
-- **Other** Merge remote-tracking branch 'origin/main' ([`6be3924`](https://github.com/davner/dotfiles/commit/6be3924ebd67804b17df0b65b9d536f42f40b3c0))
-- **Docs** Regenerate the changelog ([`ad4c3a4`](https://github.com/davner/dotfiles/commit/ad4c3a4acc0fd7bb5bf07cec10c6db235ae35a77))
 - **Chore** claude: Drop the default effort level to high ([`c614371`](https://github.com/davner/dotfiles/commit/c6143717427c82967c43ab02c3974a2d35fb92fb))
-- **Other** Merge remote-tracking branch 'origin/main' ([`1889ac9`](https://github.com/davner/dotfiles/commit/1889ac9a5d1764537d536e8a111f7ddddc2f3d7c))
-
-## 2026-08-18
-
-- **Docs** Regenerate the changelog ([`b5eeaa1`](https://github.com/davner/dotfiles/commit/b5eeaa15cd5dcfd120e2cbf5add38e7d0e0b3f89))
-
-## 2026-08-20
-
 - **Added** agents: Add fresh-eyes for first-time-user evaluation ([`2a29c6a`](https://github.com/davner/dotfiles/commit/2a29c6a6a804cd175a03a6259da7c0e2d7687525))
 
 ## 2026-08-18
 
-- **Other** Merge branch 'main' of https://github.com/davner/dotfiles
-
-Both sides edited the Tests bullet and the Skills section in
-home/AGENTS.md. Kept both: the ownership line from here, and from
-origin the rule that an unexplained failure or flake is debugger's
-before it is test-writer's.
-
-The Skills paragraph needed correcting rather than merging. It claimed
-shadcn and migrate-radix-to-base were real directories under
-~/.claude/skills/ and only four of the six were symlinks. On disk all
-six npx-installed skills are symlinks into ~/.agents/skills/, and
-impeccable is the one real directory, because it ships its own
-installer. Adding impeccable to the list also made "the other four"
-count against the wrong set. Dropped the note about skill-creator and
-find-skills sitting inert in ~/.agents/skills/, since neither is there
-any more. ([`0f89af1`](https://github.com/davner/dotfiles/commit/0f89af15abec3c4a2522c6dfcb5ea539ed6d36be))
+- **Chore** claude: Raise the default effort level back to xhigh ([`540fa8f`](https://github.com/davner/dotfiles/commit/540fa8f6593607738005318d4892bd46a9f22704))
+- **Added** agents: Add a11y-auditor and set who owns which tests ([`19689e5`](https://github.com/davner/dotfiles/commit/19689e560403c33761ebfb601c072bf480345200))
 
 ## 2026-08-17
 
-- **Docs** Regenerate the changelog ([`9bf4dc9`](https://github.com/davner/dotfiles/commit/9bf4dc9fd85aa18ccc8e4f78d92898b3d5b9f5a9))
-- **Other** Merge branch 'main' of https://github.com/davner/dotfiles ([`4656335`](https://github.com/davner/dotfiles/commit/4656335f13694012896e89982a77f84cf51b5e14))
-- **Docs** Regenerate the changelog ([`231f7d0`](https://github.com/davner/dotfiles/commit/231f7d0b3ad2be6c5ca87e91eda9939cf4c59e58))
 - **Fixed** Reject a misspelled field in a user record ([`9a314ab`](https://github.com/davner/dotfiles/commit/9a314ab3db22a3ff2fbb7a75f0b3ad5f179c328b))
 - **Changed** zsh: Move cc out of the Nix string into a real zsh file ([`83b0d10`](https://github.com/davner/dotfiles/commit/83b0d10bb2977a30dc4c5943c48a747011542f2e))
 - **Changed** Give each user one record instead of two half-lists ([`112ea4c`](https://github.com/davner/dotfiles/commit/112ea4c2e5f96f5ca62784a9f475f3a382ddaab4))
@@ -144,44 +77,29 @@ any more. ([`0f89af1`](https://github.com/davner/dotfiles/commit/0f89af15abec3c4
 - **Fixed** darwin: Upgrade self-updating casks and drop redundant --force ([`f736ba2`](https://github.com/davner/dotfiles/commit/f736ba25b64753cb1dad5aec23ede2bc53ad2cd6))
 - **Chore** Drop herdr ([`e11ca24`](https://github.com/davner/dotfiles/commit/e11ca24f3aa7ffa57b0bd170e277294ba5f8a5bb))
 - **Fixed** homebrew: Upgrade installed packages on activation ([`cc3cc02`](https://github.com/davner/dotfiles/commit/cc3cc0284eb8bd06497f6245fe74d852cfa52a29))
-- **Docs** Regenerate the changelog ([`4e75338`](https://github.com/davner/dotfiles/commit/4e75338c398fbd743beea966064b14b0418dd2f3))
-
-## 2026-08-18
-
-- **Chore** claude: Raise the default effort level back to xhigh ([`540fa8f`](https://github.com/davner/dotfiles/commit/540fa8f6593607738005318d4892bd46a9f22704))
-- **Added** agents: Add a11y-auditor and set who owns which tests ([`19689e5`](https://github.com/davner/dotfiles/commit/19689e560403c33761ebfb601c072bf480345200))
-
-## 2026-08-17
-
 - **Added** claude: Name sessions after the repo they run in ([`86d6add`](https://github.com/davner/dotfiles/commit/86d6add6b3dcfe1aae017b40b0d7d9e4e78e8097))
 - **Chore** claude: Drop the default effort level to medium ([`45548fd`](https://github.com/davner/dotfiles/commit/45548fdba4ac181b6b65dd415ff0af3c2eaa0c47))
 - **Added** darwin: Prefer tabs and group windows by app ([`a9a4c68`](https://github.com/davner/dotfiles/commit/a9a4c68c0b552f0b954d19a6309cdf490781d195))
 
 ## 2026-08-14
 
-- **Docs** Regenerate the changelog ([`dc2daad`](https://github.com/davner/dotfiles/commit/dc2daad0d5b050c81c20985c504639e9ca4fb441))
 - **Fixed** test: Stop the status line windows landing on a floor boundary ([`8a8a315`](https://github.com/davner/dotfiles/commit/8a8a315eff7cda4369614a859b872f14400ea919))
-- **Docs** Regenerate the changelog ([`91a4f6b`](https://github.com/davner/dotfiles/commit/91a4f6b468544e398f0df426e21322cfcb9c30c3))
 - **Added** agents: Rule out brute force and unmaintained dependencies ([`fd5f5b9`](https://github.com/davner/dotfiles/commit/fd5f5b9e5ca45ddef1f1e59d6a705677c19de0b9))
-- **Docs** Regenerate the changelog ([`2e87f53`](https://github.com/davner/dotfiles/commit/2e87f537854b22913571b9ac27a6f03085d0be9e))
 - **Added** agents: Add review-triage for reviews arriving from GitHub ([`efeb92b`](https://github.com/davner/dotfiles/commit/efeb92b3ced59f57849a8a24e371cb8b871a4185))
-- **Docs** Regenerate the changelog ([`a4f4af5`](https://github.com/davner/dotfiles/commit/a4f4af501a0789b47df49270d92b2b3e8b0ec90d))
 - **Docs** Group the changelog by day instead of by release ([`f8adb10`](https://github.com/davner/dotfiles/commit/f8adb10601c8748ab1018d3741ac28abcac2abc7))
-- **Docs** Regenerate the changelog ([`180b924`](https://github.com/davner/dotfiles/commit/180b92471d6eed2db6049e2370460908ff9a03d5))
 - **CI** Regenerate the changelog on every push to main ([`99fa1d1`](https://github.com/davner/dotfiles/commit/99fa1d1122466d2d526130f5bf0b3c94ad4f92c8))
-- **Docs** Regenerate the changelog ([`02458ff`](https://github.com/davner/dotfiles/commit/02458ffa750601b5f5906bec742bcd969dd8e0e1))
 - **CI** Open a pull request when flake inputs move ([`84473cf`](https://github.com/davner/dotfiles/commit/84473cf6a287c36c5a917b9687c020c1321aabfa))
 - **Added** statusline: Show session and weekly rate limits ([`a1e1526`](https://github.com/davner/dotfiles/commit/a1e1526e114287e911b19a93f78eb3be5a09bcef))
 - **Added** Use the right git identity per machine ([`36701b0`](https://github.com/davner/dotfiles/commit/36701b0cddc2646d0b1db8271a6e2fbc9829dab3))
-- **Docs** Rewrite the README around tables ([`0430f58`](https://github.com/davner/dotfiles/commit/0430f58269131c7d600611d55db66483269105ab))
 - **Docs** Generate CHANGELOG.md from the commit history ([`47b8c60`](https://github.com/davner/dotfiles/commit/47b8c603933244626e35472472894f5871a54eae))
-- **CI** Check every push, build everything weekly ([`8148786`](https://github.com/davner/dotfiles/commit/81487865f72786f2a0a80d299d8f443632d8189a))
+- **Docs** Rewrite the README around tables ([`0430f58`](https://github.com/davner/dotfiles/commit/0430f58269131c7d600611d55db66483269105ab))
 - **Tests** Cover the scripts, the flake wiring and the guard rails ([`d136639`](https://github.com/davner/dotfiles/commit/d136639abcf5a70aaa80dbce182dfd0b1a57ef61))
+- **CI** Check every push, build everything weekly ([`8148786`](https://github.com/davner/dotfiles/commit/81487865f72786f2a0a80d299d8f443632d8189a))
 - **Added** Build the configuration for whoever runs the scripts ([`a8864df`](https://github.com/davner/dotfiles/commit/a8864dff5585c9fe2e3c6937a04f6e2cbbdc06e1))
 - **Docs** agents: Route the new specialists and bound the pipeline ([`151e6fc`](https://github.com/davner/dotfiles/commit/151e6fc7dace3084f9eed68aff31c6baf346405d))
 - **Added** agents: Add five specialists to the subagent roster ([`06d2a9d`](https://github.com/davner/dotfiles/commit/06d2a9d0822c919c2e6bf9b24f43c7ec5fc09cfb))
-- **Docs** Correct how agent skills get installed ([`362ff42`](https://github.com/davner/dotfiles/commit/362ff424e26a8c2c4fca4c8efa842de99aef66bd))
 - **Fixed** Restore the configured username to danavner ([`ae95ca4`](https://github.com/davner/dotfiles/commit/ae95ca408eda3ecc2ffc58c66d369eff439003ba))
+- **Docs** Correct how agent skills get installed ([`362ff42`](https://github.com/davner/dotfiles/commit/362ff424e26a8c2c4fca4c8efa842de99aef66bd))
 - **Added** agents: Add subagent roster and symlink it from home-manager ([`bc79caa`](https://github.com/davner/dotfiles/commit/bc79caac96b30a9d473a9f9ef8f94b406d604a8b))
 
 ## 2026-08-13
@@ -190,13 +108,13 @@ any more. ([`0f89af1`](https://github.com/davner/dotfiles/commit/0f89af15abec3c4
 
 ## 2026-08-12
 
-- **Added** Enable gh with ssh git protocol ([`9ac9e3e`](https://github.com/davner/dotfiles/commit/9ac9e3e495946fd726cadb74318b72e81684981a))
 - **Chore** Set user to danavner ([`0a1e780`](https://github.com/davner/dotfiles/commit/0a1e780ee2d5b9c9fdf924996d56aa37fff7e898))
-- **Chore** Ignore herdr release-notes cache ([`76c4259`](https://github.com/davner/dotfiles/commit/76c4259510b27b0865774177765847130ad6a6a2))
+- **Added** Enable gh with ssh git protocol ([`9ac9e3e`](https://github.com/davner/dotfiles/commit/9ac9e3e495946fd726cadb74318b72e81684981a))
 - **Fixed** Nest git init.defaultBranch under settings ([`2d69925`](https://github.com/davner/dotfiles/commit/2d6992543776ee0ab2f43662011a8d4dc9fc2a96))
-- **Docs** List agent skills that should be installed ([`6a7dca3`](https://github.com/davner/dotfiles/commit/6a7dca32fa744df54b5d0e1c95794ce92989952c))
-- **Chore** Use opus 1m context, xhigh effort, and agent push notifications ([`697e4b3`](https://github.com/davner/dotfiles/commit/697e4b3dd7a36bcf83e8522c72d8630cd3914db4))
+- **Chore** Ignore herdr release-notes cache ([`76c4259`](https://github.com/davner/dotfiles/commit/76c4259510b27b0865774177765847130ad6a6a2))
 - **Chore** Enable claude remote control, git lfs, and main as default branch ([`87778c8`](https://github.com/davner/dotfiles/commit/87778c875f8bd591ee464cb61bbfd3a5a9b49aea))
+- **Chore** Use opus 1m context, xhigh effort, and agent push notifications ([`697e4b3`](https://github.com/davner/dotfiles/commit/697e4b3dd7a36bcf83e8522c72d8630cd3914db4))
+- **Docs** List agent skills that should be installed ([`6a7dca3`](https://github.com/davner/dotfiles/commit/6a7dca32fa744df54b5d0e1c95794ce92989952c))
 
 ## 2026-07-29
 

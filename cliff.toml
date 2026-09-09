@@ -16,15 +16,22 @@ machine's configuration, not a package anyone installs a version of.
 
 # A date heading gets emitted whenever the date changes while walking the
 # commits, because the template context has no date field to group_by: only
-# committer.timestamp, an integer. Walking in commit order means each date
-# appears as one contiguous run, so one heading each.
+# committer.timestamp, an integer. The sort is what makes that yield one heading
+# per date: git's walk order interleaves a merged branch's older commits among
+# newer ones, so without it the same date reaches the loop in several separate
+# runs and gets a heading for each.
+#
+# Merge commits are filtered out. A merge carries no change of its own, since the
+# branch's commits are already in the walk, and a GitHub "Merge pull request #N"
+# subject is unconventional, which leaves commit.message holding the entire
+# message and inlines the body into the entry.
 #
 # The type ends up as a label on the entry rather than a section heading. At a
 # handful of commits a day, per-day type sections would almost all hold one
 # line.
 body = """
 {% set_global heading = "" %}\
-{% for commit in commits %}\
+{% for commit in commits | filter(attribute="merge_commit", value=false) | sort(attribute="committer.timestamp") | reverse %}\
 {% set day = commit.committer.timestamp | date(format="%Y-%m-%d") %}\
 {% if day != heading %}
 ## {{ day }}
@@ -43,7 +50,8 @@ trim = true
 conventional_commits = true
 # A commit that predates the convention still belongs in the history.
 filter_unconventional = false
-filter_commits = false
+# Load-bearing despite the template sorting: Tera's sort is stable, and enough
+# commits here share a timestamp second that this is what breaks those ties.
 sort_commits = "newest"
 
 commit_parsers = [
@@ -51,6 +59,9 @@ commit_parsers = [
   { message = "^fix", group = "Fixed" },
   { message = "^perf", group = "Performance" },
   { message = "^refactor", group = "Changed" },
+  # The changelog bot commits on every push to main, so its own commits are the
+  # most numerous kind in the history and describe nothing a reader wants.
+  { message = "^docs: regenerate the changelog$", skip = true },
   { message = "^docs", group = "Docs" },
   { message = "^test", group = "Tests" },
   { message = "^ci", group = "CI" },
