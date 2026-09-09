@@ -9,6 +9,7 @@ machine's configuration, not a package anyone installs a version of.
 
 ## 2026-09-09
 
+- **Fixed** claude: Stop /config writes reaching the repo ([`8204b0f`](https://github.com/davner/dotfiles/commit/8204b0fee4a0e6b5ccbf234a6a106d31b76fc1f2))
 - **Added** ticket: Emit pasteable markdown and link issues ([`b77df36`](https://github.com/davner/dotfiles/commit/b77df36c0a24ba2b2e70681396da2ff0a8395903))
 - **Fixed** changelog: One heading per date, no merge noise ([`7676c67`](https://github.com/davner/dotfiles/commit/7676c67379f62d36507e545ed84166fa82596ce5))
 - **Added** agents: Consult researcher mid-ticket ([`a1d0584`](https://github.com/davner/dotfiles/commit/a1d05844a0cf222cd3543cd46c44450f335cc959))
