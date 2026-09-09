@@ -36,7 +36,12 @@ every other transition.
    Status IN_PROGRESS. Recovery after a restart or lost writer: the ticket
    file plus `git log main..<id>` is the whole state - boot a cold writer
    into the existing worktree with the spec, the verdicts to date, and that
-   log.
+   log. Mid-ticket, spawn `researcher` and relay its report whenever the
+   writer hits something the repo cannot answer - whether an approach is
+   possible, how a library actually behaves, or whether a dependency it is
+   about to take is still maintained. The writer idles while it runs. Reading
+   a tool's own docs is what that check would otherwise degrade into, and a
+   README never says the project was abandoned.
 
 3. **On DONE** - if the spec changes behavior, first send `test-writer` into
    the worktree to author the new coverage and commit it to the branch. The
