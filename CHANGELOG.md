@@ -9,6 +9,17 @@ machine's configuration, not a package anyone installs a version of.
 
 ## 2026-09-09
 
+- **Other** Merge pull request #1 from davner/flake-update-2026-09-07
+
+chore(deps): nix flake update ([`44ca1f1`](https://github.com/davner/dotfiles/commit/44ca1f1d3cef8a0474e3e5f9e4f53aba374edb65))
+
+## 2026-09-07
+
+- **Chore** deps: Nix flake update ([`dee9699`](https://github.com/davner/dotfiles/commit/dee9699f17cfd772c109de0d24a51bae07797633))
+
+## 2026-09-09
+
+- **Docs** Regenerate the changelog ([`43f9af3`](https://github.com/davner/dotfiles/commit/43f9af31027c171c155fcd58bd734a20229961e3))
 - **Added** agents: Route implementation work through a ticket loop ([`edc1f5d`](https://github.com/davner/dotfiles/commit/edc1f5dd34b5d9d25352ace36bf0110c7bdbc311))
 - **Added** agents: Add comment-auditor and its /comment-audit command ([`1ade5ae`](https://github.com/davner/dotfiles/commit/1ade5ae911d5109d5ef0eba482635f5fa5b32ff7))
 
