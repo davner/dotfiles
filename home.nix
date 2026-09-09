@@ -118,6 +118,10 @@ in
   # the subagent roster. one file per agent, claude picks them up by name.
   home.file.".claude/agents".source =
     config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.claude/agents";
+  # slash commands, picked up by filename the same way. this repo owns the
+  # whole directory, so unlike skills it can link as one.
+  home.file.".claude/commands".source =
+    config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.claude/commands";
   # Skills are linked one at a time, never as the whole `skills/` directory:
   # ~/.claude/skills also holds the hand-installed ones, and a directory-level
   # link would displace every one of them.

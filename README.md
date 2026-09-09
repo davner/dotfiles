@@ -116,6 +116,7 @@ applies them. They run in every project, not just this one.
 | `a11y-auditor` | Audits a running UI against WCAG, by keyboard and screen reader | no |
 | `review-triage` | Turns an external PR review into a plan, checking each claim | no |
 | `doc-auditor` | Finds plans, TODOs and READMEs that stopped being true | no |
+| `comment-auditor` | Reads every comment in a scope against its code, triaging by number | no |
 | `fresh-eyes` | Uses the product cold and scores how far a stranger gets | no |
 | `researcher` | Answers what the repo cannot, with citations | no |
 | `git-workflow` | Staging, commit messages, branches. Git only, never code | no |
