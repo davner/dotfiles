@@ -22,6 +22,13 @@ IN_PROGRESS -> DONE -> (REWORK -> IN_PROGRESS)* -> READY -> CLOSED, ESCALATED
 reachable from any REWORK. The writer owns IN_PROGRESS -> DONE; the lead owns
 every other transition.
 
+Output to the user: anything meant to be pasted elsewhere, the Shortcut title
+and description most of all, goes inside a fenced block as raw markdown, since
+rendering it in the terminal is what destroys the source that gets pasted. Any
+issue or PR named anywhere in the loop's output is a markdown link to it, never
+a bare number, because a bare number is not clickable and does not say which
+repo it belongs to.
+
 1. **new <task>** - consult `researcher`/`architect` first only when the
    design turns on an unknown or has more than one plausible shape. Write the
    spec: a paste-ready Shortcut **Title** and **Description**, then goal,
