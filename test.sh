@@ -120,6 +120,18 @@ if command -v actionlint >/dev/null 2>&1; then
 else
   skip "actionlint (nix develop --command ./test.sh installs it)"
 fi
+# users.sh parses flake.nix by shape, so a reformat is exactly the change that
+# could break it silently. Gating the format keeps that shape from drifting one
+# hand edit at a time.
+if command -v nixfmt >/dev/null 2>&1; then
+  if err="$(cd "$DIR" && git ls-files -z '*.nix' | xargs -0 nixfmt --check 2>&1)"; then
+    ok "nixfmt"
+  else
+    bad "nixfmt" "$err (run: nix fmt)"
+  fi
+else
+  skip "nixfmt (nix develop --command ./test.sh installs it)"
+fi
 # A broken template would otherwise only surface the next time someone
 # regenerated the changelog, which is rarely the same day it broke.
 if command -v git-cliff >/dev/null 2>&1; then

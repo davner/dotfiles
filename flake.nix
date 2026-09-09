@@ -14,7 +14,14 @@
     nix-homebrew.url = "github:zhaofengli/nix-homebrew";
   };
 
-  outputs = inputs@{ self, nix-darwin, nix-homebrew, home-manager, nixpkgs }:
+  outputs =
+    inputs@{
+      self,
+      nix-darwin,
+      nix-homebrew,
+      home-manager,
+      nixpkgs,
+    }:
     let
       # Every macOS username this repo can build for. This is an attrset, not a
       # single value, so one checkout serves the work machine and the personal
@@ -29,8 +36,14 @@
       # every entry on macos-latest, which is arm64 - an x86_64-darwin record
       # would fail CI with no builder available.
       users = {
-        "danavner"  = { email = "ldpavner@gmail.com";    system = "aarch64-darwin"; };
-        "dan.avner" = { email = "dan.avner@noirlab.edu"; system = "aarch64-darwin"; };
+        "danavner" = {
+          email = "ldpavner@gmail.com";
+          system = "aarch64-darwin";
+        };
+        "dan.avner" = {
+          email = "dan.avner@noirlab.edu";
+          system = "aarch64-darwin";
+        };
       }; # end users - bootstrap.sh appends new usernames above this line
 
       # darwin-rebuild splits its flake attribute on ".", so a username
@@ -42,55 +55,76 @@
 
       # Every configured machine is aarch64-darwin today, but the dev shell is
       # useful on either Mac.
-      forEachDarwin = f: builtins.listToAttrs (
-        map (system: { name = system; value = f nixpkgs.legacyPackages.${system}; })
-          [ "aarch64-darwin" "x86_64-darwin" ]
-      );
+      forEachDarwin =
+        f:
+        builtins.listToAttrs (
+          map
+            (system: {
+              name = system;
+              value = f nixpkgs.legacyPackages.${system};
+            })
+            [
+              "aarch64-darwin"
+              "x86_64-darwin"
+            ]
+        );
 
       # A record's fields are optional, which is what lets `users.sh add` write
       # an empty one and lets the missing-email throw be the thing that speaks.
       # That same tolerance would swallow a typo: `sytem = "x86_64-darwin"` is
       # not an error, it is an ignored key and a silent aarch64 build. So the
       # keys are checked even though the values are not.
-      knownFields = [ "email" "system" ];
-      checkRecord = user: record:
+      knownFields = [
+        "email"
+        "system"
+      ];
+      checkRecord =
+        user: record:
         let
-          unknown = builtins.filter (k: !(builtins.elem k knownFields))
-            (builtins.attrNames record);
+          unknown = builtins.filter (k: !(builtins.elem k knownFields)) (builtins.attrNames record);
         in
-        if unknown == [ ] then record
-        else throw ''
-          flake.nix: user "${user}" has unknown field(s): ${builtins.concatStringsSep ", " unknown}.
-          A record holds only ${builtins.concatStringsSep " and " knownFields}. Check the spelling.'';
+        if unknown == [ ] then
+          record
+        else
+          throw ''
+            flake.nix: user "${user}" has unknown field(s): ${builtins.concatStringsSep ", " unknown}.
+            A record holds only ${builtins.concatStringsSep " and " knownFields}. Check the spelling.'';
 
       # Both scopes get the username and its record: configuration.nix needs
       # the platform, home.nix needs the git address.
-      mkDarwin = user: let cfg = checkRecord user users.${user}; in nix-darwin.lib.darwinSystem {
-        specialArgs = { inherit user cfg; };
-        modules = [
-          ./configuration.nix
-          nix-homebrew.darwinModules.nix-homebrew
-          home-manager.darwinModules.home-manager
-          {
-            home-manager.useGlobalPkgs = true;
-            home-manager.useUserPackages = true;
-            home-manager.extraSpecialArgs = { inherit user cfg; };
-            home-manager.users.${user} = import ./home.nix;
-            # A dotfile that already exists and that this config also manages
-            # gets moved to <name>.backup rather than failing the activation.
-            # Nothing is ever overwritten in place. If the activation later
-            # complains that the .backup itself would be clobbered, that means
-            # an older backup is still sitting there: read it, then delete it.
-            home-manager.backupFileExtension = "backup";
-          }
-        ];
-      };
+      mkDarwin =
+        user:
+        let
+          cfg = checkRecord user users.${user};
+        in
+        nix-darwin.lib.darwinSystem {
+          specialArgs = { inherit user cfg; };
+          modules = [
+            ./configuration.nix
+            nix-homebrew.darwinModules.nix-homebrew
+            home-manager.darwinModules.home-manager
+            {
+              home-manager.useGlobalPkgs = true;
+              home-manager.useUserPackages = true;
+              home-manager.extraSpecialArgs = { inherit user cfg; };
+              home-manager.users.${user} = import ./home.nix;
+              # A dotfile that already exists and that this config also manages
+              # gets moved to <name>.backup rather than failing the activation.
+              # Nothing is ever overwritten in place. If the activation later
+              # complains that the .backup itself would be clobbered, that means
+              # an older backup is still sitting there: read it, then delete it.
+              home-manager.backupFileExtension = "backup";
+            }
+          ];
+        };
     in
     {
       # One configuration per username, e.g. `#danavner` and `#dan-avner`.
       darwinConfigurations = builtins.listToAttrs (
-        map (user: { name = attrFor user; value = mkDarwin user; })
-          (builtins.attrNames users)
+        map (user: {
+          name = attrFor user;
+          value = mkDarwin user;
+        }) (builtins.attrNames users)
       );
 
       # What ./test.sh lints with and what regenerates CHANGELOG.md, pinned by
@@ -102,8 +136,19 @@
           # and test.sh skips those checks without it. macOS has shipped jq at
           # /usr/bin/jq since Sequoia and CI runners carry one, so the tests
           # pass either way - but neither is this flake's to promise.
-          packages = [ pkgs.shellcheck pkgs.actionlint pkgs.git-cliff pkgs.jq ];
+          packages = [
+            pkgs.shellcheck
+            pkgs.actionlint
+            pkgs.git-cliff
+            pkgs.jq
+            pkgs.nixfmt
+          ];
         };
       });
+
+      # `nix fmt` to fix, `nixfmt --check` in test.sh to gate. nixfmt-tree
+      # rather than nixfmt itself: bare nixfmt reads stdin when given no
+      # arguments, so `nix fmt` with no path would format nothing and fail.
+      formatter = forEachDarwin (pkgs: pkgs.nixfmt-tree);
     };
 }

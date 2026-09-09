@@ -1,4 +1,10 @@
-{ config, pkgs, user, cfg, ... }:
+{
+  config,
+  pkgs,
+  user,
+  cfg,
+  ...
+}:
 
 let
   dotfiles = "${config.home.homeDirectory}/.dotfiles";
@@ -8,8 +14,7 @@ let
   # committing work from the wrong address is the whole thing this exists to
   # prevent, and a silent default would do exactly that.
   gitEmail =
-    cfg.email or (throw
-      "home.nix: no git email for \"${user}\". Add one to flake.nix's users.");
+    cfg.email or (throw "home.nix: no git email for \"${user}\". Add one to flake.nix's users.");
 in
 
 {
@@ -18,20 +23,20 @@ in
   home.stateVersion = "24.11";
   home.packages = with pkgs; [
     # cli i use constantly
-    ripgrep   # fast search
-    fd        # fast find
-    fzf       # fuzzy finder
-    jq        # json on the command line
+    ripgrep # fast search
+    fd # fast find
+    fzf # fuzzy finder
+    jq # json on the command line
     lazygit
     neovim
-    shellcheck  # ./test.sh lints with it, and it is worth having on PATH anyway
+    shellcheck # ./test.sh lints with it, and it is worth having on PATH anyway
     nodejs
     pnpm
     uv
     # pulling audio and video off youtube into icloud, see .config/yt-dlp/config
     yt-dlp
-    ffmpeg    # yt-dlp merges, trims and converts through it
-    deno      # the js runtime yt-dlp runs youtube's player challenge in
+    ffmpeg # yt-dlp merges, trims and converts through it
+    deno # the js runtime yt-dlp runs youtube's player challenge in
     # the font everything renders in
     nerd-fonts.hack
   ];
@@ -40,8 +45,8 @@ in
 
   programs.zsh = {
     enable = true;
-    autosuggestion.enable = true;      # ghost text from history
-    syntaxHighlighting.enable = true;  # commands turn green when valid
+    autosuggestion.enable = true; # ghost text from history
+    syntaxHighlighting.enable = true; # commands turn green when valid
     # Shell functions live in a real .zsh file, not in this string. The guard
     # is not paranoia: the file arrives by out-of-store symlink, so a checkout
     # that has moved leaves a dangling link, and an unguarded source would
