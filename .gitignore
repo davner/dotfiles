@@ -5,3 +5,6 @@ result-*
 
 # no-mistakes local validation state - never commit in this public repo
 .no-mistakes/
+
+# ticket-loop state (specs, reports, live worktrees) - local only, never committed
+.tickets/

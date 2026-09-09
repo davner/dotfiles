@@ -159,8 +159,11 @@ route to it, so usually just delegate. What the descriptions cannot carry:
 - Research before designing, when the design turns on something the repo cannot
   answer: `researcher` establishes what is possible, `architect` turns it into a
   plan. Guessing at the design stage is the most expensive place to guess.
-- Design before building: past one file or a new boundary, `architect` plans,
-  `plan-reviewer` reviews, `senior-dev` implements. Revisions go to `architect`.
+- Implementation runs through the ticket loop (`/ticket`): the lead writes the
+  spec, the user approves it with a Shortcut code, a resident `senior-dev` in
+  ticket mode builds it on a ticket branch in its own worktree, and cold review
+  rounds gate it. `architect` plans and `plan-reviewer` reviews as the pre-spec
+  consult when the design is genuinely open; revisions go to `architect`.
 - Review always follows implementation, and fixes go back to the agent that
   writes, never to the reviewer - which is why the reviewing agents cannot write
   files. The find-only agents are unconditional wherever they apply; the writing
@@ -178,18 +181,18 @@ route to it, so usually just delegate. What the descriptions cannot carry:
 
 ### How much of the chain to run
 
-The full chain is for work that is expensive to get wrong, not for everything:
-
 - **A one-line fix, a typo, a rename, a config value** - do it yourself. No
-  agent.
-- **A change confined to one file, where the fix is already obvious** - straight
-  to `senior-dev`, then `code-reviewer`.
-- **A change that crosses files or adds a boundary** - the full chain, starting
-  at `architect`.
+  agent, no ticket.
+- **Everything else that produces code** - the ticket loop (`/ticket`). The
+  user-approved spec is the plan for ordinary work; `architect` and
+  `plan-reviewer` still vet it first when the design is genuinely open.
 - **Anything touching a schema, money, permissions, or data you cannot
-  regenerate** - the full chain, and `migration-safety` is not optional.
+  regenerate** - still a ticket, and `migration-safety` is not optional.
 
-When it is genuinely unclear which of these applies, it is the third one.
+When it is genuinely unclear which of these applies, it is a ticket. Outside
+the loop - fixes from a comment audit, approved `fresh-eyes` items, work the
+user wants done without a ticket - `senior-dev` is still the one writer,
+followed by `code-reviewer`.
 
 ### Finishing work
 
@@ -264,6 +267,12 @@ or rewrites history.
   Write it as `-` bullets, at most two. Past two, or a paragraph instead of
   bullets, needs a reason you can state - a consequence that will not compress
   into a line is exactly that reason. No background essay, no restating the diff.
+
+Inside the `/ticket` loop only, and only in the ticket's worktree: the resident
+writer commits to its ticket branch and rebases that never-pushed branch onto
+main, and the loop's other writing agents commit their own in-ticket work to
+the same branch. Nothing in the loop merges to main, pushes, or deletes a
+branch - those still wait for explicit instruction, always.
 
 ### Change scope
 
