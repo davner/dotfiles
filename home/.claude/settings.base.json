@@ -1,5 +1,4 @@
 {
-  "model": "opus[1m]",
   "hooks": {
     "SessionStart": [
       {
@@ -29,8 +28,6 @@
     "type": "command",
     "command": "~/.claude/statusline.sh"
   },
-  "effortLevel": "high",
   "skipDangerousModePermissionPrompt": true,
-  "theme": "dark-ansi",
   "agentPushNotifEnabled": true
 }

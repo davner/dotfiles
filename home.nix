@@ -9,6 +9,29 @@
 let
   dotfiles = "${config.home.homeDirectory}/.dotfiles";
 
+  # Merges the durable half of Claude Code's user settings into whatever is
+  # already at ~/.claude/settings.json. Base wins on the keys it names, so a
+  # hook or statusline change reaches every machine on the next rebuild; every
+  # other key survives untouched, which is what lets /config keep ownership of
+  # model, effortLevel and theme without a write reaching this repo. Adding one
+  # of those three to settings.base.json would revert it on every rebuild.
+  claudeSettingsMerge = pkgs.writeShellScript "claude-settings-merge" ''
+    set -eu
+    target="$HOME/.claude/settings.json"
+    base="${dotfiles}/home/.claude/settings.base.json"
+    if [ ! -f "$base" ]; then
+      echo "claude-settings-merge: $base is missing" >&2
+      exit 1
+    fi
+    mkdir -p "$(dirname "$target")"
+    # A leftover link from when this file was linked into the repo. Writes
+    # through it land in the working tree, which is what this replaces.
+    if [ -L "$target" ]; then rm -f "$target"; fi
+    if [ ! -f "$target" ]; then printf '%s\n' '{}' >"$target"; fi
+    merged="$(${pkgs.jq}/bin/jq -s '.[0] * .[1]' "$target" "$base")"
+    printf '%s\n' "$merged" >"$target"
+  '';
+
   # Which address git commits as, per machine. Same name either way; only the
   # address changes. A user record without one fails the build on purpose:
   # committing work from the wrong address is the whole thing this exists to
@@ -107,9 +130,15 @@ in
   # linked as a directory so the two cannot drift apart.
   home.file.".config/yt-dlp".source =
     config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.config/yt-dlp";
-  home.file.".claude/settings.json".source =
-    config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.claude/settings.json";
-  # settings.json points at this by path, so it has to land in ~/.claude too.
+  # ~/.claude/settings.json is deliberately NOT linked here. It is the only
+  # user-scope file Claude Code reads, and /config, /model and /effort all
+  # persist into it, so a link would route every mid-session preference change
+  # into this repo. settings.base.json carries the durable half instead, merged
+  # in by an activation step rather than linked.
+  home.activation.claudeSettings = config.lib.dag.entryAfter [
+    "writeBoundary"
+  ] "run ${claudeSettingsMerge}";
+  # settings.base.json points at this by path, so it has to land in ~/.claude too.
   home.file.".claude/statusline.sh".source =
     config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.claude/statusline.sh";
   # likewise the naming script: the cc function and a SessionStart hook both
