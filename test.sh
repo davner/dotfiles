@@ -737,11 +737,8 @@ $u
     bad "the Brewfile evaluates" "$(grep -v '^warning:' "$WORK/stderr" | head -3)"
   else
     # A cask marked auto_updates is never "outdated" to brew bundle, so
-    # onActivation.upgrade skips it unless the entry is greedy. miniforge is
-    # the only one of these that self-updates; greedy on the others would race
-    # their updaters for no reason.
-    contains "miniforge is greedy, or upgrade silently skips it" \
-      "$brewfile" 'cask "miniforge", greedy: true'
+    # onActivation.upgrade skips it unless the entry is greedy. Neither of
+    # these self-updates, so greedy would only race their own updaters.
     for c in wezterm claude-code; do
       if printf '%s' "$brewfile" | grep -qE "cask \"$c\".*greedy"; then
         bad "$c is not greedy" "greedy on a cask that does not self-update races its own updater"

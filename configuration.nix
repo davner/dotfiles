@@ -81,12 +81,6 @@
     casks = [
       "wezterm"
       "claude-code"
-      # A cask that updates itself is never "outdated" to `brew bundle`, so
-      # `upgrade = true` above skips it silently. `greedy` is what actually
-      # upgrades it. Only miniforge needs this - the other two are not
-      # self-updating, and greedy on an app that updates itself can race its
-      # own updater.
-      { name = "miniforge"; greedy = true; }
     ];
   };
 }
