@@ -149,6 +149,10 @@ in
   # runs inside subagents too, which is where the code actually gets written.
   home.file.".claude/comment-audit.sh".source =
     config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.claude/comment-audit.sh";
+  # a PreToolUse hook on Bash, reached by path the same way. it blocks rather
+  # than nudges, so it has to exist before the tool call it judges.
+  home.file.".claude/guard-bash.sh".source =
+    config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.claude/guard-bash.sh";
   # the subagent roster. one file per agent, claude picks them up by name.
   home.file.".claude/agents".source =
     config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.claude/agents";

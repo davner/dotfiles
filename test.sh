@@ -98,7 +98,7 @@ run() { # run a repo script with the stubs in place; never touches real $HOME
 
 SCRIPTS=(bootstrap.sh rebuild.sh users.sh test.sh
   home/.claude/statusline.sh home/.claude/session-name.sh
-  home/.claude/comment-audit.sh)
+  home/.claude/comment-audit.sh home/.claude/guard-bash.sh)
 
 # --------------------------------------------------------------------------
 section "syntax and lint"
@@ -131,6 +131,80 @@ if command -v nixfmt >/dev/null 2>&1; then
   fi
 else
   skip "nixfmt (nix develop --command ./test.sh installs it)"
+fi
+
+# --------------------------------------------------------------------------
+section "bash guard hook"
+# The rules this enforces are absolute in home/AGENTS.md, which is exactly why
+# they are a hook: a prompt is advice and a hook is a decision. The allow cases
+# matter more than the block cases - a guard that blocks ordinary work is one
+# that gets switched off.
+GUARD="$DIR/home/.claude/guard-bash.sh"
+if ! command -v jq >/dev/null 2>&1; then
+  skip "guard-bash.sh (jq not found)"
+elif [ ! -x "$GUARD" ]; then
+  bad "guard-bash.sh is executable" "$GUARD"
+else
+  # Exit 2 is the only code that blocks a PreToolUse call; 0 lets it through.
+  guard() { printf '{"tool_name":"Bash","tool_input":{"command":%s}}' \
+    "$(printf '%s' "$1" | jq -Rs .)" | "$GUARD" >/dev/null 2>&1; echo $?; }
+
+  blocked=""
+  while IFS= read -r c; do
+    [ -n "$c" ] || continue
+    [ "$(guard "$c")" = "2" ] || blocked="$blocked
+    let through: $c"
+  done <<'CASES'
+git add .
+git add -A
+git add --all
+cd src && git add .
+git push --force origin main
+git push --force-with-lease
+git push -f
+git clean -dfx
+git clean -xfd
+CASES
+  if [ -z "$blocked" ]; then
+    ok "the absolute rules are blocked"
+  else
+    bad "the absolute rules are blocked" "$blocked"
+  fi
+
+  # A commit message spans lines, so this one is checked against the whole
+  # command rather than the segment its `git commit` started on.
+  trailer='git commit -m "feat: x
+
+Co-Authored-By: Claude <n@a.com>"'
+  eq "an AI trailer in a commit message is blocked" "2" "$(guard "$trailer")"
+
+  allowed=""
+  while IFS= read -r c; do
+    [ -n "$c" ] || continue
+    [ "$(guard "$c")" = "0" ] || allowed="$allowed
+    blocked: $c"
+  done <<'CASES'
+git add home/.claude/guard-bash.sh
+git add ./src/foo.ts
+git add -u home/AGENTS.md
+git status --short
+git log --oneline -5
+git push origin main
+git clean -fd
+git commit -m "fix: a real message"
+echo "git add ."
+nix develop --command ./test.sh
+CASES
+  if [ -z "$allowed" ]; then
+    ok "ordinary work is not blocked"
+  else
+    bad "ordinary work is not blocked" "$allowed"
+  fi
+fi
+if grep -q 'guard-bash.sh' "$DIR/home/.claude/settings.base.json"; then
+  ok "settings.base.json registers it on PreToolUse"
+else
+  bad "settings.base.json registers it on PreToolUse" "the hook would never fire"
 fi
 
 # --------------------------------------------------------------------------
