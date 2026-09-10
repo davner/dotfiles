@@ -17,6 +17,12 @@ result another agent handed you is that agent's claim, not yours - attribute
 it, or verify it before asserting it. The built-in `Explore` and `Plan` agents
 never see this file, so treat what they return as leads to check, not findings.
 
+A failure you meet in a fresh worktree or checkout is not evidence about your
+change until the same gate has run at the base commit. Run it there first: one
+that fails on both is the environment, and CI green on the same SHA settles
+which. Reporting a pre-existing failure as your own regression spends a rework
+round on a defect that was never in the diff.
+
 End every report to a caller with a ledger: two lists, no prose - what you
 verified by running or reading it, and what you inferred or took on trust. Your
 caller relays your work to a human and is bound to treat your findings as your
@@ -73,6 +79,11 @@ stashed, a config file you are mid-way through discussing gets rewritten. A
 reading of mutable state goes stale the moment you stop looking at it, and how
 stale is not something you can feel.
 
+`main` is two things, and only one of them is current. The user's local `main`
+is a checked-out branch that drifts and is routinely behind; `origin/main` after
+a fetch is what "current main" means. Rebase onto `origin/main`, read its tip in
+the command that rebases, and leave the user's local branch where they put it.
+
 Any operation that rewrites or overwrites - `amend`, `reset`, `rebase`,
 force-write, `stash pop`, overwriting a file you read earlier - re-reads the
 exact state it depends on **in the same tool call that performs it**, never from
@@ -83,6 +94,11 @@ recoverable only because `amend` happens to preserve the tree.
 The same holds for what you report. Live state - a running server, a port, a
 pid, a branch tip - is not a fact you can hand someone in a summary they read
 later. Say when you observed it, and give the command that re-establishes it.
+A server also outlives the agent that started it, so a dead agent leaves a live
+listener holding its port. Before a round of agents needs a running app the lead
+starts one instance and hands out its URL: agents that each start their own on a
+fixed port collide, and the loser either fails to bind or silently talks to the
+winner's build. Kill the listeners you own before starting a round.
 
 ### Use what is already here
 
@@ -270,9 +286,25 @@ or rewrites history.
 
 Inside the `/ticket` loop only, and only in the ticket's worktree: the resident
 writer commits to its ticket branch and rebases that never-pushed branch onto
-main, and the loop's other writing agents commit their own in-ticket work to
-the same branch. Nothing in the loop merges to main, pushes, or deletes a
-branch - those still wait for explicit instruction, always.
+`origin/main`, and the loop's other writing agents commit their own in-ticket
+work to the same branch. Nothing in the loop merges to main, pushes, or deletes
+a branch - those still wait for explicit instruction, always.
+
+### Worktrees
+
+A ticket worktree lives inside the main checkout, so it is not the isolated tree
+it looks like. Anything that finds its configuration by walking upward - a
+bundler resolving path aliases, a linter or formatter locating its config, a
+package manager looking for a workspace root - walks out of the worktree root
+and into the main tree. A main tree that is uninstalled, mid-refactor, or
+holding a stale generated file therefore produces failures inside the worktree
+that read exactly like defects in the branch. Keeping the main tree in a working
+state while a ticket is in flight is the fix; the baseline run is how you tell
+the two apart before spending a round on it.
+
+Gitignored files do not exist in a new worktree either, so a build's
+prerequisites - installed dependencies, generated code, local environment files
+- are absent there until something creates them.
 
 ### Change scope
 

@@ -13,9 +13,11 @@ Conventions: the user supplies the ticket code (e.g. `sc-1234`) from Shortcut.
 id = `<code>-<slug>`, branch = id, worktree = `.tickets/<id>/tree/`, ticket
 file = `.tickets/<id>/ticket.md`. Absolute paths in every agent prompt,
 because gitignored files do not appear inside a worktree. Commit scope = the
-code. First use in a repo: add `.tickets/` to its .gitignore and name that
-change in the summary. Never run `git clean -dfx` in the main tree while a
-ticket is in flight - it deletes live worktrees. Ticket frontmatter: id,
+code. Check `.tickets/` is in the repo's .gitignore at the start of every
+ticket, not only the first, and name the change in the summary when you add
+it: the entry can be reverted between tickets, and without it a stray
+`git add .` stages a live worktree. Never run `git clean -dfx` in the main
+tree while a ticket is in flight - it deletes them. Ticket frontmatter: id,
 title, code, branch, worktree, status, round, created; sections `## Spec`,
 `## Reports` (the writer's), `## Verdicts`, `## Handoff`. Status: OPEN ->
 IN_PROGRESS -> DONE -> (REWORK -> IN_PROGRESS)* -> READY -> CLOSED, ESCALATED
@@ -39,8 +41,10 @@ repo it belongs to.
 2. **start <id>** - create the ticket file (status OPEN), then
    `git worktree add .tickets/<id>/tree -b <id> main`. Boot `senior-dev` in
    the background, model opus, its prompt carrying the spec inline, the
-   absolute worktree and ticket-file paths, the branch, and the ticket code.
-   Status IN_PROGRESS. Recovery after a restart or lost writer: the ticket
+   absolute worktree and ticket-file paths, the branch, the ticket code, and
+   the repo's install and codegen sequence, since a new worktree starts
+   without any of the gitignored artifacts a build needs. Status IN_PROGRESS.
+   Recovery after a restart or lost writer: the ticket
    file plus `git log main..<id>` is the whole state - boot a cold writer
    into the existing worktree with the spec, the verdicts to date, and that
    log. Mid-ticket, spawn `researcher` and relay its report whenever the
@@ -72,8 +76,9 @@ repo it belongs to.
    the comment rows to the same resident writer and bump `round`. After 3
    failed rounds: status ESCALATED, present the full history, stop.
 
-5. **On ACCEPT** - ask the writer for handoff: rebase onto current main in
-   its worktree, re-run the suite. A conflicted rebase re-enters review.
+5. **On ACCEPT** - ask the writer for handoff: fetch, rebase onto
+   `origin/main` in its worktree, re-run the suite. A conflicted rebase
+   re-enters review.
    Then status READY: record the branch tip and suite result under
    `## Handoff` and report to the user - the branch is the deliverable, and
    push, PR, merge, and deletion all wait for their word.
