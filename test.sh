@@ -134,6 +134,37 @@ else
 fi
 
 # --------------------------------------------------------------------------
+section "ticket loop"
+# The timings file is append-only and compared across tickets, so its columns
+# are a contract: reordering one silently invalidates every row already
+# written. Pinning the header here makes changing it a deliberate act.
+TICKET_MD="$DIR/home/.claude/commands/ticket.md"
+TIMINGS_HEADER="$(printf 'ticket\tphase\tround\tagent\tstarted\tended\tseconds')"
+if grep -qF "$TIMINGS_HEADER" "$TICKET_MD"; then
+  ok "the timings header is the agreed columns, tab separated"
+else
+  bad "the timings header is the agreed columns, tab separated" \
+    "ticket.md no longer documents: $TIMINGS_HEADER"
+fi
+missing=""
+for phase in spec approval setup writer tests review handoff; do
+  grep -qF "\`$phase\`" "$TICKET_MD" || missing="$missing $phase"
+done
+if [ -z "$missing" ]; then
+  ok "every timing phase is named in ticket.md"
+else
+  bad "every timing phase is named in ticket.md" "undocumented:$missing"
+fi
+# The lead starts one app and hands out the URL. Two agents each starting their
+# own collide on the port, which reads as a defect in the branch.
+if grep -q 'each starting their own collide' "$TICKET_MD"; then
+  ok "frontend review shares one app instance"
+else
+  bad "frontend review shares one app instance" \
+    "ui-verifier and a11y-auditor would each start one"
+fi
+
+# --------------------------------------------------------------------------
 section "bash guard hook"
 # The rules this enforces are absolute in home/AGENTS.md, which is exactly why
 # they are a hook: a prompt is advice and a hook is a decision. The allow cases

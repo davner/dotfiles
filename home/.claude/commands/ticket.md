@@ -31,6 +31,37 @@ issue or PR named anywhere in the loop's output is a markdown link to it, never
 a bare number, because a bare number is not clickable and does not say which
 repo it belongs to.
 
+Timings: the lead appends one tab-separated row to `.tickets/timings.tsv` as
+each phase ends, creating the file with this header when it is absent:
+
+```
+ticket	phase	round	agent	started	ended	seconds
+```
+
+Timestamps are `date -u +%Y-%m-%dT%H:%M:%SZ`. `round` is `0` outside a round,
+`agent` is `-` where none applies. Phases: `spec` (the lead writing it),
+`approval` (waiting on the user's ticket code), `setup` (worktree, install,
+codegen), `writer`, `tests`, `review` (one row per reviewer, named in `agent`),
+`handoff`. The columns are fixed and append-only: reordering one or inserting
+another makes every row written before it unreadable, and comparison across
+tickets is the only reason the file exists. It lives under `.tickets/`, so it is
+never committed.
+
+Optimising this loop later: read `.tickets/timings.tsv` first and say which row
+totals drove the change - the loop is not to be tuned on a hunch. What each
+finding licenses:
+
+- `review` rows dominate, and rounds after the first are most of that - scope
+  rounds >= 2 to `git diff` since the previous round's tip instead of the whole
+  diff, keeping the full diff for round 1.
+- One reviewer's rows dominate the others - re-run only the reviewers that
+  found something, plus `code-reviewer`, and re-run a passed reviewer only when
+  the fix touched files in its domain.
+- `setup` dominates - move install and codegen into a `WorktreeCreate` hook so
+  a cold worktree is off the critical path.
+- `approval` dominates - the spec gate is working as designed and the loop is
+  not what is slow. Change nothing here.
+
 1. **new <task>** - consult `researcher`/`architect` first only when the
    design turns on an unknown or has more than one plausible shape. Write the
    spec: a paste-ready Shortcut **Title** and **Description**, then goal,
@@ -66,9 +97,12 @@ repo it belongs to.
      the diff introduced or changed join the must-fix list; rows on
      pre-existing comments are reported to the user and left alone.
    - When the diff warrants: `migration-safety` (any migration - mandatory),
-     `ui-verifier` + `a11y-auditor` (frontend - they start the app from the
-     worktree). `debugger` and `docs-writer` on their own triggers,
-     sequential like test-writer.
+     `ui-verifier` + `a11y-auditor` (frontend). The lead starts one instance
+     of the app from the worktree and hands both agents that URL and the time
+     it was observed; two agents each starting their own collide on the port,
+     and the loser either fails to bind or reads the winner's build.
+     `debugger` and `docs-writer` on their own triggers, sequential like
+     test-writer.
    Record each verdict verbatim under `## Verdicts` with the round number.
 
 4. **Verdict** - ACCEPT is APPROVE with every score >= 90 and no Blocking
