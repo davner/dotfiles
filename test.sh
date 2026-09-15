@@ -156,13 +156,13 @@ if [ -z "$missing" ]; then
 else
   bad "every timing phase is named in ticket.md" "undocumented:$missing"
 fi
-# The lead starts one app and hands out the URL. Two agents each starting their
-# own collide on the port, which reads as a defect in the branch.
-if grep -q 'each starting their own collide' "$TICKET_MD"; then
-  ok "frontend review shares one app instance"
+# The lead starts one app and hands out the URL, so no agent races another
+# for the port - a lost race reads as a defect in the branch.
+if grep -q 'never race to' "$TICKET_MD"; then
+  ok "the lead hands the review round one app instance"
 else
-  bad "frontend review shares one app instance" \
-    "ui-verifier and a11y-auditor would each start one"
+  bad "the lead hands the review round one app instance" \
+    "ticket.md no longer says the lead starts the app and shares its URL"
 fi
 
 # --------------------------------------------------------------------------

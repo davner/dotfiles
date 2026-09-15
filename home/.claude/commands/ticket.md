@@ -11,18 +11,34 @@ the ticket's worktree.
 
 Conventions: the user supplies the ticket code (e.g. `sc-1234`) from Shortcut.
 id = `<code>-<slug>`, branch = id, worktree = `.tickets/<id>/tree/`, ticket
-file = `.tickets/<id>/ticket.md`. Absolute paths in every agent prompt,
+file = `.tickets/<id>.md` - at the top level of `.tickets/`, outside the
+`<id>/` folder, so deleting a ticket's worktree folder never takes the spec
+and reports with it. Absolute paths in every agent prompt,
 because gitignored files do not appear inside a worktree. Commit scope = the
 code. Check `.tickets/` is in the repo's .gitignore at the start of every
 ticket, not only the first, and name the change in the summary when you add
 it: the entry can be reverted between tickets, and without it a stray
 `git add .` stages a live worktree. Never run `git clean -dfx` in the main
 tree while a ticket is in flight - it deletes them. Ticket frontmatter: id,
-title, code, branch, worktree, status, round, created; sections `## Spec`,
+title, code, branch, worktree, status, round, created, phase_started (the
+running phase's start, empty between phases); sections `## Spec`,
 `## Reports` (the writer's), `## Verdicts`, `## Handoff`. Status: OPEN ->
 IN_PROGRESS -> DONE -> (REWORK -> IN_PROGRESS)* -> READY -> CLOSED, ESCALATED
 reachable from any REWORK. The writer owns IN_PROGRESS -> DONE; the lead owns
 every other transition.
+
+Worktrees: a ticket worktree lives inside the main checkout, so it is not the
+isolated tree it looks like. Anything that finds its configuration by walking
+upward - a bundler resolving path aliases, a linter or formatter locating its
+config, a package manager looking for a workspace root - walks out of the
+worktree root and into the main tree. A main tree that is uninstalled,
+mid-refactor, or holding a stale generated file therefore produces failures
+inside the worktree that read exactly like defects in the branch. Keeping the
+main tree in a working state while a ticket is in flight is the fix; the
+baseline run is how you tell the two apart before spending a round on it.
+Gitignored files do not exist in a new worktree either, so a build's
+prerequisites - installed dependencies, generated code, local environment
+files - are absent there until something creates them.
 
 Output to the user: anything meant to be pasted elsewhere, the Shortcut title
 and description most of all, goes inside a fenced block as raw markdown, since
@@ -47,16 +63,18 @@ another makes every row written before it unreadable, and comparison across
 tickets is the only reason the file exists. It lives under `.tickets/`, so it is
 never committed.
 
+A phase is not finished until its row is appended: write the row in the same
+action that reports the phase's end, not from memory later, because a gap in
+the file reads as a fast phase and steers the tuning below toward the wrong
+fix. When a phase starts, set `phase_started` in the ticket frontmatter to the
+start timestamp (for `review`, the round's shared start); clear it when the
+row lands. The ticket file is the recovery state, so a rebooted lead inherits
+the running phase's start instead of inventing one.
+
 Optimising this loop later: read `.tickets/timings.tsv` first and say which row
 totals drove the change - the loop is not to be tuned on a hunch. What each
 finding licenses:
 
-- `review` rows dominate, and rounds after the first are most of that - scope
-  rounds >= 2 to `git diff` since the previous round's tip instead of the whole
-  diff, keeping the full diff for round 1.
-- One reviewer's rows dominate the others - re-run only the reviewers that
-  found something, plus `code-reviewer`, and re-run a passed reviewer only when
-  the fix touched files in its domain.
 - `setup` dominates - move install and codegen into a `WorktreeCreate` hook so
   a cold worktree is off the critical path.
 - `approval` dominates - the spec gate is working as designed and the loop is
@@ -85,29 +103,44 @@ finding licenses:
    a tool's own docs is what that check would otherwise degrade into, and a
    README never says the project was abandoned.
 
-3. **On DONE** - if the spec changes behavior, first send `test-writer` into
+3. **On DONE** - a DONE claim carries its verification: the repo's own gates
+   (tests, lint, build) run green in the worktree, with the output shown. A
+   red or unrun gate bounces straight back to the writer without spawning
+   any reviewer - review judgment is never spent on defects a test run
+   catches free. Then, if the spec changes behavior, send `test-writer` into
    the worktree to author the new coverage and commit it to the branch. The
    worktree has one writer at a time: the resident writer idles while
-   test-writer, debugger, or docs-writer works there. Then spawn the review
-   round in parallel, each agent given the spec inline, the worktree path,
-   and `git diff main...<id>` as scope:
-   - `code-reviewer`, model overridden to the session's top model - every
-     round, cold.
-   - `comment-auditor` on the diff's files - every round. Rows on comments
-     the diff introduced or changed join the must-fix list; rows on
-     pre-existing comments are reported to the user and left alone.
+   test-writer, debugger, or docs-writer works there. Then run the review
+   round, each agent given the spec inline and the worktree path. Round 1
+   opens with `code-reviewer` alone as a smoke gate: any Blocking finding
+   goes straight to REWORK and the rest of the panel never spawns, because
+   it would be reviewing a tip about to change. Only a gate pass (no
+   Blocking finding) fans the rest of the round out in parallel; rounds
+   after the first are parallel from the start, since the code is stable
+   enough by then that serializing only spends wall clock.
+   Round 1 reviews `git diff main...<id>` in full; record the branch tip with
+   the round's verdicts, and rounds after the first review only the diff
+   since the previous round's recorded tip - the earlier code already passed,
+   so re-reading it buys nothing. On rounds after the first, re-run only the
+   reviewers that found something, plus `code-reviewer` always; a reviewer
+   that passed re-runs only when the rework touched files in its domain.
+   - `code-reviewer` - every round, cold.
+   - No comment reviewer: the write hook audits comment discipline on the
+     writer's own edits, deterministically, and hooks fire inside subagents.
+     Do not spawn `comment-auditor` here - it is the legacy-sweep tool for
+     `/comment-audit`, not a round gate.
    - When the diff warrants: `migration-safety` (any migration - mandatory),
-     `ui-verifier` + `a11y-auditor` (frontend). The lead starts one instance
-     of the app from the worktree and hands both agents that URL and the time
-     it was observed; two agents each starting their own collide on the port,
-     and the loser either fails to bind or reads the winner's build.
+     `ui-verifier` (frontend - its verdict covers rendering and WCAG). The
+     lead starts one instance of the app from the worktree and hands the
+     agent that URL and the time it was observed, so agents never race to
+     bind the same port.
      `debugger` and `docs-writer` on their own triggers, sequential like
      test-writer.
    Record each verdict verbatim under `## Verdicts` with the round number.
 
 4. **Verdict** - ACCEPT is APPROVE with every score >= 90 and no Blocking
-   finding anywhere. Anything else is REWORK: relay Blocking + Should-fix +
-   the comment rows to the same resident writer and bump `round`. After 3
+   finding anywhere. Anything else is REWORK: relay Blocking + Should-fix
+   to the same resident writer and bump `round`. After 3
    failed rounds: status ESCALATED, present the full history, stop.
 
 5. **On ACCEPT** - ask the writer for handoff: fetch, rebase onto
@@ -119,7 +152,9 @@ finding licenses:
 
 6. **accept <id>** (user-triggered) - retire the writer,
    `git worktree remove .tickets/<id>/tree` (`--force` only for leftover
-   build artifacts), status CLOSED. The branch stays: it holds unmerged work.
+   build artifacts), then delete the now-empty `.tickets/<id>/` folder,
+   status CLOSED. The branch stays: it holds unmerged work. The ticket file
+   stays too - `.tickets/<id>.md` is the record of what was built and why.
 
 7. **status [id]** - one table from ticket frontmatter; anything live (a
    running writer, a branch tip) is stamped with when it was observed.
