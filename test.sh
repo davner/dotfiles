@@ -98,7 +98,8 @@ run() { # run a repo script with the stubs in place; never touches real $HOME
 
 SCRIPTS=(bootstrap.sh rebuild.sh users.sh test.sh
   home/.claude/statusline.sh home/.claude/session-name.sh
-  home/.claude/comment-audit.sh home/.claude/guard-bash.sh)
+  home/.claude/comment-audit.sh home/.claude/guard-bash.sh
+  home/.claude/context-audit.sh)
 
 # --------------------------------------------------------------------------
 section "syntax and lint"
@@ -598,6 +599,119 @@ else
   bad "settings.base.json registers the hook on Write|Edit|MultiEdit" \
     "the script exists but nothing calls it"
 fi
+
+# --------------------------------------------------------------------------
+section "context audit"
+# It only reports, so its failure mode is a wrong number quietly steering a
+# trim decision: a miscounted body, a cap applied to the wrong kind of file,
+# or a config glob silently matching nothing.
+CTX="$DIR/home/.claude/context-audit.sh"
+CTXWORK="$WORK/ctx"
+mkdir -p "$CTXWORK/agents" "$CTXWORK/scoped/.claude" "$CTXWORK/scoped/docs" \
+  "$CTXWORK/rootonly/docs" "$CTXWORK/deepglob/.claude" "$CTXWORK/deepglob/docs/a/b"
+
+printf '# small\n' >"$CTXWORK/small.md"
+seq 1 201 >"$CTXWORK/long.md"
+# 150 lines of 200 chars: past the byte cap while comfortably under the line
+# cap, which is exactly the case the byte half exists for.
+awk 'BEGIN { s = sprintf("%200s", "x"); for (i = 0; i < 150; i++) print s }' >"$CTXWORK/wide.md"
+{
+  printf -- '---\nname: big\ndescription: fits\n---\n'
+  seq 1 401
+} >"$CTXWORK/agents/big.md"
+{
+  printf -- '---\nname: chatty\ndescription: >\n'
+  for _ in $(seq 1 30); do printf '  twenty characters..\n'; done
+  printf -- '---\nbody\n'
+} >"$CTXWORK/agents/chatty.md"
+
+out="$("$CTX" "$CTXWORK/small.md" 2>/dev/null)"
+rc=$?
+eq "a file under both caps exits 0" "0" "$rc"
+contains "the passing file is reported ok" "$out" "ok"
+
+out="$("$CTX" "$CTXWORK/small.md" "$CTXWORK/long.md" 2>/dev/null)"
+rc=$?
+eq "a file over 200 lines exits 1" "1" "$rc"
+contains "the long file is reported over" "$out" "over"
+
+out="$("$CTX" "$CTXWORK/wide.md" 2>/dev/null)"
+rc=$?
+eq "short lines past 25600 bytes exit 1" "1" "$rc"
+
+# A missing final newline is invisible in an editor, so an off-by-one here is
+# a silent pass exactly on the boundary the tool enforces.
+{
+  seq 1 200
+  printf 'no trailing newline'
+} >"$CTXWORK/noeol.md"
+out="$("$CTX" "$CTXWORK/noeol.md" 2>/dev/null)"
+rc=$?
+eq "an over-cap file with no trailing newline exits 1" "1" "$rc"
+contains "the unterminated last line is counted" "$out" "201"
+
+out="$("$CTX" "$CTXWORK/agents/big.md" 2>/dev/null)"
+rc=$?
+eq "an agent body over 400 lines exits 1" "1" "$rc"
+contains "the agent body row carries the agent cap" "$out" "400L"
+
+out="$("$CTX" "$CTXWORK/agents/chatty.md" 2>/dev/null)"
+rc=$?
+eq "an agent description over 500 chars exits 1" "1" "$rc"
+contains "the over verdict lands on the description row" \
+  "$(printf '%s\n' "$out" | grep '(description)')" "over"
+
+# An opening fence that never closes counts the whole file as body, so a
+# malformed agent file can never report a body of zero and slip under the cap.
+{
+  printf -- '---\nname: unclosed\n'
+  seq 1 401
+} >"$CTXWORK/agents/unclosed.md"
+out="$("$CTX" "$CTXWORK/agents/unclosed.md" 2>/dev/null)"
+rc=$?
+eq "an unclosed frontmatter fence counts the whole file as body" "1" "$rc"
+
+# The agent caps must also apply when the path is bare-relative, with no
+# leading directory in front of agents/.
+out="$(cd "$CTXWORK" && "$CTX" agents/big.md 2>/dev/null)"
+rc=$?
+eq "a bare relative agents/ path gets the agent caps" "1" "$rc"
+contains "the relative path's row carries the agent cap" "$out" "400L"
+
+printf '# root\n' >"$CTXWORK/scoped/CLAUDE.md"
+seq 1 201 >"$CTXWORK/scoped/docs/nested.md"
+printf '# scoped in\ndocs/*.md\nCLAUDE.md\n' >"$CTXWORK/scoped/.claude/context-audit"
+out="$(cd "$CTXWORK/scoped" && "$CTX" 2>/dev/null)"
+rc=$?
+eq "a config glob pulls a nested file in" "1" "$rc"
+contains "the nested file appears in the table" "$out" "nested.md"
+eq "a config line re-matching the root file adds no second row" \
+  "1" "$(printf '%s\n' "$out" | grep -c 'CLAUDE.md')"
+
+# The test relies on the bash on PATH having globstar; without it the script
+# refuses the `**` line rather than matching it one level deep.
+printf '# deep\ndocs/**/*.md\n' >"$CTXWORK/deepglob/.claude/context-audit"
+printf '# root\n' >"$CTXWORK/deepglob/CLAUDE.md"
+seq 1 201 >"$CTXWORK/deepglob/docs/a/b/deep.md"
+out="$(cd "$CTXWORK/deepglob" && "$CTX" 2>/dev/null)"
+rc=$?
+eq "a ** config glob reaches a deeply nested file" "1" "$rc"
+contains "the deep file appears in the table" "$out" "docs/a/b/deep.md"
+
+printf '# root\n' >"$CTXWORK/rootonly/CLAUDE.md"
+seq 1 201 >"$CTXWORK/rootonly/docs/nested.md"
+out="$(cd "$CTXWORK/rootonly" && "$CTX" 2>/dev/null)"
+rc=$?
+eq "absent config audits the root only" "0" "$rc"
+case "$out" in
+  *nested.md*) bad "absent config leaves nested files alone" "nested.md was audited with no config listing it" ;;
+  *) ok "absent config leaves nested files alone" ;;
+esac
+
+"$CTX" "$CTXWORK/absent.md" >/dev/null 2>"$WORK/ctx-stderr"
+rc=$?
+eq "a nonexistent named file exits 2" "2" "$rc"
+contains "the missing file is named on stderr" "$(cat "$WORK/ctx-stderr")" "absent.md"
 
 # --------------------------------------------------------------------------
 section "agent roster"

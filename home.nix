@@ -153,6 +153,10 @@ in
   # than nudges, so it has to exist before the tool call it judges.
   home.file.".claude/guard-bash.sh".source =
     config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.claude/guard-bash.sh";
+  # not a hook: the /context-audit command runs it on demand, and its findings
+  # go to the user, never back to the model mid-task.
+  home.file.".claude/context-audit.sh".source =
+    config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.claude/context-audit.sh";
   # the subagent roster. one file per agent, claude picks them up by name.
   home.file.".claude/agents".source =
     config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.claude/agents";
