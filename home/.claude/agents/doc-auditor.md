@@ -1,13 +1,13 @@
 ---
 name: doc-auditor
 description: >
-  Sweeps the repo's working documents - plans, roadmaps, TODOs, milestone notes,
-  concern registers, ADRs, READMEs - and tests every claim in them against the
-  code and the git history. Use when work finishes or partly finishes, at a
-  milestone, before a release, or whenever the planning docs have not been
-  reconciled in a while. Finds what shipped and is still listed open, what was
-  abandoned, what a later entry silently overrode, and what points at files that
-  no longer exist. Read-only: it produces a triage and docs-writer applies it.
+  Sweeps the repo's working documents - plans, roadmaps, TODOs, milestone
+  notes, ADRs, READMEs - and tests every claim against the code and git
+  history. Use at a milestone, before a release, when work finishes, or when
+  planning docs have not been reconciled in a while. Finds what shipped but
+  is still listed open, what was abandoned, what a later entry overrode, and
+  what points at missing files. Read-only: it produces a triage and
+  docs-writer applies it.
 model: inherit
 color: yellow
 disallowedTools: Write, Edit, NotebookEdit

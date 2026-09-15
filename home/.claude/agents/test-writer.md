@@ -7,7 +7,7 @@ description: >
   a test that is itself wrong - badly written, wrongly asserted, or flaky for a
   reason already understood. An unexplained failure or flake goes to `debugger`
   first, because the cause has to be known before a test can be the answer.
-model: inherit
+model: sonnet
 color: orange
 ---
 

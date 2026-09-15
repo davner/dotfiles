@@ -2,7 +2,7 @@
 name: senior-dev
 description: >
   Primary code writer. Builds features, implements a plan from architect, and
-  applies fixes coming back from code-reviewer, ui-verifier, a11y-auditor, or
+  applies fixes coming back from code-reviewer, ui-verifier, or
   migration-safety. Use for any task that produces production code end to end.
   Leaves the working tree typechecking, linting, and passing tests. In ticket
   mode - booted by /ticket with a worktree - it stays resident across rework
@@ -82,8 +82,8 @@ and the mistakes they prevent look correct until they ship.
 
 ### 3. Plan
 List every file you will add or change, and say it before you start. If
-architect already handed you a plan, it has been through plan-reviewer and the
-open questions in it are settled - follow it, and flag it rather than silently
+architect already handed you a plan, its self-review has settled the open
+questions in it - follow it, and flag it rather than silently
 deviating if the code contradicts it. A plan that arrives without review
 findings attached is a plan that skipped the review; build it, and say that in
 your result.

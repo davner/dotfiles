@@ -97,3 +97,28 @@ When you are explicitly asked for a PR, use `gh`. Title follows the same
 Conventional Commits format. Body opens with the theme sentence, then what
 changed, why, and how it was tested - and carries no generated-by line, session
 link, or attribution to a model or tool.
+
+## Change scope
+
+The theme rule and the ~500-line hard gate are in CLAUDE.md; these are the
+sizing heuristics behind them.
+
+- **Past ~200 lines of hand-written code, suspect the theme was drawn too
+  wide.** Say the theme out loud; usually a second sentence is hiding in it. ~50
+  is the empirical sweet spot. File count is size too: 200 lines in one file is
+  fine, 200 across 50 files is not.
+- **Under ~25 lines, suspect it was drawn too narrow** and belongs with its
+  neighbour.
+- **A wide theme is sometimes genuinely one theme.** A mechanical rename across
+  40 files is one sentence and one idea; splitting it by line count makes it
+  harder to review, not easier. Judge the sentence first, then let size argue.
+- **A PR with nothing to demonstrate is fine when its theme genuinely has no
+  user-visible surface** - a domain contract, a data layer. Say so in the
+  description rather than padding the PR with unrelated UI.
+- Mechanical lines are not evidence about the theme: generated files, lock files,
+  vendored code, whole-file deletions, trusted tool output. A hand-written change
+  is never mechanical, however repetitive.
+- Large work lands as a stack of small dependent PRs, each with its own theme and
+  its own tests, planned that way from the start rather than carved up after the
+  fact. Write the theme sentences before the code; the seams are where they
+  change.

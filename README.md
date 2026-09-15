@@ -105,16 +105,14 @@ applies them. They run in every project, not just this one.
 
 | Agent | Does | Edits files |
 | --- | --- | --- |
-| `architect` | Designs a change before code exists: files, contracts, rejected options | no |
-| `plan-reviewer` | Checks that plan against the actual codebase | no |
+| `architect` | Designs a change before code exists, then self-reviews the plan | no |
 | `senior-dev` | Primary writer. Builds features, applies every reviewer's fixes | yes |
 | `test-writer` | Writes tests in whatever framework the project already uses | yes |
 | `debugger` | Reproduces a failure first, then fixes the cause | yes |
 | `docs-writer` | Makes docs match the code, running every example it touches | yes |
 | `code-reviewer` | Correctness bugs, error paths, drift from the repo's conventions | no |
 | `migration-safety` | Runs a migration forward and back before it meets real data | no |
-| `ui-verifier` | Loads the app in a real browser and reports what renders | no |
-| `a11y-auditor` | Audits a running UI against WCAG, by keyboard and screen reader | no |
+| `ui-verifier` | Loads the app in a real browser: what renders, plus WCAG by keyboard and screen reader | no |
 | `review-triage` | Turns an external PR review into a plan, checking each claim | no |
 | `doc-auditor` | Finds plans, TODOs and READMEs that stopped being true | no |
 | `comment-auditor` | Reads every comment in a scope against its code, triaging by number | no |

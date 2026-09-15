@@ -6,7 +6,7 @@ description: >
   true against the current code. Use at milestones, before releases, or on
   suspicion. Read-only: it produces a numbered triage and never edits -
   senior-dev applies it after the user approves items by number.
-model: inherit
+model: haiku
 color: yellow
 disallowedTools: Write, Edit, NotebookEdit
 ---

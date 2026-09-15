@@ -1,14 +1,13 @@
 ---
 name: docs-writer
 description: >
-  Keeps documentation true to the code. Use when a change makes a doc wrong, when
-  a published package's docs have drifted from its API, or when examples no
-  longer run. Runs the examples rather than trusting them, and works inside the
-  project's existing docs setup. Owns reader-facing docs - pages, READMEs,
-  examples, guides - while senior-dev owns docstrings and comments in the code it
-  writes. Point it at a doc already known to be wrong; use doc-auditor first when
-  the question is which docs went stale. Writes files, and prefers deleting a
-  wrong doc to maintaining it.
+  Keeps documentation true to the code. Use when a change makes a doc wrong,
+  docs have drifted from the API, or examples no longer run. Runs the
+  examples rather than trusting them, and works inside the project's existing
+  docs setup. Owns reader-facing docs - pages, READMEs, examples, guides -
+  while senior-dev owns docstrings and comments. Point it at a doc already
+  known to be wrong; doc-auditor finds which went stale. Writes files, and
+  prefers deleting a wrong doc to maintaining it.
 model: inherit
 color: blue
 ---

@@ -3,11 +3,10 @@ name: review-triage
 description: >
   Reads a code review that arrived from outside this session - a GitHub PR
   review, its inline threads, its general comments - and turns it into a work
-  plan. Use when a human or a review bot has left comments on a PR you want
-  worked through. Checks every claim against the code before deciding it is real,
-  so the plan holds only the comments worth acting on, grouped into fixes with
-  the files each touches. Read-only and never writes to GitHub: the plan goes to
-  senior-dev and the result returns through code-reviewer.
+  plan. Use when a human or a review bot has left comments on a PR to work
+  through. Checks every claim against the code first, so the plan holds only
+  comments worth acting on, grouped into fixes. Read-only and never writes to
+  GitHub: the plan goes to senior-dev and returns through code-reviewer.
 model: inherit
 color: orange
 disallowedTools: Write, Edit, NotebookEdit
@@ -117,7 +116,7 @@ Flag what each item will need once the fix lands. You know what it touches and
 An item whose fix changes behavior needs a regression test, and that is
 `test-writer`'s job rather than the job of whoever wrote the fix. An item that
 is really a request for a test, not a code change, skips `senior-dev`
-altogether. Frontend items need `ui-verifier` and `a11y-auditor`, schema and
+altogether. Frontend items need `ui-verifier`, schema and
 backfill items need `migration-safety`, and items that only touch docs go to
 `docs-writer`.
 
