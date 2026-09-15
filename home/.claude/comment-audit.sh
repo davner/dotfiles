@@ -50,14 +50,24 @@ case $path in
   *) fenced=0 ;;
 esac
 
-history_re='used to|no longer|formerly|superseded|(was|were) (removed|replaced|renamed)|this replaced|earlier (revision|version)|first (version|pass)|stopped being|went stale|until [0-9]{4}-[0-9]{2}-[0-9]{2}'
+# The adverb forms are matched even though the bare adjectives above are
+# excluded: in a comment the adverb narrates the edit, not the domain. The
+# move and rename patterns keep their extra words because the two-word forms
+# also describe runtime state.
+history_re='used to|no longer|formerly|superseded|(was|were) (removed|replaced|renamed)|this replaced|earlier (revision|version)|first (version|pass)|stopped being|went stale|previously|originally|refactored|renamed from|moved here from|instead of the old|until [0-9]{4}-[0-9]{2}-[0-9]{2}'
+# Session talk: a comment addressed to a party of the conversation instead
+# of a reader of the code. "per the spec" stays unmatched - an RFC or a
+# protocol spec is a legitimate present-tense referent.
+session_re='as requested|as discussed|as instructed|per (the )?(plan|ticket|review|feedback)|review feedback|addresses the (review|finding)'
 # Who decided it and when is never wanted, in a test as much as anywhere.
 # Doubled backslash: `awk -v` resolves escapes before the regex is compiled.
 stamp_re='\\([A-Z][a-z]+, [0-9]{4}-[0-9]{2}-[0-9]{2}'
-date_re='[0-9]{4}-[0-9]{2}-[0-9]{2}'
+# Month names require the year beside them, so "Mar" the abbreviation and
+# "May" the modal never hit on their own.
+date_re='[0-9]{4}-[0-9]{2}-[0-9]{2}|(January|February|March|April|May|June|July|August|September|October|November|December|Jan|Feb|Mar|Apr|Jun|Jul|Aug|Sep|Sept|Oct|Nov|Dec)\\.? (19|20)[0-9][0-9]'
 
 findings=$(
-  awk -v hist="$history_re" -v stamp="$stamp_re" -v date="$date_re" -v in_test="$in_test" -v fenced="$fenced" '
+  awk -v hist="$history_re" -v sess="$session_re" -v stamp="$stamp_re" -v date="$date_re" -v in_test="$in_test" -v fenced="$fenced" '
     # A GraphQL or Python docstring is documentation too, and carries no marker
     # on its body lines - so track the fence rather than looking for one.
     fenced && /"""/ { in_doc = !in_doc; text = $0 }
@@ -75,7 +85,7 @@ findings=$(
       }
       if (text == "") next
 
-      if (text ~ hist || text ~ stamp || (in_test == 0 && text ~ date)) {
+      if (text ~ hist || text ~ sess || text ~ stamp || (in_test == 0 && text ~ date)) {
         sub(/^[[:space:]]+/, "", line)
         print "  " line
       }
@@ -87,13 +97,14 @@ findings=$(
 [[ -n $findings ]] || exit 0
 
 {
-  echo "Comment audit: the text just written to $path narrates the edit history."
+  echo "Comment audit: the text just written to $path narrates the edit history"
+  echo "or the session that produced it."
   echo "$findings"
   echo
-  echo "A comment says why the code is what it is, never what it used to be, who"
-  echo "decided it, or when. The reason survives in the present tense - \"one control,"
-  echo "so the aria labels cannot drift\" carries the whole lesson with no history"
-  echo "attached. Rewrite these that way, or delete them if nothing is left."
+  echo "A comment says why the code is what it is - never what it used to be, who"
+  echo "decided it, when, or what the current task wanted. The audience is a stranger"
+  echo "reading the code, not a party to this conversation. The reason survives in"
+  echo "the present tense; rewrite these that way, or delete them if nothing is left."
 } >&2
 
 exit 2

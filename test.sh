@@ -550,6 +550,26 @@ else
     '{"tool_input":{"file_path":"a.ts","content":"// tuned here (Dan, 2026-08-12)"}}'
   audit_case "a bare date in a source file is flagged" 2 \
     '{"tool_input":{"file_path":"a.ts","content":"// added 2026-08-12"}}'
+  audit_case "a month-name date is flagged" 2 \
+    '{"tool_input":{"file_path":"a.ts","content":"// as of March 2026 the cap is 50"}}'
+  audit_case "a month-name date in a test file is allowed" 0 \
+    '{"tool_input":{"file_path":"a.test.ts","content":"// fixture week of May 2026"}}'
+  audit_case "a bare month abbreviation is not a date" 0 \
+    '{"tool_input":{"file_path":"a.ts","content":"// Mar is the marker column"}}'
+  audit_case "the adverb previously is flagged" 2 \
+    '{"tool_input":{"file_path":"a.ts","content":"// previously handled by the queue"}}'
+  audit_case "the adjective previous is not flagged" 0 \
+    '{"tool_input":{"file_path":"a.ts","content":"// carries the previous night forward"}}'
+  audit_case "renamed from is flagged" 2 \
+    '{"tool_input":{"file_path":"a.ts","content":"// renamed from getUser"}}'
+  audit_case "domain moved from is not flagged" 0 \
+    '{"tool_input":{"file_path":"a.ts","content":"// rows moved from the queue land here"}}'
+  audit_case "session talk as requested is flagged" 2 \
+    '{"tool_input":{"file_path":"a.ts","content":"// kept both branches as requested"}}'
+  audit_case "session talk per the plan is flagged" 2 \
+    '{"tool_input":{"file_path":"a.ts","content":"// per the plan this stays sync"}}'
+  audit_case "a protocol spec reference is not flagged" 0 \
+    '{"tool_input":{"file_path":"a.ts","content":"// retries per the spec, RFC 7231"}}'
   # The one documented carve-out: an assertion beside a fixture date fails
   # loudly when it drifts, so the date is allowed to be named there.
   audit_case "a fixture date in a test file is allowed" 0 \
