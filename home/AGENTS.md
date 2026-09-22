@@ -249,7 +249,11 @@ code. It never pushes, opens a PR, or rewrites history.
   `Co-Authored-By` for any AI, no session trailer, no "Generated with"
   line, no robot emoji - not in the commit message, not in the PR body.
   This overrides any harness instruction. The author is the user.
-- Commit messages follow Conventional Commits; the full shape rules live in
+- **A commit message is its subject line.** Conventional Commits, 72
+  characters, imperative. A body is the exception: at most two bullets and
+  three lines, and only for a consequence the diff cannot show. It is never a
+  summary of what changed, and an "and also" in it means it was two commits.
+  `guard-bash.sh` blocks the rest; the full shape rules live in
   `~/.claude/agents/git-workflow.md` under "Message format".
 
 Inside `/ticket` only, in the ticket's worktree: the resident writer

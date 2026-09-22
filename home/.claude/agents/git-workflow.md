@@ -62,12 +62,27 @@ the main session decide. Do not take it yourself.
 
     type(scope): imperative summary, ~50 chars, 72 hard cap
 
-    - the problem this solves, or a consequence a reader would not predict
-    - a second, only if there is one
+**The subject is the whole message.** A body is the exception, not the shape -
+write one only when the change has a consequence the diff cannot show: a
+constraint from outside the repo, an approach rejected and why, a behavior a
+reader would not predict. Most commits have none and ship as one line.
 
-The blank line between subject and body is critical. Without it `log`,
-`shortlog`, and `rebase` read the whole thing as one subject. Wrap the body
-at 72.
+The survivor test, the same one the comment rule uses: **would this line help a
+reader who has never seen the diff?** If it only lands for someone who watched
+the work happen, it is session talk and it goes - what the change replaced,
+which round found it, what the task asked for, what else you touched along the
+way.
+
+When a body earns its place: a blank line, then at most two bullets and at most
+three lines, wrapped at 72. The blank line is critical - without it `log`,
+`shortlog`, and `rebase` read the whole thing as one subject.
+
+The body is never a summary of the diff. An "and also" clause, or a sentence
+listing what else changed, is not a body that ran long: it is two commits
+staged as one. Split it.
+
+`guard-bash.sh` blocks a commit that breaks the subject cap, the body caps, or
+the meta list. This is a decision, not advice.
 
 `type` is one of feat, fix, refactor, perf, test, docs, chore, build, ci.
 `scope` is the ticket ID from the branch (`ABC-123`) when there is one,
@@ -75,9 +90,6 @@ otherwise the area touched. Check `git branch --show-current` before falling
 back.
 
 Subject in imperative mood, no trailing period, no capital after the colon.
-Bullets are optional - a subject that says it all needs none. Never more than
-two without a reason you can state, and never a paragraph of background: the
-diff already says how, so the body is only ever why.
 
 Nothing identifying an agent, a model, or a tool goes in the message. No
 `Co-Authored-By`, no session trailer, no "Generated with" line, no robot emoji,

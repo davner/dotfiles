@@ -305,6 +305,230 @@ CASES
     bad "ordinary subjects naming claude pass" "$human_allowed"
   fi
 
+  # The message-shape cap has to read the message out of the command first, so
+  # each carrier form gets a case of its own.
+  long_subject="feat(scope): a subject that keeps going and going and going and going past the cap"
+  eq "a subject over 72 characters is blocked" "2" \
+    "$(guard "git commit -m \"$long_subject\"")"
+  eq "a subject at 72 characters is allowed" "0" \
+    "$(guard "git commit -m \"${long_subject:0:72}\"")"
+
+  body5='git commit -m "fix: x" -m "one
+two
+three
+four
+five"'
+  eq "a body over three lines is blocked" "2" "$(guard "$body5")"
+  body3='git commit -m "fix: x" -m "one
+two
+three"'
+  eq "a three-line body is allowed" "0" "$(guard "$body3")"
+  bullets3='git commit -m "fix: x" -m "- one
+- two
+- three"'
+  eq "a third bullet is blocked" "2" "$(guard "$bullets3")"
+  eq "two bullets are allowed" "0" \
+    "$(guard 'git commit -m "fix: x" -m "- one
+- two"')"
+  eq "repeated -m values are read as subject and body" "2" \
+    "$(guard "git commit -m 'fix: x' -m one -m two -m three -m four")"
+
+  meta=""
+  while IFS= read -r m; do
+    [ -n "$m" ] || continue
+    [ "$(guard "git commit -m 'fix: x' -m '$m'")" = "2" ] || meta="$meta
+    let through: $m"
+  done <<'CASES'
+Kept both branches as requested.
+Per the plan this stays synchronous.
+Addresses the review finding on nulls.
+Also renames the helper.
+CASES
+  if [ -z "$meta" ]; then
+    ok "a body line about the session is blocked"
+  else
+    bad "a body line about the session is blocked" "$meta"
+  fi
+  # A commit body legitimately describes a behavior change in these words,
+  # unlike a code comment, so the comment-audit patterns stop short of here.
+  eq "a behavior change described as 'no longer' is allowed" "0" \
+    "$(guard "git commit -m 'fix: x' -m 'The cache no longer invalidates on write.'")"
+  # The meta list stops where honest engineering prose starts: both of these say
+  # something the diff cannot, which is exactly what a body is for.
+  eq "a consequence phrased as 'this change' is allowed" "0" \
+    "$(guard "git commit -m 'fix: x' -m 'Without this change the cache never invalidates.'")"
+  eq "an architecture note using 'alongside the' is allowed" "0" \
+    "$(guard "git commit -m 'fix: x' -m 'Runs alongside the existing awk pass to avoid a second scan.'")"
+  # The verbose commit this cap exists to stop is usually written without the
+  # blank line, so line 2 onward is a body whether or not git would fold it in.
+  noblank='git commit -m "Refactor auth flow
+Also updates the token cache
+Adds new validation
+Removes old code path
+Bumps version numbers"'
+  eq "an unseparated message past the cap is blocked" "2" "$(guard "$noblank")"
+  short_noblank='git commit -m "fix: x
+The cap is the log wrap, not a preference."'
+  eq "an unseparated message within the cap is allowed" "0" "$(guard "$short_noblank")"
+  eq "the subject is scanned for the meta list too" "2" \
+    "$(guard "git commit -m 'As requested, rename the helper function'")"
+
+  heredoc_long=$(cat <<'CMD'
+git commit -F - <<'MSG'
+fix: x
+
+one
+two
+three
+four
+MSG
+CMD
+  )
+  eq "a heredoc body over three lines is blocked" "2" "$(guard "$heredoc_long")"
+  heredoc_ok=$(cat <<'CMD'
+git commit -F - <<'MSG'
+fix: tighten the cap
+
+The cap is git's own log wrap, not a preference.
+MSG
+CMD
+  )
+  eq "a heredoc message within the caps is allowed" "0" "$(guard "$heredoc_ok")"
+  cat_subst=$(cat <<'CMD'
+git commit -m "$(cat <<'EOF'
+feat(scope): a subject that keeps going and going and going and going past the cap
+
+body
+EOF
+)"
+CMD
+  )
+  eq "a -m \$(cat <<EOF) subject is read" "2" "$(guard "$cat_subst")"
+  # A command is a sequence of statements, and only the one that invokes
+  # `git commit` is the commit. Everything here is a false positive the gate
+  # produced when it searched the whole command instead of one statement.
+  not_ours=""
+  next_line=$'git commit -m "fix: valid short subject"\nfoo -m one -m two -m three -m four'
+  [ "$(guard "$next_line")" = "0" ] || not_ours="$not_ours
+    the next line's flags became a body"
+  other_doc=$'printf x > /tmp/d.txt <<\'END\'\ngit commit -m "fix: x" -m "one" -m "two" -m "three" -m "four"\nEND'
+  [ "$(guard "$other_doc")" = "0" ] || not_ours="$not_ours
+    another command's heredoc body was read as tokens"
+  commented=$'# example: git commit -m "fix: x" -m "one" -m "two" -m "three" -m "four"\necho hi'
+  [ "$(guard "$commented")" = "0" ] || not_ours="$not_ours
+    a shell comment was read as a command"
+  if [ -z "$not_ours" ]; then
+    ok "only the statement that commits is judged"
+  else
+    bad "only the statement that commits is judged" "$not_ours"
+  fi
+
+  # And the flip side: a statement that does commit is judged wherever it sits.
+  eq "a commit inside \$(...) is judged" "2" \
+    "$(guard "echo \$(git commit -m 'As requested, rename the helper')")"
+  eq "a commit after an unrelated statement is judged" "2" \
+    "$(guard "cd /tmp && git commit -m 'As requested, rename the helper'")"
+  eq "the second of two commits is judged" "2" \
+    "$(guard "git commit -m 'fix: ok' && git commit -m 'As requested, rename it'")"
+  eq "two compliant commits both pass" "0" \
+    "$(guard "git commit -m 'fix: one' && git commit -m 'fix: two'")"
+
+  # The delimiter may be quoted or bare, and only a line that is the delimiter
+  # ends the body - a line merely containing the word does not.
+  bare_delim=$'git commit -F - <<MSG\nfix: x\n\none\ntwo\nthree\nfour\nMSG'
+  eq "an unquoted heredoc delimiter is read" "2" "$(guard "$bare_delim")"
+  dq_delim=$'git commit -F - <<"MSG"\nfix: x\n\none\ntwo\nthree\nfour\nMSG'
+  eq "a double-quoted heredoc delimiter is read" "2" "$(guard "$dq_delim")"
+  substr_delim=$'git commit -F - <<\'END\'\nfix: x\n\nENDING is not END\nand nor is this\nnor this\nnor this\nEND'
+  eq "the delimiter as a substring does not end the body" "2" "$(guard "$substr_delim")"
+
+  # A heredoc that belongs to something else in the same command is not the
+  # commit message, whichever side of the commit it sits on.
+  before=$(cat <<'CMD'
+cat >/tmp/x <<'EOF'
+one
+two
+three
+four
+EOF
+git commit -m 'fix: short'
+CMD
+  )
+  eq "a heredoc before the commit is not the message" "0" "$(guard "$before")"
+  after=$(cat <<'CMD'
+git commit -m 'fix: short' && cat >/tmp/x <<'EOF'
+one
+two
+three
+four
+EOF
+CMD
+  )
+  eq "a heredoc after the commit is not the message" "0" "$(guard "$after")"
+
+  printf 'feat: x\n\n- also adds a loader\n' >"$WORK/commit-msg.txt"
+  eq "a -F file message is read" "2" "$(guard "git commit -F $WORK/commit-msg.txt")"
+  # A short-option cluster carries its argument the same way the lone flag does.
+  eq "-F fused into a short cluster is read" "2" \
+    "$(guard "git commit -aF $WORK/commit-msg.txt")"
+  eq "-F fused onto its path is read" "2" \
+    "$(guard "git commit -aF$WORK/commit-msg.txt")"
+  printf 'fix: x\n\n# Please enter the commit message\n# a\n# b\n# c\n# d\n' \
+    >"$WORK/commit-tpl.txt"
+  eq "a commit template's comment block does not count" "0" \
+    "$(guard "git commit --file $WORK/commit-tpl.txt")"
+
+  # A message this cannot read is not a message it may block: an --amend reusing
+  # the stored text, a -F pointing nowhere, an editor commit.
+  unread=""
+  while IFS= read -r c; do
+    [ -n "$c" ] || continue
+    [ "$(guard "$c")" = "0" ] || unread="$unread
+    blocked: $c"
+  done <<CASES
+git commit --amend --no-edit
+git commit --amend
+git commit
+git commit -a
+git commit -F -
+git commit -F $WORK/not-a-file.txt
+echo "git commit -m This commit is fine"
+CASES
+  if [ -z "$unread" ]; then
+    ok "a message the hook cannot read is allowed"
+  else
+    bad "a message the hook cannot read is allowed" "$unread"
+  fi
+
+  # The hook runs under whatever bash is on PATH, and a stock macOS /bin/bash is
+  # 3.2 - where an empty array expanded under `set -u` aborts the whole script
+  # and the guard silently passes everything.
+  if [ -x /bin/bash ] && ! /bin/bash -c 'echo "${BASH_VERSINFO[0]}"' | grep -qx 5; then
+    old_bash=""
+    while IFS= read -r c; do
+      [ -n "$c" ] || continue
+      payload="$(printf '{"tool_name":"Bash","tool_input":{"command":%s}}' \
+        "$(printf '%s' "$c" | jq -Rs .)")"
+      here="$(printf '%s' "$payload" | "$GUARD" >/dev/null 2>&1; echo $?)"
+      there="$(printf '%s' "$payload" | /bin/bash "$GUARD" >/dev/null 2>&1; echo $?)"
+      [ "$here" = "$there" ] || old_bash="$old_bash
+    $c: exit $here here, exit $there under /bin/bash"
+    done <<'CASES'
+git commit -m "fix: a real message"
+git commit -m "As requested, rename the helper function"
+git commit -m "fix: x" -m "one"
+git commit --amend --no-edit
+git add .
+CASES
+    if [ -z "$old_bash" ]; then
+      ok "nothing in the guard needs a bash newer than /bin/bash"
+    else
+      bad "nothing in the guard needs a bash newer than /bin/bash" "$old_bash"
+    fi
+  else
+    skip "guard-bash.sh under an older /bin/bash (this one is bash 5)"
+  fi
+
   allowed=""
   while IFS= read -r c; do
     [ -n "$c" ] || continue

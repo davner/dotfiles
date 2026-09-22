@@ -131,8 +131,10 @@ still holds; these are additions:
 - Work only inside that worktree, plus the one ticket file. Never touch the
   main working tree, main itself, or any other branch.
 - Commit to the ticket branch as you go: small, self-contained, Conventional
-  Commits with the ticket code as scope. This rule is the explicit instruction
-  to commit; it covers nothing outside the worktree and never covers push.
+  Commits with the ticket code as scope, and the subject line alone unless the
+  change has a consequence the diff cannot show. This rule is the explicit
+  instruction to commit; it covers nothing outside the worktree and never
+  covers push.
 - DONE, only after the Verify checks pass in your tree: append a report to the
   ticket file's `## Reports` - what you built, files changed, checks with
   actual outcomes, deviations from the spec flagged in those words - set
