@@ -237,6 +237,74 @@ CASES
 Co-Authored-By: Claude <n@a.com>"'
   eq "an AI trailer in a commit message is blocked" "2" "$(guard "$trailer")"
 
+  # An AI credit is not always spelled "Claude": git reads trailer keys
+  # case-insensitively, a model number is a name with no brand in it, and other
+  # vendors sign the same way. Each of these is a model in what git records, so
+  # none of them may depend on the word Claude to be caught. Each payload spans
+  # lines, so each is its own variable - the loop above reads line by line.
+  lower_key='git commit -m "feat: x
+
+co-authored-by: Claude <n@anthropic.com>"'
+  eq "a lowercase trailer key is blocked" "2" "$(guard "$lower_key")"
+
+  model_name='git commit -m "feat: x
+
+Co-Authored-By: Opus 5 <noreply@anthropic.com>"'
+  eq "a model number with a vendor address is blocked" "2" "$(guard "$model_name")"
+
+  other_vendor='git commit -m "feat: x
+
+Co-Authored-By: Cursor Agent <agent@cursor.sh>"'
+  eq "another vendor's agent is blocked" "2" "$(guard "$other_vendor")"
+
+  copilot='git commit -m "feat: x
+
+Co-Authored-By: Copilot <copilot@github.com>"'
+  eq "copilot is blocked" "2" "$(guard "$copilot")"
+
+  # The cost of widening that match is false positives, and a guard that blocks
+  # ordinary work is one that gets switched off. A human co-author is
+  # legitimate, and this repo's own subjects say "claude" without crediting it.
+  human='git commit -m "feat: x
+
+Co-Authored-By: Jane Doe <jane@example.com>"'
+  eq "a human co-author passes" "0" "$(guard "$human")"
+
+  # A DCO sign-off is a human's legal attestation, never how a model credits
+  # itself, so the key is out of the match entirely and `-s` stays usable.
+  dco='git commit -s -m "feat: x
+
+Signed-off-by: Cody Smith <cody@example.com>"'
+  eq "a DCO sign-off by a human named Cody passes" "0" "$(guard "$dco")"
+  eq "a plain signed-off commit passes" "0" "$(guard 'git commit -s -m "fix: x"')"
+
+  # Every vendor word that is also a given name comes out of the name list; the
+  # vendor domain still catches those agents when they credit themselves.
+  named_cursor='git commit -m "feat: x
+
+Co-Authored-By: Jane Cursor <jane@example.com>"'
+  eq "a human surnamed Cursor passes" "0" "$(guard "$named_cursor")"
+  named_devin='git commit -m "feat: x
+
+Co-Authored-By: Devin Parker <devin@example.com>"'
+  eq "a human named Devin passes" "0" "$(guard "$named_devin")"
+
+  human_allowed=""
+  while IFS= read -r c; do
+    [ -n "$c" ] || continue
+    [ "$(guard "$c")" = "2" ] && human_allowed="$human_allowed
+    blocked: $c"
+  done <<'CASES'
+git commit -m "feat(claude): add a draft-ticket skill"
+git commit -m "fix: stop the claude-code cask lagging"
+git commit -m "docs: link the anthropic docs page"
+CASES
+  if [ -z "$human_allowed" ]; then
+    ok "ordinary subjects naming claude pass"
+  else
+    bad "ordinary subjects naming claude pass" "$human_allowed"
+  fi
+
   allowed=""
   while IFS= read -r c; do
     [ -n "$c" ] || continue

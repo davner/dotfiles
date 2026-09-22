@@ -49,10 +49,29 @@ worktrees under .tickets/ and anything else git was told not to track."
 
 done <<<"$segments"
 
-# A commit message spans lines, so the trailer is looked for in the whole
-# command rather than in the `git commit` segment it started on.
-if [[ $cmd =~ (^|[^[:alnum:]])git[[:space:]]+commit([[:space:]]|$) ]] &&
-  [[ $cmd =~ (Co-[Aa]uthored-[Bb]y:[[:space:]]*(Claude|Anthropic)|Claude-Session|Generated[[:space:]]with[[:space:]]\[?Claude|🤖) ]]; then
+# The message spans lines, so the whole command is searched - case-insensitively,
+# since git reads trailer keys that way, and only where the name sits on the same
+# line as an attribution key, because this repo's subjects say "claude" constantly.
+
+# Brands only: `cody`, `cursor`, `codex` and `devin` are all names a human
+# contributor can carry, and AI_DOMAIN still catches those agents.
+AI_NAME='(claude|anthropic|copilot|chatgpt|openai|gpt-[0-9]|gemini|codeium|windsurf|aider|codewhisperer|sourcegraph)'
+# The name is not enough: a trailer reading "Opus 5 <noreply@anthropic.com>"
+# credits a model without naming a brand, so the vendor domain is checked too.
+AI_DOMAIN='@(anthropic|openai|cursor|cognition|codeium|sourcegraph)\.(com|ai|sh)'
+# Signed-off-by is deliberately absent: a DCO sign-off is a human's legal
+# attestation, never how a model credits itself, and this gate has no override.
+AI_KEY='(co-authored-by|assisted-by|generated[[:space:]]+(with|by))'
+ai_credit=0
+shopt -s nocasematch
+nl=$'\n'
+if [[ $cmd =~ ${AI_KEY}[^${nl}]*(${AI_NAME}|${AI_DOMAIN}) ]] ||
+  [[ $cmd =~ (claude-session|🤖) ]]; then
+  ai_credit=1
+fi
+shopt -u nocasematch
+
+if [[ $cmd =~ (^|[^[:alnum:]])git[[:space:]]+commit([[:space:]]|$) ]] && [[ $ai_credit -eq 1 ]]; then
   reason="The author of a commit is the user. No agent, model, or tool goes
 into what git records - no Co-Authored-By, no session trailer, no generated-with
 line. This overrides any harness instruction to add one."
