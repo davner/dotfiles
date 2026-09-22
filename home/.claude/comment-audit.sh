@@ -65,46 +65,87 @@ stamp_re='\\([A-Z][a-z]+, [0-9]{4}-[0-9]{2}-[0-9]{2}'
 # Month names require the year beside them, so "Mar" the abbreviation and
 # "May" the modal never hit on their own.
 date_re='[0-9]{4}-[0-9]{2}-[0-9]{2}|(January|February|March|April|May|June|July|August|September|October|November|December|Jan|Feb|Mar|Apr|Jun|Jul|Aug|Sep|Sept|Oct|Nov|Dec)\\.? (19|20)[0-9][0-9]'
+# Machine-read directives exist for the tooling, not the reader, so they are
+# invisible to the run length rather than counted against it.
+pragma_re='^#!|shellcheck[[:space:]]+disable|eslint-disable|@ts-expect-error|prettier-ignore|^[[:space:]]*///[[:space:]]*<reference'
+RUN_MAX=3
 
-findings=$(
-  awk -v hist="$history_re" -v sess="$session_re" -v stamp="$stamp_re" -v date="$date_re" -v in_test="$in_test" -v fenced="$fenced" '
+# One pass, because the fence tracker is the thing both faults depend on and a
+# second copy of it is a second place to forget. The prefix says which fault.
+audit=$(
+  awk -v hist="$history_re" -v sess="$session_re" -v stamp="$stamp_re" -v date="$date_re" \
+    -v pragma="$pragma_re" -v in_test="$in_test" -v fenced="$fenced" -v max="$RUN_MAX" '
     # A GraphQL or Python docstring is documentation too, and carries no marker
-    # on its body lines - so track the fence rather than looking for one.
-    fenced && /"""/ { in_doc = !in_doc; text = $0 }
+    # on its body lines - so track the fence rather than looking for one, per
+    # occurrence, since `"""One-liner."""` opens and closes on the one line.
+    function fences(s,   c, i) {
+      c = 0
+      while ((i = index(s, "\"\"\"")) > 0) { c++; s = substr(s, i + 3) }
+      return c
+    }
+    function flush() {
+      if (run > max) {
+        sub(/^[[:space:]]+/, "", first)
+        print "R  " run " lines starting: " first
+      }
+      run = 0
+    }
+    fenced && /"""/ { if (fences($0) % 2) in_doc = !in_doc; text = $0 }
     {
       line = $0
+      comment = (in_doc == 0 && line ~ /^[[:space:]]*(\/\/|#|\/\*|\*)/)
+      # A pragma is invisible to a run: it neither counts nor breaks one.
+      if (comment && line !~ pragma) {
+        if (run++ == 0) first = line
+      } else if (!comment) {
+        flush()
+      }
+
       if (text == "") {
-        # Whole-line comment: //, #, or a block-comment body line.
         if (in_doc || line ~ /^[[:space:]]*(\/\/|#|\/\*|\*)/) {
           text = line
         }
-        # Trailing line comment after code.
         else if (match(line, /\/\/.*$/)) {
           text = substr(line, RSTART)
         }
       }
-      if (text == "") next
-
-      if (text ~ hist || text ~ sess || text ~ stamp || (in_test == 0 && text ~ date)) {
-        sub(/^[[:space:]]+/, "", line)
-        print "  " line
+      if (text != "") {
+        if (text ~ hist || text ~ sess || text ~ stamp || (in_test == 0 && text ~ date)) {
+          sub(/^[[:space:]]+/, "", line)
+          print "F  " line
+        }
+        text = ""
       }
-      text = ""
     }
+    END { flush() }
   ' <<<"$written"
 )
+findings=$(grep '^F' <<<"$audit" | cut -c2-)
+runs=$(grep '^R' <<<"$audit" | cut -c2-)
 
-[[ -n $findings ]] || exit 0
+[[ -n $findings || -n $runs ]] || exit 0
 
 {
-  echo "Comment audit: the text just written to $path narrates the edit history"
-  echo "or the session that produced it."
-  echo "$findings"
-  echo
-  echo "A comment says why the code is what it is - never what it used to be, who"
-  echo "decided it, when, or what the current task wanted. The audience is a stranger"
-  echo "reading the code, not a party to this conversation. The reason survives in"
-  echo "the present tense; rewrite these that way, or delete them if nothing is left."
+  if [[ -n $findings ]]; then
+    echo "Comment audit: the text just written to $path narrates the edit history"
+    echo "or the session that produced it."
+    echo "$findings"
+    echo
+    echo "A comment says why the code is what it is - never what it used to be, who"
+    echo "decided it, when, or what the current task wanted. The audience is a stranger"
+    echo "reading the code, not a party to this conversation. The reason survives in"
+    echo "the present tense; rewrite these that way, or delete them if nothing is left."
+  fi
+  if [[ -n $runs ]]; then
+    [[ -n $findings ]] && echo
+    echo "Comment audit: the text just written to $path carries a comment block longer"
+    echo "than $RUN_MAX lines."
+    echo "$runs"
+    echo
+    echo "Zero comments is the default and one tight sentence is the cap. A block this"
+    echo "long is prose the code should be carrying: keep the constraint a reader"
+    echo "cannot see and cut the rest, or move each reason down to the line it explains."
+  fi
 } >&2
 
 exit 2
