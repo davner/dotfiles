@@ -1,25 +1,16 @@
 #!/usr/bin/env bash
-# Blocks the Bash commands the global agent instructions call absolute, at the
-# moment they are attempted. Reads a PreToolUse payload on stdin; exit 2 is the
-# only code that blocks a tool call, and the reason goes to the model on stderr.
-#
-# These four are enforced here rather than written down because a prompt is
-# advice and a hook is a decision. Every one of them is unrecoverable or
-# rewrites history that was never the agent's to rewrite.
-#
-#   guard-bash.sh             reads the payload on stdin, prints the reason on
-#                             stderr, exits 2 to block and 0 to allow
-#
-# Registered as a PreToolUse hook on Bash in settings.base.json.
+# PreToolUse hook on Bash in settings.base.json: a prompt is advice, a hook is a
+# decision. Exit 2 is the only code that blocks a tool call, and the reason on
+# stderr is what the model reads back.
 set -uo pipefail
 
 payload=$(cat)
 cmd=$(jq -r '.tool_input.command // empty' <<<"$payload")
 [[ -n $cmd ]] || exit 0
 
-# A blocked command hides just as well behind `&&` as at the start of the line,
-# so each segment is judged on its own. Anchoring at a segment start is also
-# what keeps `echo "git add ."` from matching.
+# A blocked command hides behind `&&` as well as at the start of a line, so each
+# segment is judged on its own - which is also what keeps `echo "git add ."`
+# from matching.
 segments=$(printf '%s\n' "$cmd" | sed -E 's/(\&\&|\|\||;|\|)/\n/g')
 
 reason=""

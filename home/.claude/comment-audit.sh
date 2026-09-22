@@ -1,22 +1,7 @@
 #!/usr/bin/env bash
-# Flags comments that narrate the edit history instead of the reason, at the
-# moment they are written. Reads a PostToolUse payload on stdin; feedback goes
-# back to the model on stderr with exit 2, which for PostToolUse is a nudge
-# rather than a block, since the write has already happened.
-#
-# It inspects only the text the tool just wrote, never the whole file. Reading
-# the file would flag every legacy comment in anything an agent touches, and a
-# hook that fires on work you did not do is a hook you learn to ignore.
-#
-# The patterns are deliberately narrow. Domain prose says "the previous night"
-# and "the old semester's page" about runtime state, so bare "previous" and
-# "old" are not matched: this is a net for the obvious cases, not a proof, and
-# its worth depends on staying quiet enough to be read.
-#
-#   comment-audit.sh          reads the payload on stdin, prints findings on
-#                             stderr, exits 2 when it finds any and 0 otherwise
-#
-# Registered as a PostToolUse hook on Write|Edit|MultiEdit in settings.json.
+# PostToolUse hook on Write|Edit|MultiEdit in settings.base.json. Exit 2 here is
+# a nudge rather than a block, since the write already happened, and it reads
+# only the text the tool just wrote so it never flags a comment it did not author.
 set -uo pipefail
 
 payload=$(cat)
@@ -37,7 +22,7 @@ written=$(jq -r '
 [[ -n $written ]] || exit 0
 
 # A fixture date in a test is guarded by the assertion beside it, so it is
-# allowed to name one. Nothing else about a test comment is.
+# allowed to name one.
 case $path in
   *.test.* | *.spec.* | *_test.* | */tests/* | */test/*) in_test=1 ;;
   *) in_test=0 ;;
@@ -50,20 +35,16 @@ case $path in
   *) fenced=0 ;;
 esac
 
-# The adverb forms are matched even though the bare adjectives above are
-# excluded: in a comment the adverb narrates the edit, not the domain. The
-# move and rename patterns keep their extra words because the two-word forms
-# also describe runtime state.
+# Deliberately narrow, because a net that fires on domain prose gets ignored:
+# bare "previous" and "old" describe runtime state, their adverb forms never do,
+# and the move and rename patterns keep their extra words for the same reason.
 history_re='used to|no longer|formerly|superseded|(was|were) (removed|replaced|renamed)|this replaced|earlier (revision|version)|first (version|pass)|stopped being|went stale|previously|originally|refactored|renamed from|moved here from|instead of the old|until [0-9]{4}-[0-9]{2}-[0-9]{2}'
-# Session talk: a comment addressed to a party of the conversation instead
-# of a reader of the code. "per the spec" stays unmatched - an RFC or a
-# protocol spec is a legitimate present-tense referent.
+# "per the spec" stays unmatched - an RFC is a legitimate present-tense referent.
 session_re='as requested|as discussed|as instructed|per (the )?(plan|ticket|review|feedback)|review feedback|addresses the (review|finding)'
-# Who decided it and when is never wanted, in a test as much as anywhere.
 # Doubled backslash: `awk -v` resolves escapes before the regex is compiled.
 stamp_re='\\([A-Z][a-z]+, [0-9]{4}-[0-9]{2}-[0-9]{2}'
-# Month names require the year beside them, so "Mar" the abbreviation and
-# "May" the modal never hit on their own.
+# Month names require the year beside them, so "Mar" the abbreviation and "May"
+# the modal never hit on their own.
 date_re='[0-9]{4}-[0-9]{2}-[0-9]{2}|(January|February|March|April|May|June|July|August|September|October|November|December|Jan|Feb|Mar|Apr|Jun|Jul|Aug|Sep|Sept|Oct|Nov|Dec)\\.? (19|20)[0-9][0-9]'
 # Machine-read directives exist for the tooling, not the reader, so they are
 # invisible to the run length rather than counted against it.

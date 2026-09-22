@@ -1,20 +1,7 @@
 #!/usr/bin/env bash
-# The Claude Code status line: model, context window, and how much of the
-# 5-hour and weekly rate limits is gone.
-#
-#   Opus 5 · ctx 8% · 5h 24% (2h00m) · wk 41% (3d)
-#
-# Claude Code pipes one JSON object in on stdin; the fields are documented at
-# https://code.claude.com/docs/en/statusline. Almost all of them are optional:
-# rate_limits appears only on a claude.ai subscription and only after the
-# session's first API response, either window can be absent on its own, and the
-# context percentages are null until the first API call and again after
-# /compact. So every segment is printed only once its value has shown up, and
-# the line degrades to just the model name.
-#
-# There is no per-model breakdown in this payload. It carries the current
-# model and two account-wide windows, nothing per model, so a Fable-versus-Opus
-# split is not something a status line can show. /usage has that.
+# The Claude Code status line; the stdin payload is documented at
+# https://code.claude.com/docs/en/statusline. Almost every field is optional, so
+# each segment prints only once its value shows up and the line degrades to one.
 set -uo pipefail # no -e: a status line that exits early renders as nothing
 
 command -v jq >/dev/null 2>&1 || exit 0
@@ -22,6 +9,8 @@ command -v jq >/dev/null 2>&1 || exit 0
 # \x1f rather than a tab: bash collapses runs of whitespace when splitting, so
 # one absent middle value would silently shift every later field.
 SEP=$'\x1f'
+# Two account-wide windows and nothing per model, so a per-model split is not
+# something a status line can show; /usage has that.
 IFS="$SEP" read -r model ctx five five_at seven seven_at fast <<EOF
 $(jq -r --arg sep "$SEP" '
   def pct: if . == null then "" else (round | tostring) end;

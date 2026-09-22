@@ -1,25 +1,7 @@
 #!/usr/bin/env bash
-# Names a Claude Code session after the repo it is running in, so remote
-# control lists "nedkit" and "dotfiles" rather than three rows of whatever the
-# first prompt happened to say.
-#
-#   dotfiles          the only session in this repo
-#   dotfiles-2        a second one, opened while the first is still running
-#
-# Two callers, one answer:
-#
-#   session-name.sh [dir]     prints the name. The cc function passes it to
-#                             claude --name at launch.
-#   session-name.sh --hook    reads a SessionStart payload on stdin and prints
-#                             the JSON that sets the session title, for sessions
-#                             started as plain `claude`. Documented at
-#                             https://code.claude.com/docs/en/hooks.
-#
-# The number is a slot rather than a count. Claude Code keeps a file per running
-# session under ~/.claude/sessions/, carrying its pid, its directory and its
-# name, so which numbers are in use is a question about live processes rather
-# than something this script has to remember. Close the second session and the
-# next one to open takes its number back.
+# Names a Claude Code session after its repo, so remote control lists "dotfiles"
+# rather than whatever the first prompt said. The suffix number is a slot rather
+# than a count, so closing a session hands its number back to the next one.
 set -uo pipefail # no -e: a hook that dies mid-way still has to print its JSON
 
 command -v jq >/dev/null 2>&1 || exit 0
@@ -43,14 +25,12 @@ base="$(basename "$root")"
 case "$base" in "" | / | .) exit 0 ;; esac
 
 # The hook runs as a child of the claude process it is naming, so $PPID is the
-# session asking the question. It is in the registry too by this point, and it
-# is the one entry that must not count against itself.
+# session asking - the one registry entry that must not count against itself.
 self=""
 [ -n "$hook" ] && self="$PPID"
 
-# A pid still running under a name containing "claude" is a session still
-# holding its number. Checking the name as well as the pid keeps a recycled pid
-# from holding one for a session that ended.
+# Checking the process name as well as the pid keeps a recycled pid from holding
+# a number for a session that has ended.
 taken=""
 for f in "$HOME"/.claude/sessions/*.json; do
   [ -f "$f" ] || continue
@@ -73,6 +53,7 @@ while printf '%s' "$taken" | grep -qxF "$name"; do
 done
 
 if [ -n "$hook" ]; then
+  # SessionStart output shape: https://code.claude.com/docs/en/hooks
   jq -n --arg name "$name" \
     '{hookSpecificOutput: {hookEventName: "SessionStart", sessionTitle: $name}}'
 else

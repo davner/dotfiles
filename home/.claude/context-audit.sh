@@ -1,41 +1,15 @@
 #!/usr/bin/env bash
-# Measures Claude context files against the size caps that matter: a context
-# file loads into every session, so every line it grows costs every future
-# session. Prints one table and an exit code, and changes nothing - what to cut
-# is a judgment call, so findings go to the user, never back to the model
-# mid-task, which is why there is deliberately no --hook mode.
-#
-# A .md file inside a directory named `agents` is judged as an agent
-# definition and gets the agent caps; everything else gets the context caps.
-# An agent file whose opening `---` fence never closes is counted whole as
-# body, since without a closing fence it has no frontmatter.
-#
-#   context-audit.sh <file>...  audit exactly the named files. A file that does
-#                               not exist is an error on stderr and exit 2.
-#   context-audit.sh            audit the current repo's context files:
-#                               CLAUDE.md and AGENTS.md at the repo root (the
-#                               current directory outside a git repo), plus any
-#                               paths or globs listed one per line in
-#                               <root>/.claude/context-audit - blank lines and
-#                               `#` comments ignored. Absent config means
-#                               root-only, which is how a multiproject repo
-#                               scopes the audit. Globs may use `**`; on a
-#                               bash without globstar such a line is an error
-#                               (exit 2), never a shallow match.
-#   context-audit.sh --agents   audit every $HOME/.claude/agents/*.md.
-#
-# Exit 0 when everything is under its cap, 1 when anything is over.
+# Measures Claude context files against size caps: a context file loads into
+# every session, so every line it grows costs every future session. Deliberately
+# has no --hook mode - what to cut is the user's call, not the model's mid-task.
 set -uo pipefail
 
-# code.claude.com/docs/en/memory says to target under 200 lines per CLAUDE.md
-# file and caps its own MEMORY.md at 200 lines / 25KB. The byte cap exists
-# because unwrapped long lines dodge a pure line count.
+# code.claude.com/docs/en/memory targets under 200 lines per CLAUDE.md; the byte
+# cap exists because unwrapped long lines dodge a pure line count.
 CONTEXT_MAX_LINES=200
 CONTEXT_MAX_BYTES=25600
-# An agent body loads only when the agent runs, so it is laxer than a context
-# file. The description loads into every parent session for routing - Claude
-# Code warns when all descriptions together pass 15,000 tokens - so it gets a
-# much smaller cap of its own.
+# An agent body loads only when the agent runs, but its description loads into
+# every parent session for routing, so the description gets a far smaller cap.
 AGENT_BODY_MAX_LINES=400
 AGENT_DESC_MAX_CHARS=500
 
@@ -70,11 +44,8 @@ audit_context() { # display path
 
 audit_agent() { # display path
   local body chars bytes verdict
-  # Body is everything after the closing frontmatter fence (the whole file when
-  # there is no frontmatter). The description value is either on the
-  # `description:` line or a `>` folded block of indented lines, which is all
-  # the roster actually uses; the description row reports chars in the bytes
-  # column, against its own cap.
+  # A description is either inline or a `>` folded block of indented lines; its
+  # row reports chars in the bytes column, against a cap of its own.
   read -r body chars < <(awk '
     NR == 1 && /^---[[:space:]]*$/ { infm = 1; next }
     infm && /^---[[:space:]]*$/ { infm = 0; next }
@@ -98,9 +69,8 @@ audit_agent() { # display path
     }
     { body++ }
     END {
-      # An opening fence that never closes is not frontmatter: the whole file
-      # counts as body, so a malformed file can only over-report, never slip
-      # under the cap with a body of zero.
+      # An opening fence that never closes is not frontmatter, so a malformed
+      # file can only over-report, never slip under the cap with a body of zero.
       if (infm) { body = NR; desc = "" }
       print body + 0, length(desc)
     }
@@ -156,9 +126,8 @@ else
   done
   cfg="$root/.claude/context-audit"
   if [ -f "$cfg" ]; then
-    # Probed once so a `**` line fails loudly instead of matching one level
-    # deep: on a bash without globstar, nullglob would stick in the expansion
-    # subshell while globstar silently failed to set.
+    # Probed once so a `**` line fails loudly instead of matching one level deep:
+    # nullglob would stick in the expansion subshell while globstar never set.
     globstar_ok=1
     (shopt -s globstar) 2>/dev/null || globstar_ok=""
     while IFS= read -r pat || [ -n "$pat" ]; do
@@ -174,11 +143,10 @@ else
         esac
       fi
       # Each config line is a glob; expanding it is the point, so it stays
-      # unquoted. Expanded from the repo root so the paths are root-relative.
+      # unquoted, and from the repo root so the display paths are root-relative.
       # shellcheck disable=SC2086
       while IFS= read -r m; do
         [ -n "$m" ] || continue
-        # A glob that re-matches an already-audited file must not add a row.
         case $seen in *" $root/$m "*) continue ;; esac
         seen="$seen $root/$m "
         audit_one "$m" "$root/$m"
