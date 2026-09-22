@@ -166,6 +166,33 @@ else
 fi
 
 # --------------------------------------------------------------------------
+section "draft-ticket skill"
+# The skill drafts text a human pastes. The moment it can file a ticket it
+# stops being safe to run unattended, and that boundary lives only in the
+# prose - so pin the sentence that states it.
+DRAFT_MD="$DIR/home/.claude/skills/draft-ticket/SKILL.md"
+if grep -qF 'Nothing here files, edits, or moves a ticket.' "$DRAFT_MD"; then
+  ok "draft-ticket still says it never files a ticket"
+else
+  bad "draft-ticket still says it never files a ticket" \
+    "SKILL.md dropped the boundary that keeps it a drafting tool"
+fi
+# Both halves of "tied into the ticket loop, callable on its own": the loop has
+# to name the skill, and the skill has to say what it does when called alone.
+if grep -qF 'draft-ticket' "$TICKET_MD"; then
+  ok "the ticket loop's spec step uses the skill"
+else
+  bad "the ticket loop's spec step uses the skill" \
+    "ticket.md no longer routes its Title and Description through draft-ticket"
+fi
+if grep -qF 'Called on its own, the skill ends at section 6' "$DRAFT_MD"; then
+  ok "draft-ticket still stops at the draft when called alone"
+else
+  bad "draft-ticket still stops at the draft when called alone" \
+    "SKILL.md no longer says a standalone call starts no ticket loop"
+fi
+
+# --------------------------------------------------------------------------
 section "bash guard hook"
 # The rules this enforces are absolute in home/AGENTS.md, which is exactly why
 # they are a hook: a prompt is advice and a hook is a decision. The allow cases

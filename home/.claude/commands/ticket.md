@@ -82,10 +82,11 @@ finding licenses:
 
 1. **new <task>** - consult `researcher`/`architect` first only when the
    design turns on an unknown or has more than one plausible shape. Write the
-   spec: a paste-ready Shortcut **Title** and **Description**, then goal,
-   contracts, files expected to change, tests required, out of scope. Present
-   it and STOP. The user files it in Shortcut; their reply with the ticket
-   code is the approval.
+   spec: the `draft-ticket` skill produces the paste-ready Shortcut **Title**
+   and **Description** and the sidebar-field recommendations, then this loop
+   adds the engineering half - goal, contracts, files expected to change,
+   tests required, out of scope. Present it and STOP. The user files it in
+   Shortcut; their reply with the ticket code is the approval.
 
 2. **start <id>** - create the ticket file (status OPEN), then
    `git worktree add .tickets/<id>/tree -b <id> main`. Boot `senior-dev` in

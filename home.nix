@@ -167,6 +167,8 @@ in
   # Skills are linked one at a time, never as the whole `skills/` directory:
   # ~/.claude/skills also holds the hand-installed ones, and a directory-level
   # link would displace every one of them.
+  home.file.".claude/skills/draft-ticket".source =
+    config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.claude/skills/draft-ticket";
   home.file.".claude/skills/primereact-v10".source =
     config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.claude/skills/primereact-v10";
   home.file.".claude/skills/tailwind-v4".source =
