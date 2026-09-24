@@ -1605,7 +1605,7 @@ $u
     # A cask marked auto_updates is never "outdated" to brew bundle, so
     # onActivation.upgrade skips it unless the entry is greedy. Neither of
     # these self-updates, so greedy would only race their own updaters.
-    for c in wezterm claude-code; do
+    for c in wezterm claude-code@latest; do
       if printf '%s' "$brewfile" | grep -qE "cask \"$c\".*greedy"; then
         bad "$c is not greedy" "greedy on a cask that does not self-update races its own updater"
       else
