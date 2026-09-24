@@ -289,6 +289,32 @@ Co-Authored-By: Jane Cursor <jane@example.com>"'
 Co-Authored-By: Devin Parker <devin@example.com>"'
   eq "a human named Devin passes" "0" "$(guard "$named_devin")"
 
+  # Which is why the agent is matched by its handle and by the shape of a bot
+  # address instead, neither of which a human contributor carries.
+  devin_bot='git commit -m "feat: x
+
+Co-Authored-By: Devin <158243242+devin-ai-integration[bot]@users.noreply.github.com>"'
+  eq "the devin bot trailer is blocked" "2" "$(guard "$devin_bot")"
+  swe_bot='git commit -m "feat: x
+
+Co-Authored-By: Copilot <12345+copilot-swe-agent[bot]@users.noreply.github.com>"'
+  eq "another vendor's bot address is blocked" "2" "$(guard "$swe_bot")"
+  # No brand word anywhere, so only the bot-address pattern can fire.
+  bare_bot='git commit -m "feat: x
+
+Co-Authored-By: Some Bot <99+some-random-agent[bot]@users.noreply.github.com>"'
+  eq "a bot address with no brand word is blocked" "2" "$(guard "$bare_bot")"
+  human_noreply='git commit -m "feat: x
+
+Co-Authored-By: Jane Doe <9876+janedoe@users.noreply.github.com>"'
+  eq "an ordinary github noreply passes" "0" "$(guard "$human_noreply")"
+  # The same address without the suffix. Read as a bracket expression instead of
+  # two literals, `[bot]` would match the `t` of "agent" and block this.
+  not_a_bot='git commit -m "feat: x
+
+Co-Authored-By: Some One <99+some-random-agent@users.noreply.github.com>"'
+  eq "the same handle without [bot] passes" "0" "$(guard "$not_a_bot")"
+
   # A credit counts when it is in the message being committed, and nowhere else.
   # Each of these is a false positive the gate produced when it read the command.
   mentioned=""

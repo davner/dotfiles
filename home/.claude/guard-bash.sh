@@ -40,12 +40,15 @@ worktrees under .tickets/ and anything else git was told not to track."
 
 done <<<"$segments"
 
-# Brands only: `cody`, `cursor`, `codex` and `devin` are all names a human
-# contributor can carry, and AI_DOMAIN still catches those agents.
-AI_NAME='(claude|anthropic|copilot|chatgpt|openai|gpt-[0-9]|gemini|codeium|windsurf|aider|codewhisperer|sourcegraph)'
+# Brands only: `cody`, `cursor` and `codex` are all names a human contributor
+# can carry, but `devin-ai-integration` is a handle nobody is christened with.
+AI_NAME='(claude|anthropic|copilot|chatgpt|openai|gpt-[0-9]|gemini|codeium|windsurf|aider|codewhisperer|sourcegraph|devin-ai-integration)'
 # The name is not enough: a trailer reading "Opus 5 <noreply@anthropic.com>"
 # credits a model without naming a brand, so the vendor domain is checked too.
 AI_DOMAIN='@(anthropic|openai|cursor|cognition|codeium|sourcegraph)\.(com|ai|sh)'
+# A `[bot]` suffix in a GitHub noreply address is a machine account by
+# construction, whatever display name the trailer puts in front of it.
+AI_BOT='[0-9]+\+[a-z0-9-]+\[bot\]@users\.noreply\.github\.com'
 # Signed-off-by is deliberately absent: a DCO sign-off is a human's legal
 # attestation, never how a model credits itself, and this gate has no override.
 AI_KEY='(co-authored-by|assisted-by|generated[[:space:]]+(with|by))'
@@ -366,7 +369,7 @@ attribution_reason() { # committed text -> why it credits a tool, if it does
   local head="(^|${nl})[[:blank:]]*"
   local gap="[^${nl}]*(${nl}[[:space:]]*)?[^${nl}]*"
   shopt -s nocasematch
-  if [[ $text =~ ${head}${AI_KEY}${gap}(${AI_NAME}|${AI_DOMAIN}) ]] ||
+  if [[ $text =~ ${head}${AI_KEY}${gap}(${AI_NAME}|${AI_DOMAIN}|${AI_BOT}) ]] ||
     [[ $text =~ (claude-session|🤖) ]]; then
     hit=1
   fi
