@@ -9,6 +9,10 @@ machine's configuration, not a package anyone installs a version of.
 
 ## 2026-09-24
 
+- **Added** claude: Keep a label record for draft-ticket to reuse ([`b2367d9`](https://github.com/davner/dotfiles/commit/b2367d9beb23a565383707f82112c71c888293e8))
+- **Added** claude: Make acceptance criteria the floor of a ticket's tests ([`4bb421e`](https://github.com/davner/dotfiles/commit/4bb421ecd83c56a8e28e4095df83c4ffd4e7c094))
+- **Added** claude: Give draft-ticket titles a voice per ticket type ([`70d7f5b`](https://github.com/davner/dotfiles/commit/70d7f5b061a6636023d098a74361f0841e44cf60))
+- **Added** claude: Replace the user-story sentence with a Why section ([`3e95851`](https://github.com/davner/dotfiles/commit/3e958517848aa22f2174a38fa629832ea883ae78))
 - **Docs** agents: Keep find-only agents from re-running gates ([`5f016da`](https://github.com/davner/dotfiles/commit/5f016dac2fccfca3766291e544ab55e50ddb47c5))
 - **Fixed** claude: Judge AI credit only in the message being committed ([`d6ea381`](https://github.com/davner/dotfiles/commit/d6ea381fe148199b495cb4895414c582952eca81))
 - **Added** claude: Block AI credit from GitHub bot noreply addresses ([`fab6839`](https://github.com/davner/dotfiles/commit/fab6839335a7671b80449882359d8291cf8b9918))
