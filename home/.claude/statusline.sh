@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
-# The Claude Code status line; the stdin payload is documented at
-# https://code.claude.com/docs/en/statusline. Almost every field is optional, so
-# each segment prints only once its value shows up and the line degrades to one.
+# The Claude Code status line. Almost every field of its stdin payload is
+# optional: https://code.claude.com/docs/en/statusline
 set -uo pipefail # no -e: a status line that exits early renders as nothing
 
 command -v jq >/dev/null 2>&1 || exit 0

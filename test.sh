@@ -1053,32 +1053,48 @@ else
     '{"tool_input":{"file_path":"a.py","content":"\"\"\"\nformerly a generator\n\"\"\""}}'
   # Length is its own fault: the patterns above catch what a comment says, and
   # nothing there catches a block that simply runs on.
-  audit_case "a four-line comment run is flagged" 2 \
-    '{"tool_input":{"file_path":"a.ts","content":"// one\n// two\n// three\n// four"}}'
-  audit_case "a three-line comment run is not flagged" 0 \
+  audit_case "a three-line comment run is flagged" 2 \
     '{"tool_input":{"file_path":"a.ts","content":"// one\n// two\n// three"}}'
+  audit_case "a two-line comment run is not flagged" 0 \
+    '{"tool_input":{"file_path":"a.ts","content":"// one\n// two"}}'
   audit_case "a blank line ends a run" 0 \
     '{"tool_input":{"file_path":"a.ts","content":"// one\n// two\n\n// three\n// four"}}'
   audit_case "a block comment run is flagged" 2 \
-    '{"tool_input":{"file_path":"a.ts","content":"/* one\n * two\n * three\n * four\n */"}}'
+    '{"tool_input":{"file_path":"a.ts","content":"/* one\n * two\n * three\n */"}}'
   audit_case "a four-line python docstring is not a comment run" 0 \
     '{"tool_input":{"file_path":"a.py","content":"\"\"\"\nalpha\nbeta\ngamma\ndelta\n\"\"\""}}'
   # A fence that opens and closes on one line must leave the tracker where it
   # found it, or every line after it is misread for the rest of the file.
   audit_case "a one-line docstring does not swallow the run count" 2 \
-    '{"tool_input":{"file_path":"a.py","content":"\"\"\"One-liner.\"\"\"\n# one\n# two\n# three\n# four"}}'
+    '{"tool_input":{"file_path":"a.py","content":"\"\"\"One-liner.\"\"\"\n# one\n# two\n# three"}}'
   audit_case "a one-line docstring does not swallow the patterns" 2 \
     '{"tool_input":{"file_path":"a.py","content":"\"\"\"One-liner.\"\"\"\n# formerly a generator"}}'
   audit_case "a one-line docstring leaves a short run short" 0 \
-    '{"tool_input":{"file_path":"a.py","content":"\"\"\"One-liner.\"\"\"\n# one\n# two\n# three"}}'
+    '{"tool_input":{"file_path":"a.py","content":"\"\"\"One-liner.\"\"\"\n# one\n# two"}}'
   audit_case "a run of pragma lines is not flagged" 0 \
     '{"tool_input":{"file_path":"a.sh","content":"#!/usr/bin/env bash\n# shellcheck disable=SC2086\n# shellcheck disable=SC2001\n# shellcheck disable=SC2002"}}'
-  audit_case "a shebang does not pad a three-line run" 0 \
-    '{"tool_input":{"file_path":"a.sh","content":"#!/usr/bin/env bash\n# one\n# two\n# three"}}'
+  audit_case "a shebang does not pad a two-line run" 0 \
+    '{"tool_input":{"file_path":"a.sh","content":"#!/usr/bin/env bash\n# one\n# two"}}'
   audit_case "a trailing comment on each line is not a run" 0 \
     '{"tool_input":{"file_path":"a.ts","content":"const a=1; // one\nconst b=2; // two\nconst c=3; // three\nconst d=4; // four"}}'
   # A hook that dies on an unexpected payload takes the session's write with it.
   audit_case "malformed input exits quietly" 0 'not json at all'
+
+  # The cap is only credible if the repo it ships from meets it, so every hook
+  # script is replayed as the full-file Write it would arrive as.
+  unaudited=""
+  for s in "$DIR"/home/.claude/*.sh; do
+    out=$(jq -Rs --arg p "$s" '{tool_input:{file_path:$p,content:.}}' "$s" |
+      "$AUDIT" 2>&1 >/dev/null) && continue
+    unaudited="$unaudited
+    $(basename "$s"):
+$out"
+  done
+  if [ -z "$unaudited" ]; then
+    ok "the repo's own hook scripts pass the comment audit"
+  else
+    bad "the repo's own hook scripts pass the comment audit" "$unaudited"
+  fi
 fi
 
 # The hook is inert unless settings.base.json still registers it on the write tools.

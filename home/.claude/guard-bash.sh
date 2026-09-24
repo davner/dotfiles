@@ -1,16 +1,14 @@
 #!/usr/bin/env bash
-# PreToolUse hook on Bash in settings.base.json: a prompt is advice, a hook is a
-# decision. Exit 2 is the only code that blocks a tool call, and the reason on
-# stderr is what the model reads back.
+# PreToolUse hook on Bash in settings.base.json: exit 2 is the only code that
+# blocks a tool call, and the reason on stderr is what the model reads back.
 set -uo pipefail
 
 payload=$(cat)
 cmd=$(jq -r '.tool_input.command // empty' <<<"$payload")
 [[ -n $cmd ]] || exit 0
 
-# A blocked command hides behind `&&` as well as at the start of a line, so each
-# segment is judged on its own - which is also what keeps `echo "git add ."`
-# from matching.
+# A blocked command hides behind `&&` as well as at a line start, so each
+# segment is judged alone - which also keeps `echo "git add ."` from matching.
 segments=$(printf '%s\n' "$cmd" | sed -E 's/(\&\&|\|\||;|\|)/\n/g')
 
 reason=""
@@ -71,12 +69,10 @@ emit_token() { # append the token being built; reads scan_command's locals
 }
 
 # A commit is judged on its own statement, so the scan has to know where one
-# ends: a newline separates, a `#` opens a comment, and a heredoc body is data
-# belonging to whichever statement opened it rather than tokens of its own.
+# ends: a newline separates, `#` opens a comment, and a heredoc body is data.
 scan_command() { # command -> TOKENS, TOK_STMT (statement per token), STMT_DOC
-  # Line by line, because indexing a character out of the whole command is
-  # linear in its length and doing that per character made a long heredoc
-  # quadratic - seconds of latency on a hook that runs before every command.
+  # Line by line: indexing a character out of the whole command is linear in its
+  # length, so doing that per character made a long heredoc quadratic.
   local -a L=() pd=() ps=()
   local line trimmed body delim q c two
   local nl li i n cur="" have=0 stmt=0 inq="" cont=0 j st
@@ -417,6 +413,8 @@ accurate, it is two commits - split it."
   # way is a body in every sense this cap is about, so it is judged as one.
   ((blank >= 0)) || blank=0
 
+  # Seeded with the subject, which the meta list scans too, and which keeps the
+  # array non-empty - bash 3.2 refuses to expand an empty one under `set -u`.
   scan=("$subject")
   for ((i = blank + 1; i < ${#kept[@]}; i++)); do
     [[ -n ${kept[i]//[[:space:]]/} ]] || continue
@@ -446,9 +444,6 @@ bullet is usually a second commit - split it."
   # nocasematch rather than ${line,,}: this hook runs under whatever bash is on
   # PATH, which on a stock macOS is 3.2.
   shopt -s nocasematch
-  # The subject is scanned too: "As requested, rename the helper" is the same
-  # fault wherever it sits. It is seeded first so the array is never empty,
-  # which bash 3.2 refuses to expand under `set -u`.
   for line in "${scan[@]}"; do
     stripped=${line#"${line%%[![:space:]]*}"}
     case $stripped in
@@ -493,9 +488,8 @@ message_reason() { # -> why some staged message is not allowed, if one is not
   return 1
 }
 
-# Best effort by design: a form this cannot read - an --amend reusing the stored
-# message, a -F pointing nowhere - yields nothing and the commit goes through
-# unjudged, because blocking a message you cannot see is worse than verbosity.
+# Best effort by design: a message this cannot read - an --amend reusing the
+# stored one, a -F pointing nowhere - goes through unjudged rather than blocked.
 if [[ -z $reason ]]; then
   reason=$(message_reason) || reason=""
 fi

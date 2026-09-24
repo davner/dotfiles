@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
-# Measures Claude context files against size caps: a context file loads into
-# every session, so every line it grows costs every future session. Deliberately
-# has no --hook mode - what to cut is the user's call, not the model's mid-task.
+# Measures Claude context files against size caps, since each one loads into
+# every session. No --hook mode: what to cut is the user's call, not a model's.
 set -uo pipefail
 
 # code.claude.com/docs/en/memory targets under 200 lines per CLAUDE.md; the byte

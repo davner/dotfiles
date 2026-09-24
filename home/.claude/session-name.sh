@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
 # Names a Claude Code session after its repo, so remote control lists "dotfiles"
-# rather than whatever the first prompt said. The suffix number is a slot rather
-# than a count, so closing a session hands its number back to the next one.
+# rather than whatever the first prompt said.
 set -uo pipefail # no -e: a hook that dies mid-way still has to print its JSON
 
 command -v jq >/dev/null 2>&1 || exit 0
@@ -44,6 +43,8 @@ for f in "$HOME"/.claude/sessions/*.json; do
   taken="$taken$name"$'\n'
 done
 
+# The suffix is a slot rather than a count, so closing a session hands its
+# number back to the next one that opens.
 name="$base"
 n=1
 while printf '%s' "$taken" | grep -qxF "$name"; do

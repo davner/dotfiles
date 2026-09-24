@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
-# PostToolUse hook on Write|Edit|MultiEdit in settings.base.json. Exit 2 here is
-# a nudge rather than a block, since the write already happened, and it reads
-# only the text the tool just wrote so it never flags a comment it did not author.
+# PostToolUse hook on Write|Edit|MultiEdit in settings.base.json: exit 2 is a
+# nudge rather than a block, since the write already happened.
 set -uo pipefail
 
 payload=$(cat)
@@ -14,7 +13,8 @@ case $path in
   *) exit 0 ;;
 esac
 
-# Write carries `content`, Edit carries `new_string`, MultiEdit an array of them.
+# Write carries `content`, Edit carries `new_string`, MultiEdit an array of them
+# - and only those, so a comment this hook did not just see written is not read.
 written=$(jq -r '
   [ .tool_input.content?, .tool_input.new_string?, (.tool_input.edits // [])[]?.new_string? ]
   | map(select(. != null)) | join("\n")
@@ -36,8 +36,7 @@ case $path in
 esac
 
 # Deliberately narrow, because a net that fires on domain prose gets ignored:
-# bare "previous" and "old" describe runtime state, their adverb forms never do,
-# and the move and rename patterns keep their extra words for the same reason.
+# bare "previous" and "old" describe runtime state, their adverb forms never do.
 history_re='used to|no longer|formerly|superseded|(was|were) (removed|replaced|renamed)|this replaced|earlier (revision|version)|first (version|pass)|stopped being|went stale|previously|originally|refactored|renamed from|moved here from|instead of the old|until [0-9]{4}-[0-9]{2}-[0-9]{2}'
 # "per the spec" stays unmatched - an RFC is a legitimate present-tense referent.
 session_re='as requested|as discussed|as instructed|per (the )?(plan|ticket|review|feedback)|review feedback|addresses the (review|finding)'
@@ -49,16 +48,15 @@ date_re='[0-9]{4}-[0-9]{2}-[0-9]{2}|(January|February|March|April|May|June|July|
 # Machine-read directives exist for the tooling, not the reader, so they are
 # invisible to the run length rather than counted against it.
 pragma_re='^#!|shellcheck[[:space:]]+disable|eslint-disable|@ts-expect-error|prettier-ignore|^[[:space:]]*///[[:space:]]*<reference'
-RUN_MAX=3
+RUN_MAX=2
 
 # One pass, because the fence tracker is the thing both faults depend on and a
 # second copy of it is a second place to forget. The prefix says which fault.
 audit=$(
   awk -v hist="$history_re" -v sess="$session_re" -v stamp="$stamp_re" -v date="$date_re" \
     -v pragma="$pragma_re" -v in_test="$in_test" -v fenced="$fenced" -v max="$RUN_MAX" '
-    # A GraphQL or Python docstring is documentation too, and carries no marker
-    # on its body lines - so track the fence rather than looking for one, per
-    # occurrence, since `"""One-liner."""` opens and closes on the one line.
+    # A docstring is documentation too and its body lines carry no marker, so
+    # the fence is counted per occurrence: `"""One-liner."""` opens and closes.
     function fences(s,   c, i) {
       c = 0
       while ((i = index(s, "\"\"\"")) > 0) { c++; s = substr(s, i + 3) }
