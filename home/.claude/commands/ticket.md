@@ -85,8 +85,12 @@ finding licenses:
    spec: the `draft-ticket` skill produces the paste-ready Shortcut **Title**
    and **Description** and the sidebar-field recommendations, then this loop
    adds the engineering half - goal, contracts, files expected to change,
-   tests required, out of scope. Present it and STOP. The user files it in
-   Shortcut; their reply with the ticket code is the approval.
+   tests required, out of scope. Tests required are built from the acceptance
+   criteria: each criterion is a required case cited by its position in the
+   list (the first is 1), followed by the cases a human-facing ticket leaves
+   out - failure paths, edge inputs. The criteria are the floor, not the test
+   plan. Present it and STOP. The user files it in Shortcut; their reply with
+   the ticket code is the approval.
 
 2. **start <id>** - create the ticket file (status OPEN), then
    `git worktree add .tickets/<id>/tree -b <id> main`. Boot `senior-dev` in
@@ -109,14 +113,14 @@ finding licenses:
    red or unrun gate bounces straight back to the writer without spawning
    any reviewer - review judgment is never spent on defects a test run
    catches free. Then, if the spec changes behavior, send `test-writer` into
-   the worktree to author the new coverage and commit it to the branch. The
-   worktree has one writer at a time: the resident writer idles while
-   test-writer, debugger, or docs-writer works there. Then run the review
-   round, each agent given the spec inline and the worktree path. Round 1
-   opens with `code-reviewer` alone as a smoke gate: any Blocking finding
-   goes straight to REWORK and the rest of the panel never spawns, because
-   it would be reviewing a tip about to change. Only a gate pass (no
-   Blocking finding) fans the rest of the round out in parallel; rounds
+   the worktree, with the spec inline, to author the new coverage and commit
+   it to the branch. The worktree has one writer at a time: the resident
+   writer idles while test-writer, debugger, or docs-writer works there. Then
+   run the review round, each agent given the spec inline and the worktree
+   path. Round 1 opens with `code-reviewer` alone as a smoke gate: any
+   Blocking finding goes straight to REWORK and the rest of the panel never
+   spawns, because it would be reviewing a tip about to change. Only a gate
+   pass (no Blocking finding) fans the rest of the round out in parallel; rounds
    after the first are parallel from the start, since the code is stable
    enough by then that serializing only spends wall clock.
    Round 1 reviews `git diff main...<id>` in full; record the branch tip with

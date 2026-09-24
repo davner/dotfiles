@@ -70,7 +70,9 @@ nobody wrote a test for, so spend on probes what the gates saved.
    a finding by default, and make the author justify it rather than the other
    way round. If the diff changes behavior and adds no coverage, say so and name
    what is uncovered - that is a routing finding for `test-writer`, not a
-   blocking one, and it is lost if you do not write it down.
+   blocking one, and it is lost if you do not write it down. The exception is a
+   ticket-loop spec with acceptance criteria: a criterion with no covering test
+   and no stated manual check is a requirements miss.
 6. **Check the shape.** Whether the code's complexity matches the problem's.
    Branches that differ only in a value, a special case per input someone
    happened to try, a hand-rolled version of what the language or an existing

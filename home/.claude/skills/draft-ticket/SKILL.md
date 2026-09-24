@@ -272,11 +272,14 @@ constraint that rules it out, stated in the present tense.>
 
 Acceptance criteria are the contract, and they are where most tickets fail:
 
-1. Each one is a **check a reviewer can run**, pass or fail, no judgment call.
-   "Handles errors gracefully" is not a criterion. "A 500 from the payments API
-   shows the retry banner and does not clear the cart" is.
+1. Each one is a **check a reviewer can run**, pass or fail, no judgment call,
+   phrased so it can become a test: a concrete starting state, an action, an
+   observable result. "Handles errors gracefully" is not a criterion. "With a
+   stored token that expires in 120 s, the first refresh request goes out 60 s
+   after the session starts, and none goes out before that" is.
 2. They describe **behavior, not steps**. If a criterion names a function to
-   write, it belongs in Notes.
+   write, it belongs in Notes. A criterion never names a test file either -
+   mapping criteria to tests belongs to whoever builds it, not to the ticket.
 3. Include the unhappy paths that matter: empty, failing, unauthorized,
    concurrent, already-done. One or two, chosen because they are real, not a
    sweep of everything imaginable.
@@ -408,7 +411,7 @@ checklist.
 
 1. Would someone with no context act correctly on this alone?
 2. Is every acceptance criterion binary, behavioral, and checkable by a third
-   party?
+   party, with a concrete starting state, an action, and an observable result?
 3. Is the *why* in there, and is it sourced rather than invented?
 4. Does the title survive alone in a board column, and do its first two
    words carry information the Team field does not already give?

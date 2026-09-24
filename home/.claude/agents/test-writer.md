@@ -45,6 +45,15 @@ its mistakes and goes green on all of them.
   to match what the code happens to do, and do not fix the code yourself -
   `senior-dev` owns that.
 
+## Acceptance criteria
+
+When the task carries acceptance criteria, each one is covered by at least one
+test, and the report maps every criterion to the names of its tests. A
+criterion no test can automate says how it is checked instead - `ui-verifier`
+in a browser, for one. The criteria are a floor, not the test plan: they are the
+examples that pin down what was agreed, and the method above - intent first,
+then what can fail - still finds the cases they leave out.
+
 ## What to cover
 
 Cover the boundaries and the error paths, not just the happy path. The happy
