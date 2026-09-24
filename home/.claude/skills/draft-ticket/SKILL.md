@@ -1,6 +1,6 @@
 ---
 name: draft-ticket
-description: Draft the text for a Shortcut epic, story, bug, chore, or spike - a title, a markdown description with acceptance criteria, and a recommendation for each sidebar field - ready to paste into the Create form. Use whenever the user asks for a ticket, story, epic, bug report, or spec to be written up, when work needs filing before it is built, or when an existing ticket is too thin to act on. Also drafts from work that already exists - the current diff, a named branch, a git worktree, or several of them at once, where several related branches become one epic with a story each. Also the drafting half of the `/ticket` loop's spec step. It writes text only and never creates, edits, or transitions anything in Shortcut or Jira.
+description: Draft the text for a Shortcut epic, story, bug, chore, or spike - a title, a markdown description with acceptance criteria, and a recommendation for each sidebar field - ready to paste into the Create form. Use whenever the user asks for a ticket, story, epic, bug report, or spec to be written up, when work needs filing before it is built, or when an existing ticket is too thin to act on. Also drafts from work that already exists - the current diff, a named branch, a git worktree, or several of them at once, where several related branches become one epic with a story each. Also the drafting half of the `/ticket` loop's spec step. It never creates, edits, or transitions anything in Shortcut or Jira; its only write is the project's label record and a one-line pointer to it.
 argument-hint: [epic|story|bug|chore|spike] <what the work is, a branch, or a worktree path>
 model: opus
 ---
@@ -10,7 +10,8 @@ model: opus
 Produce the content a human pastes into Shortcut's Create Epic or Create Story
 form. **Nothing here files, edits, or moves a ticket.** No API call, no browser,
 no MCP write. The deliverable is text on screen; the user decides whether it
-ever becomes a ticket.
+ever becomes a ticket. The one local write is the project's label record and
+its pointer (section 5), and nothing else.
 
 Write for the person who opens this cold at 2am six months from now, knowing
 nothing about today's conversation. That reader is the only audience. A
@@ -362,12 +363,26 @@ user or the team can know as "yours to set" rather than inventing them.
 | Epic | - | yes | Name the epic if one exists or you are drafting it in the same pass. |
 | Estimate | - | yes | Points, only if the team's scale is known from the conversation or the repo. Otherwise say "unestimated - your call". Never invent a scale. |
 | Priority | - | yes | A workspace custom field, not a Shortcut built-in. Recommend it for bugs, where impact and frequency are already in the draft. Otherwise leave it. There is no Severity field at all - that goes in the description. |
-| Labels | maybe | maybe | Only labels already in use. Do not mint taxonomy. |
+| Labels | maybe | maybe | Reuse a recorded label when one fits. Propose a new one only for a cross-cutting concern no recorded label covers, shown as `name (new - one-line meaning)`. |
 | Relationships | - | maybe | Blocks / blocked by / duplicates, when a real dependency exists. |
 | External Links | maybe | maybe | The PR, the Sentry issue, the design, the doc. Drafting from a branch or worktree, this carries the branch, its tip, and when you observed the tip - section 1 requires it and this row is where it actually gets written. |
 | Sub-tasks / Checklist | - | maybe | Only when the story genuinely has ordered steps. Acceptance criteria are not sub-tasks. |
 | Objective | maybe | - | Leave it; the user knows which objective this rolls up to. |
 | Team, Workflow, State, Owner, Requester, Iteration, Project, Dates, Followers | - | - | Yours to set. Never recommend these. |
+
+**The label record.** A project's labels live in `.claude/ticket-labels.md`
+at its root, one entry per label, sorted by name: `- name - use when <one-line
+meaning>`. Read it before recommending labels; a missing file means none are
+recorded. A proposed label is appended in the same run, after checking the
+record for a near-duplicate - a plural, a synonym - and reusing that instead.
+Never propose one that duplicates what Type, Priority, Estimate, or another
+field already holds, since a label that repeats a field drifts from it. The
+user creates labels in Shortcut when filing, never this skill, so an entry can
+name a label nobody created.
+
+The pointer is one line naming the record in the project's `CLAUDE.md`, added
+when absent - in the link's target when `CLAUDE.md` is a symlink, in `AGENTS.md`
+when only that exists, and in a new `CLAUDE.md` when neither does.
 
 ## 6. How to present it
 
@@ -378,7 +393,8 @@ field. Never a single block containing the whole ticket.
 Order: the artifact choice and its reasoning, briefly - one line where the
 call is obvious, a short paragraph where a split is being recommended - then
 the **Title** block, then
-**Description** block, then the field table, then a short **Could not
+**Description** block, then the field table, then one line naming any label
+appended to the record, then a short **Could not
 determine** list naming each gap and who can close it. Then stop. Do not offer
 to file it.
 
