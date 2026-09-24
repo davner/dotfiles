@@ -238,23 +238,15 @@ noise, and a missing one reads as "not relevant".
 
 ### Story (Feature)
 
-The user-story sentence earns its place when there is a real actor whose goal
-differs from the team's. When the actor would be "as a developer, I want the
-code to be cleaner", it is a Chore - drop the sentence and write plain prose.
-The format is a tool for surfacing a user's motive, not a tax.
-
-**Uniformity rule:** be uniform *within* a type, never across the backlog.
-Every Feature story takes the same shape, every Bug takes the same shape, and a
-Chore is not bent into either. Forcing one template over all three is what
-produces "As a developer, I want a database index" (Cohn's named smell); making
-each ticket its own genre is what makes a backlog unreadable.
-
-The means is **"I want to <do something>"**, not "I want <a feature>". The
-mutation into feature-naming is what turns a story back into a requirements
-document (Marcano on the Connextra original).
+Feature and Chore share this shape. **Why** states the "so that" plainly -
+the effect of the change and who feels it - because that is the part a reader
+six months out cannot reconstruct from the code. Be uniform *within* a type:
+every Feature and Chore takes this shape, every Bug takes the Bug shape, and
+nothing is bent into a shape that does not fit it.
 
 ```markdown
-As a <actor>, I want to <do something> so that <benefit>.
+## Why
+<The effect this change has, and who feels it. One short paragraph.>
 
 ## Context
 <Where this lives in the code, what exists today, the constraint that shapes
@@ -347,9 +339,10 @@ that and mixes two causes into one history.
 
 ### Chore and Spike
 
-Chore: what changes, why now, how a reviewer confirms nothing else moved.
-Acceptance criteria are still binary - "the build passes with `foo@3` and no
-`@ts-expect-error` remains" is one.
+Chore: the Feature shape, with **Why** saying why now and one criterion
+saying how a reviewer confirms nothing else moved. Acceptance criteria are
+still binary - "the build passes with `foo@3` and no `@ts-expect-error`
+remains" is one.
 
 Spike: the question, the timebox, and the artifact that ends it (a written
 recommendation, a decision record, a throwaway branch that gets deleted). A

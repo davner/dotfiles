@@ -53,11 +53,13 @@ The only real split in the literature, and the skill has to hold a position.
 | Keep it uniform | The QUS academic framework (Lucassen et al., 2016) | Scores a story **down** for being non-**Uniform** with the rest of the set. |
 
 **The skill's resolution, and it is a synthesis rather than a citation:**
-uniform within a type, free across types. Every Feature takes the Connextra
-sentence, every Bug takes the Mozilla field set, every Chore takes the FDD
-shape. Nothing is bent into a template that does not fit it. This satisfies
-QUS's Uniform within the set a reader is actually comparing, and satisfies
-Cohn by never forcing a Chore into a user's voice.
+uniform within a type, free across types. Feature and Chore share one shape
+whose **Why** section carries the "so that", and every Bug takes the Mozilla
+field set. The Connextra sentence is dropped: Lucassen et al.'s practitioner
+survey (REFSQ 2016) found that a consistent template helps and the "why" is
+essential, while the "As a ... I want ..." wording itself is not. This
+satisfies QUS's Uniform within the set a reader is actually comparing, and
+satisfies Cohn by never forcing technical work into a user's voice.
 
 One detail worth keeping right: the Connextra original said "I want **to do
 something**". The industry mutated it to "I want **\[feature]**", which turns
