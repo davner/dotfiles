@@ -15,6 +15,10 @@ machine's configuration, not a package anyone installs a version of.
 - **Added** claude: Flag comment blocks longer than three lines ([`f0318d7`](https://github.com/davner/dotfiles/commit/f0318d70ba31580703c02cce0cb5b970cd21602e))
 - **Docs** claude: Cut the hook scripts' headers down to the reason ([`16ed811`](https://github.com/davner/dotfiles/commit/16ed811a1905acff4ad3045389936cdf453831d0))
 
+## 2026-09-21
+
+- **Chore** deps: Nix flake update ([`b00458a`](https://github.com/davner/dotfiles/commit/b00458af9124aa201346261daf430b93babbdc34))
+
 ## 2026-09-15
 
 - **Changed** claude: Merge a11y-auditor into ui-verifier and retire plan-reviewer ([`8d86238`](https://github.com/davner/dotfiles/commit/8d86238c853fe8d3ecdfa41a012af4e9feb2a55f))
