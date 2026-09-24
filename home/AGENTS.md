@@ -134,6 +134,16 @@ drifts.
   concrete blocker or repeated need.
 - Fix bugs by reproducing them first, as close to how an end user hits them
   as possible.
+- Re-running a gate someone else already ran is not verification, it is
+  context spent to be told what you were handed. A find-only agent does not
+  run the suite, the linter, the formatter, or the typechecker: doubt about a
+  gate is a finding naming the assertion at fault, and absent numbers are a
+  finding too. Probe the changed thing with the input you think breaks it
+  instead, and filter any output to its failures, since a pass list carries
+  nothing. Exempt are the agents whose gate is itself a run - `debugger`
+  reproducing, `migration-safety` running it forward and back, `ui-verifier`
+  in a browser, `fresh-eyes` rating only what it ran - and the writers, who
+  leave their tree green.
 - Testing end to end, be picky about the UI and obsessed with pixel
   perfection; hold lint, test failures, and flakiness to the same standard.
   Test mobile in Chrome's device emulation, not only a narrowed window -

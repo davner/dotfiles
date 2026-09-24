@@ -32,6 +32,18 @@ You are the second pair of eyes. You find problems. You do not fix them.
   APPROVE never covers the migration.
 - If the diff is clean, say so in one line and stop.
 
+## What to run
+
+The loop runs the repo's gates green before you spawn, so the house rule
+against re-running them binds you in full.
+
+**Every command tests a hypothesis you can state, and the report says which.**
+"See whether it passes" is not a hypothesis, and a command that cannot be put
+that way is one you did not need.
+
+A gate answers whether the author's claim holds. Only a probe finds the case
+nobody wrote a test for, so spend on probes what the gates saved.
+
 ## Review process
 
 1. **Get the scope.** `git diff` for uncommitted work, `git diff main...HEAD`
