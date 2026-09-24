@@ -179,13 +179,18 @@ Splitting an epic: slice vertically, by user-visible outcome, never by layer.
 ## 3. Titles
 
 One line, under ~80 characters, specific enough to be searchable and to stand
-alone in a board column with nothing around it.
+alone in a board column with nothing around it. The voice follows the type:
 
-- State the outcome, not the implementation. `Password reset email arrives
-  within 60 seconds` beats `Add SQS queue to mailer`. The exception is a chore,
-  where the implementation *is* the outcome.
-- A bug title names the broken behavior and where: `Disabled filter on Agents
+- **Feature and Chore:** imperative, naming the observable change, with a
+  "so ..." clause only when the effect is not obvious from the change: `Renew
+  SSO tokens 60 s early so one failed refresh does not sign the reader out`.
+  The verb names the domain change, not the mechanism - `Add SQS queue to
+  mailer` is wrong when the queue is not the point.
+- **Bug:** the broken behavior and where - the problem, not the suggested
+  solution (Mozilla's bug-writing guideline): `Disabled filter on Agents
   redirects to an undefined page`. Not `Filter bug`.
+- **Epic:** the outcome, since no single verb covers several changes.
+- **Spike:** the question it answers.
 - No ticket-type prefixes (`[BUG]`, `FE:`). Shortcut has a Type field and a
   Team field; duplicating them in the title only costs column width.
 - **Do not open with the service, repo, or app name.** The board is already
@@ -195,9 +200,6 @@ alone in a board column with nothing around it.
   the SSO session` and `resource-ui keeps an SSO session and sends the user's
   token to Resource` cost the same width for the same nothing. Lead with the
   behavior: `SSO session survives logout and leaks the user token downstream`.
-- The grammatical subject is the behavior or the user, not the system that
-  owns the code. A title whose subject is a service name is almost always the
-  previous bullet wearing a verb.
 - **Name a component only where it disambiguates**, and then inside the
   sentence rather than in front of it: two services in one epic, or a name that
   a reader would otherwise get wrong. `Token refresh races the logout redirect
@@ -413,8 +415,9 @@ checklist.
 2. Is every acceptance criterion binary, behavioral, and checkable by a third
    party, with a concrete starting state, an action, and an observable result?
 3. Is the *why* in there, and is it sourced rather than invented?
-4. Does the title survive alone in a board column, and do its first two
-   words carry information the Team field does not already give?
+4. Does the title take its type's voice, survive alone in a board column, and
+   carry information the Team field does not already give in its first two
+   words?
 5. Does the scope have an edge? An "out of scope" line is how a reader knows
    you thought about one.
 6. Is every file, symbol, link, and error string real and verified, not
