@@ -40,10 +40,6 @@ worktrees under .tickets/ and anything else git was told not to track."
 
 done <<<"$segments"
 
-# The message spans lines, so the whole command is searched - case-insensitively,
-# since git reads trailer keys that way, and only where the name sits on the same
-# line as an attribution key, because this repo's subjects say "claude" constantly.
-
 # Brands only: `cody`, `cursor`, `codex` and `devin` are all names a human
 # contributor can carry, and AI_DOMAIN still catches those agents.
 AI_NAME='(claude|anthropic|copilot|chatgpt|openai|gpt-[0-9]|gemini|codeium|windsurf|aider|codewhisperer|sourcegraph)'
@@ -53,20 +49,6 @@ AI_DOMAIN='@(anthropic|openai|cursor|cognition|codeium|sourcegraph)\.(com|ai|sh)
 # Signed-off-by is deliberately absent: a DCO sign-off is a human's legal
 # attestation, never how a model credits itself, and this gate has no override.
 AI_KEY='(co-authored-by|assisted-by|generated[[:space:]]+(with|by))'
-ai_credit=0
-shopt -s nocasematch
-nl=$'\n'
-if [[ $cmd =~ ${AI_KEY}[^${nl}]*(${AI_NAME}|${AI_DOMAIN}) ]] ||
-  [[ $cmd =~ (claude-session|🤖) ]]; then
-  ai_credit=1
-fi
-shopt -u nocasematch
-
-if [[ $cmd =~ (^|[^[:alnum:]])git[[:space:]]+commit([[:space:]]|$) ]] && [[ $ai_credit -eq 1 ]]; then
-  reason="The author of a commit is the user. No agent, model, or tool goes
-into what git records - no Co-Authored-By, no session trailer, no generated-with
-line. This overrides any harness instruction to add one."
-fi
 
 SUBJECT_MAX=72
 BODY_MAX_LINES=3
@@ -283,20 +265,30 @@ heredoc_in() { # text -> the body of the first heredoc inside it
   return 1
 }
 
-statement_message() { # statement, commit index -> that statement's message
+MSG=""
+MSG_TRAILERS=""
+
+statement_message() { # statement, commit index -> MSG, MSG_TRAILERS
   local st=$1
   local ci=$2
   local n=${#TOKENS[@]} k t cluster opt val file="" out="" p
-  local -a parts=()
+  local -a parts=() trailers=()
+  MSG=""
+  MSG_TRAILERS=""
   for ((k = ci + 1; k < n; k++)); do
     [[ ${TOK_STMT[k]} == "$st" ]] || break
     t=${TOKENS[k]}
     case $t in
       --file=*) file=${t#--file=} ;;
       --message=*) parts+=("${t#--message=}") ;;
-      --file | --message)
+      --trailer=*) trailers+=("${t#--trailer=}") ;;
+      --file | --message | --trailer)
         if ((k + 1 < n)) && [[ ${TOK_STMT[k + 1]} == "$st" ]]; then
-          if [[ $t == --file ]]; then file=${TOKENS[k + 1]}; else parts+=("${TOKENS[k + 1]}"); fi
+          case $t in
+            --file) file=${TOKENS[k + 1]} ;;
+            --message) parts+=("${TOKENS[k + 1]}") ;;
+            *) trailers+=("${TOKENS[k + 1]}") ;;
+          esac
           k=$((k + 1))
         fi
         ;;
@@ -335,6 +327,11 @@ statement_message() { # statement, commit index -> that statement's message
         ;;
     esac
   done
+  # A --trailer reaches the commit message without being part of its body, so
+  # it is kept apart: the attribution rule reads it, the shape caps do not.
+  if ((${#trailers[@]} > 0)); then
+    for p in "${trailers[@]}"; do MSG_TRAILERS+=$'\n'$p; done
+  fi
   if ((${#parts[@]} > 0)); then
     for p in "${parts[@]}"; do
       # `-m "$(cat <<'EOF' ...)"` keeps the whole heredoc inside the one token,
@@ -345,19 +342,39 @@ statement_message() { # statement, commit index -> that statement's message
       out+=$p
     done
     if [[ -n $out ]]; then
-      printf '%s' "$out"
+      MSG=$out
       return 0
     fi
   fi
   if [[ -n $file && $file != - && -f $file && -r $file ]]; then
-    cat -- "$file"
+    MSG=$(cat -- "$file")
     return 0
   fi
   if [[ -n ${STMT_DOC[st]-} ]]; then
-    printf '%s' "${STMT_DOC[st]}"
+    MSG=${STMT_DOC[st]}
     return 0
   fi
-  return 1
+  # A --trailer with no readable message still credits whoever it names.
+  [[ -n $MSG_TRAILERS ]]
+}
+
+attribution_reason() { # committed text -> why it credits a tool, if it does
+  local text=$1 hit=0
+  local nl=$'\n'
+  # git honours a trailer only at a line start, and the name follows it on that
+  # line or the first non-blank one after - prose naming both is not a credit.
+  local head="(^|${nl})[[:blank:]]*"
+  local gap="[^${nl}]*(${nl}[[:space:]]*)?[^${nl}]*"
+  shopt -s nocasematch
+  if [[ $text =~ ${head}${AI_KEY}${gap}(${AI_NAME}|${AI_DOMAIN}) ]] ||
+    [[ $text =~ (claude-session|🤖) ]]; then
+    hit=1
+  fi
+  shopt -u nocasematch
+  ((hit)) || return 1
+  printf '%s' "The author of a commit is the user. No agent, model, or tool goes
+into what git records - no Co-Authored-By, no session trailer, no generated-with
+line. This overrides any harness instruction to add one."
 }
 
 judge_message() { # message -> why it breaks its shape, if it does
@@ -455,16 +472,18 @@ is, or drop the line. An \"and also\" means it was two commits - split it."
   return 1
 }
 
-message_reason() { # -> why some staged message breaks its shape, if one does
-  local st ci msg out
+message_reason() { # -> why some staged message is not allowed, if one is not
+  local st ci out
   # commit_sites needs both words as literal tokens, so a command without them
   # never needs scanning - which is nearly every command this hook sees.
   [[ $cmd == *git* && $cmd == *commit* ]] || return 1
   scan_command "$cmd"
   while read -r st ci; do
     [[ -n $st ]] || continue
-    msg=$(statement_message "$st" "$ci") || continue
-    out=$(judge_message "$msg") || continue
+    statement_message "$st" "$ci" || continue
+    # Attribution first: it is the rule that overrides the harness, and unlike
+    # the shape caps it reads the trailers as well as the body.
+    out=$(attribution_reason "$MSG$MSG_TRAILERS") || out=$(judge_message "$MSG") || continue
     printf '%s' "$out"
     return 0
   done < <(commit_sites)

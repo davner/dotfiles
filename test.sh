@@ -230,8 +230,8 @@ CASES
     bad "the absolute rules are blocked" "$blocked"
   fi
 
-  # A commit message spans lines, so this one is checked against the whole
-  # command rather than the segment its `git commit` started on.
+  # An AI credit is judged in the message being committed, never in the command
+  # text around it, so every route the message arrives by gets a case below.
   trailer='git commit -m "feat: x
 
 Co-Authored-By: Claude <n@a.com>"'
@@ -288,6 +288,125 @@ Co-Authored-By: Jane Cursor <jane@example.com>"'
 
 Co-Authored-By: Devin Parker <devin@example.com>"'
   eq "a human named Devin passes" "0" "$(guard "$named_devin")"
+
+  # A credit counts when it is in the message being committed, and nowhere else.
+  # Each of these is a false positive the gate produced when it read the command.
+  mentioned=""
+  attr_bare=$'# note: never add Co-Authored-By: Claude <n@a.com> to a message\necho hi'
+  [ "$(guard "$attr_bare")" = "0" ] || mentioned="$mentioned
+    a comment mentioning a trailer blocked a command that does not commit"
+  attr_comment=$'# note: Co-Authored-By: Claude <n@a.com>\ngit commit -m "fix: short"'
+  [ "$(guard "$attr_comment")" = "0" ] || mentioned="$mentioned
+    a comment mentioning a trailer blocked the commit beside it"
+  attr_doc=$'cat > /tmp/d.txt <<\'END\'\nCo-Authored-By: Claude <n@a.com>\nEND\ngit commit -m "fix: short"'
+  [ "$(guard "$attr_doc")" = "0" ] || mentioned="$mentioned
+    another command's heredoc blocked the commit beside it"
+  attr_echo='echo "Co-Authored-By: Claude <n@a.com>" && git commit -m "fix: short"'
+  [ "$(guard "$attr_echo")" = "0" ] || mentioned="$mentioned
+    an unrelated command blocked the commit beside it"
+  attr_sess=$'# Claude-Session: https://x\ngit commit -m "fix: short"'
+  [ "$(guard "$attr_sess")" = "0" ] || mentioned="$mentioned
+    a session trailer in a comment blocked the commit beside it"
+  attr_emoji='echo "🤖" && git commit -m "fix: short"'
+  [ "$(guard "$attr_emoji")" = "0" ] || mentioned="$mentioned
+    an emoji outside the message blocked the commit beside it"
+  if [ -z "$mentioned" ]; then
+    ok "a credit outside the message does not block"
+  else
+    bad "a credit outside the message does not block" "$mentioned"
+  fi
+
+  # ...and it counts by whichever route the message reaches the commit.
+  attr_heredoc=$'git commit -F - <<\'MSG\'\nfix: x\n\nCo-Authored-By: Claude <n@a.com>\nMSG'
+  eq "a credit arriving by heredoc is blocked" "2" "$(guard "$attr_heredoc")"
+  printf 'fix: x\n\nCo-Authored-By: Claude <n@a.com>\n' >"$WORK/attr-msg.txt"
+  eq "a credit arriving by -F file is blocked" "2" \
+    "$(guard "git commit -F $WORK/attr-msg.txt")"
+  eq "a credit in a later -m is blocked" "2" \
+    "$(guard 'git commit -m "fix: x" -m "Co-Authored-By: Claude <n@a.com>"')"
+  eq "a credit in an amended message is blocked" "2" \
+    "$(guard 'git commit --amend -m "fix: x" -m "Co-Authored-By: Claude <n@a.com>"')"
+  eq "a session trailer in the message is blocked" "2" \
+    "$(guard 'git commit -m "fix: x" -m "Claude-Session: https://x"')"
+  eq "the robot emoji in the message is blocked" "2" \
+    "$(guard 'git commit -m "fix: x" -m "🤖 Generated with Claude Code"')"
+  # git puts a --trailer into the committed message without it being in the
+  # body, so the attribution rule reads it and the shape caps do not.
+  eq "a credit passed with --trailer is blocked" "2" \
+    "$(guard 'git commit -m "fix: x" --trailer "Co-Authored-By: Claude <n@a.com>"')"
+  eq "a credit passed with --trailer= is blocked" "2" \
+    "$(guard 'git commit -m "fix: x" --trailer="Claude-Session: https://x"')"
+  eq "a human --trailer passes" "0" \
+    "$(guard 'git commit -m "fix: x" --trailer "Reviewed-by: Jane <j@example.com>"')"
+  eq "a --trailer does not consume a body line" "0" \
+    "$(guard 'git commit -m "fix: x" -m "one
+two
+three" --trailer "Reviewed-by: Jane"')"
+  eq "a --trailer does not consume a bullet" "0" \
+    "$(guard 'git commit -m "fix: x" -m "- one
+- two" --trailer "Reviewed-by: Jane"')"
+
+  # Splitting the key from the name is still a credit: git joins paragraphs with
+  # a blank line, so neither a line break nor a flag boundary hides one.
+  split_body='git commit -m "fix: x
+
+Co-Authored-By:
+Claude <noreply@anthropic.com>"'
+  eq "a credit split across a line break is blocked" "2" "$(guard "$split_body")"
+  eq "a credit split across two -m flags is blocked" "2" \
+    "$(guard 'git commit -m "fix: x" -m "Co-Authored-By:" -m "Claude <noreply@anthropic.com>"')"
+  eq "a credit split across two --trailer flags is blocked" "2" \
+    "$(guard 'git commit -m "fix: x" --trailer "Co-Authored-By:" --trailer "Claude <noreply@anthropic.com>"')"
+  eq "a credit split across two --trailer= flags is blocked" "2" \
+    "$(guard 'git commit -m "fix: x" --trailer="Co-Authored-By:" --trailer="Claude <noreply@anthropic.com>"')"
+  printf 'fix: x\n\nCo-Authored-By:\n' >"$WORK/split-key.txt"
+  eq "a --trailer completing a -F file's key is blocked" "2" \
+    "$(guard "git commit -F $WORK/split-key.txt --trailer \"Claude <noreply@anthropic.com>\"")"
+  # An empty -m adds a second blank line that git's cleanup collapses, so the
+  # gap has to be counted in non-blank lines rather than in newlines.
+  eq "an empty -m between key and name does not hide it" "2" \
+    "$(guard 'git commit -m "fix: x" -m "Co-Authored-By:" -m "" -m "Claude <noreply@anthropic.com>"')"
+
+  # git honours a trailer only at a line start, so a key buried in a sentence
+  # opens nothing. These are commits this repo has to stay able to write.
+  fp_split='git commit -m "fix(guard-bash): close the co-authored-by line-break bypass" -m "Claude split trailer test showed a credit spanning two lines slipped through
+headers that were only checked on one line."'
+  eq "a key mid-subject over a Claude body passes" "0" "$(guard "$fp_split")"
+  fp_rename='git commit -m "fix: rename co-authored-by check to attribution_reason" -m "Claude early draft flagged this differently, so the message now reads MSG_TRAILERS too."'
+  eq "a key mid-subject over a one-line body passes" "0" "$(guard "$fp_rename")"
+  # Subject, one blank line, body: the commonest shape there is, and the one the
+  # gap reaches across, so the anchor is all that keeps it out.
+  common='git commit -m "fix(guard-bash): anchor the co-authored-by key to its line start" -m "Claude Code writes this repo, so the credit rule and the subject vocabulary collide."'
+  eq "subject with a key, one blank line, then a body, passes" "0" "$(guard "$common")"
+  eq "a key buried mid-sentence opens no credit" "0" \
+    "$(guard 'git commit -m "fix: x" -m "The rule ignores a co-authored-by: Claude <n@a.com> buried in a sentence."')"
+  # And with the key at a line start, the one-hop gap is what draws the line.
+  prose='git commit -m "fix: x" -m "Co-authored-by trailers are what this rule reads.
+The line between carries content of its own.
+Claude is mentioned only here."'
+  eq "a line-start key and a model two lines apart passes" "0" "$(guard "$prose")"
+
+  # A message this cannot read is a commit that goes through, credit rule and
+  # all: blocking what you cannot see is worse than the credit slipping past.
+  unreadable=""
+  while IFS= read -r c; do
+    [ -n "$c" ] || continue
+    [ "$(guard "$c")" = "0" ] || unreadable="$unreadable
+    blocked: $c"
+  done <<CASES
+git commit
+git commit --amend --no-edit
+git commit -F $WORK/no-such-message.txt
+CASES
+  if [ -z "$unreadable" ]; then
+    ok "a message this cannot read is not blocked"
+  else
+    bad "a message this cannot read is not blocked" "$unreadable"
+  fi
+  # A deliberate, accepted limit: the payload arrives on stdin from another
+  # statement, and a filter between the two makes it undecidable without running.
+  piped_credit=$'echo "fix: x\n\nCo-Authored-By: Claude <n@a.com>" | git commit -F -'
+  eq "a credit piped to -F - is a known miss" "0" "$(guard "$piped_credit")"
 
   human_allowed=""
   while IFS= read -r c; do
