@@ -1,6 +1,6 @@
 ---
 description: Run the ticket loop - spec gate, resident writer in a worktree, cold review rounds, the branch as the deliverable
-argument-hint: new <task> | start <id> | status [id] | accept <id>
+argument-hint: new <task> | start <id> | status [id] | close <id...>
 ---
 
 Run the ticket loop on $ARGUMENTS. The lead (this session) drives it. Nothing
@@ -20,12 +20,14 @@ ticket, not only the first, and name the change in the summary when you add
 it: the entry can be reverted between tickets, and without it a stray
 `git add .` stages a live worktree. Never run `git clean -dfx` in the main
 tree while a ticket is in flight - it deletes them. Ticket frontmatter: id,
-title, code, branch, worktree, status, round, created, phase_started (the
-running phase's start, empty between phases); sections `## Spec`,
-`## Reports` (the writer's), `## Verdicts`, `## Handoff`. Status: OPEN ->
-IN_PROGRESS -> DONE -> (REWORK -> IN_PROGRESS)* -> READY -> CLOSED, ESCALATED
-reachable from any REWORK. The writer owns IN_PROGRESS -> DONE; the lead owns
-every other transition.
+title, code, branch, base (the branch it was cut from - `main` or a parent
+ticket's branch), worktree, port (its dev-server port, empty when the project
+has no server), server_pid (empty when no server runs), status, round,
+created, phase_started (the running phase's start, empty between phases);
+sections `## Spec`, `## Reports` (the writer's), `## Verdicts`,
+`## Handoff`. Status: OPEN -> IN_PROGRESS -> DONE -> (REWORK -> IN_PROGRESS)*
+-> READY -> CLOSED, ESCALATED reachable from any REWORK. The writer owns
+IN_PROGRESS -> DONE; the lead owns every other transition.
 
 Worktrees: a ticket worktree lives inside the main checkout, so it is not the
 isolated tree it looks like. Anything that finds its configuration by walking
@@ -58,10 +60,11 @@ Timestamps are `date -u +%Y-%m-%dT%H:%M:%SZ`. `round` is `0` outside a round,
 `agent` is `-` where none applies. Phases: `spec` (the lead writing it),
 `approval` (waiting on the user's ticket code), `setup` (worktree, install,
 codegen), `writer`, `tests`, `review` (one row per reviewer, named in `agent`),
-`handoff`. The columns are fixed and append-only: reordering one or inserting
-another makes every row written before it unreadable, and comparison across
-tickets is the only reason the file exists. It lives under `.tickets/`, so it is
-never committed.
+`handoff`, `rework-after-ready` (any change after READY), `squash` (folding a
+branch's commits before its PR), `cleanup` (close-out). The columns are fixed
+and append-only: reordering one or inserting another makes every row written
+before it unreadable, and comparison across tickets is the only reason the
+file exists. It lives under `.tickets/`, so it is never committed.
 
 A phase is not finished until its row is appended: write the row in the same
 action that reports the phase's end, not from memory later, because a gap in
@@ -93,13 +96,20 @@ finding licenses:
    the ticket code is the approval.
 
 2. **start <id>** - create the ticket file (status OPEN), then
-   `git worktree add .tickets/<id>/tree -b <id> main`. Boot `senior-dev` in
-   the background, model opus, its prompt carrying the spec inline, the
-   absolute worktree and ticket-file paths, the branch, the ticket code, and
-   the repo's install and codegen sequence, since a new worktree starts
-   without any of the gitignored artifacts a build needs. Status IN_PROGRESS.
-   Recovery after a restart or lost writer: the ticket
-   file plus `git log main..<id>` is the whole state - boot a cold writer
+   `git worktree add .tickets/<id>/tree -b <id> <base>`. When several tickets
+   are approved together, the lead fixes their order at approval: a ticket
+   that uses another's work takes that ticket's branch as `base`, and tickets
+   called parallel must not change the same file. When the project's
+   CLAUDE.md or README names a command that serves it, assign the worktree a
+   free dev-server port (check nothing listens on it) and record it;
+   otherwise `port` and `server_pid` stay empty. Any server the lead starts
+   for the ticket gets its pid recorded in `server_pid`. Boot
+   `senior-dev` in the background, model opus, its prompt carrying the spec
+   inline, the absolute worktree and ticket-file paths, the branch, the ticket
+   code, and the repo's install and codegen sequence, since a new worktree
+   starts without any of the gitignored artifacts a build needs. Status
+   IN_PROGRESS. Recovery after a restart or lost writer: the ticket
+   file plus `git log <base>..<id>` is the whole state - boot a cold writer
    into the existing worktree with the spec, the verdicts to date, and that
    log. Mid-ticket, spawn `researcher` and relay its report whenever the
    writer hits something the repo cannot answer - whether an approach is
@@ -123,7 +133,7 @@ finding licenses:
    pass (no Blocking finding) fans the rest of the round out in parallel; rounds
    after the first are parallel from the start, since the code is stable
    enough by then that serializing only spends wall clock.
-   Round 1 reviews `git diff main...<id>` in full; record the branch tip with
+   Round 1 reviews `git diff <base>...<id>` in full; record the branch tip with
    the round's verdicts, and rounds after the first review only the diff
    since the previous round's recorded tip - the earlier code already passed,
    so re-reading it buys nothing. On rounds after the first, re-run only the
@@ -136,9 +146,9 @@ finding licenses:
      `/comment-audit`, not a round gate.
    - When the diff warrants: `migration-safety` (any migration - mandatory),
      `ui-verifier` (frontend - its verdict covers rendering and WCAG). The
-     lead starts one instance of the app from the worktree and hands the
-     agent that URL and the time it was observed, so agents never race to
-     bind the same port.
+     lead starts one instance of the app from the worktree on its `port`
+     and hands the agent that URL and the time it was observed, so agents
+     never race to bind the same port.
      `debugger` and `docs-writer` on their own triggers, sequential like
      test-writer.
    Record each verdict verbatim under `## Verdicts` with the round number.
@@ -148,18 +158,26 @@ finding licenses:
    to the same resident writer and bump `round`. After 3
    failed rounds: status ESCALATED, present the full history, stop.
 
-5. **On ACCEPT** - ask the writer for handoff: fetch, rebase onto
-   `origin/main` in its worktree, re-run the suite. A conflicted rebase
-   re-enters review.
+5. **On ACCEPT** - when the branch holds several commits for one
+   capability, the lead may fold them into one, keeping a
+   `<branch>-pre-squash` backup branch, timed as `squash`; folding rewrites
+   history, so it waits for the user's word like every rewrite. Then ask the
+   writer for handoff: fetch, rebase onto `base` in its worktree
+   (`origin/main` when `base` is main, else the parent ticket's branch after
+   its own handoff), re-run the suite. A conflicted rebase re-enters review.
    Then status READY: record the branch tip and suite result under
    `## Handoff` and report to the user - the branch is the deliverable, and
    push, PR, merge, and deletion all wait for their word.
 
-6. **accept <id>** (user-triggered) - retire the writer,
-   `git worktree remove .tickets/<id>/tree` (`--force` only for leftover
-   build artifacts), then delete the now-empty `.tickets/<id>/` folder,
-   status CLOSED. The branch stays: it holds unmerged work. The ticket file
-   stays too - `.tickets/<id>.md` is the record of what was built and why.
+6. **close <id...>** (only on the user's word, after the PRs merge) - list
+   what will go, then: stop the dev servers recorded in each ticket file,
+   retire each ticket's writer, `git worktree remove .tickets/<id>/tree`
+   (`--force` only for leftover build artifacts), delete the now-empty
+   `.tickets/<id>/` folder, and delete the local branch plus any backup
+   branches the loop made. A branch is deleted only when GitHub shows its PR
+   merged (`gh pr view <branch> --json state`), because a squash-merged
+   branch never looks merged to git. Status CLOSED. The ticket file stays -
+   `.tickets/<id>.md` is the record of what was built and why.
 
 7. **status [id]** - one table from ticket frontmatter; anything live (a
    running writer, a branch tip) is stamped with when it was observed.
