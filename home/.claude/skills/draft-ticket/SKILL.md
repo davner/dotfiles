@@ -1,6 +1,6 @@
 ---
 name: draft-ticket
-description: Draft the text for a Shortcut epic, story, bug, chore, or spike - a title, a markdown description with acceptance criteria, and a recommendation for each sidebar field - ready to paste into the Create form. Use whenever the user asks for a ticket, story, epic, bug report, or spec to be written up, when work needs filing before it is built, or when an existing ticket is too thin to act on. Also drafts from work that already exists - the current diff, a named branch, a git worktree, or several of them at once, where several related branches become one epic with a story each. Also the drafting half of the `/ticket` loop's spec step. It never creates, edits, or transitions anything in Shortcut or Jira; its only write is the project's label record and a one-line pointer to it.
+description: Draft the text for a Shortcut epic, story, bug, chore, or spike - a title, a markdown description with acceptance criteria, and a recommendation for each sidebar field - ready to paste into the Create form. Use whenever the user asks for a ticket, story, epic, bug report, or spec to be written up, when work needs filing before it is built, or when an existing ticket is too thin to act on. Also drafts from work that already exists - the current diff, a named branch, a git worktree, or several of them at once, where several related branches become one epic with a story each. Also the drafting half of the `/ticket` loop's spec step. It never creates, edits, or transitions anything in Shortcut or Jira; its only writes are the page it presents the draft on, the project's label record, and a one-line pointer to it.
 argument-hint: [epic|story|bug|chore|spike] <what the work is, a branch, or a worktree path>
 model: opus
 ---
@@ -10,8 +10,8 @@ model: opus
 Produce the content a human pastes into Shortcut's Create Epic or Create Story
 form. **Nothing here files, edits, or moves a ticket.** No API call, no browser,
 no MCP write. The deliverable is text on screen; the user decides whether it
-ever becomes a ticket. The one local write is the project's label record and
-its pointer (section 5), and nothing else.
+ever becomes a ticket. The only writes are the page the draft is presented on
+(section 6) and the project's label record and its pointer (section 5).
 
 Write for the person who opens this cold at 2am six months from now, knowing
 nothing about today's conversation. That reader is the only audience. A
@@ -400,20 +400,19 @@ added when absent - in the link's target when `CLAUDE.md` is a symlink, in
 
 ## 6. How to present it
 
-Terminal rendering destroys the markdown the user is about to paste, so every
-value that gets pasted goes inside a fenced block as raw markdown. One block per
-field. Never a single block containing the whole ticket.
+Every value that gets pasted goes on a page with a Copy button per the house
+rule, and the button copies raw markdown. One button per field, never one for
+the whole ticket.
 
 Order: the artifact choice and its reasoning, briefly - one line where the
 call is obvious, a short paragraph where a split is being recommended - then
-the **Title** block, then
-**Description** block, then the field table, then one line naming any label
-appended to the record, then a short **Could not
-determine** list naming each gap and who can close it. Then stop. Do not offer
+the **Title**, then the **Description**, then the field table, then one line
+naming any label appended to the record, then a short **Could not determine**
+list naming each gap and who can close it. Then stop. Do not offer
 to file it.
 
 Drafting an epic and its stories together: the epic first, complete, then each
-story as its own pair of blocks under its own heading.
+story as its own Title and Description under its own heading.
 
 ## 7. Check before presenting
 

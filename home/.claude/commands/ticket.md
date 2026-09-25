@@ -44,8 +44,8 @@ prerequisites - installed dependencies, generated code, local environment
 files - are absent there until something creates them.
 
 Output to the user: anything meant to be pasted elsewhere, the Shortcut title
-and description most of all, goes inside a fenced block as raw markdown, since
-rendering it in the terminal is what destroys the source that gets pasted. Any
+and description most of all, goes on a page with a Copy button per the house
+rule, and what the button copies is the raw markdown. Any
 issue or PR named anywhere in the loop's output is a markdown link to it, never
 a bare number, because a bare number is not clickable and does not say which
 repo it belongs to.
@@ -206,4 +206,7 @@ finding licenses:
    `.tickets/<id>.md` is the record of what was built and why.
 
 7. **status [id]** - one table from ticket frontmatter; anything live (a
-   running writer, a branch tip) is stamped with when it was observed.
+   running writer, a branch tip) is stamped with when it was observed. While
+   more than one ticket is in flight, the lead also prints a six-column status
+   table, with nothing before it, at the end of every phase: ticket, status,
+   round, waiting on (the user, or which agent), last score, lines changed.

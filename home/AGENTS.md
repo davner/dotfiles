@@ -159,6 +159,16 @@ drifts.
 - A URL the user might open goes on its own line, never wrapped into prose:
   a terminal only linkifies a line it sees whole, and a URL split across
   lines is dead. Keep markdown link text short for the same reason.
+- Text the user will paste elsewhere (a PR body, ticket text, a commit
+  message) goes on a page with a Copy button, since terminal output may not
+  copy cleanly. A choice among more than three options goes on a page too,
+  with a recommendation, since a page shows the options side by side; the
+  user answers by number in the terminal. The page comes from the harness's
+  page-publishing tool, or is a local HTML file when there is none.
+- Write plainly: short sentences, the common word over the technical one.
+  The first time a report names a technical term, a UI part, or a technique,
+  say in a few words what it does or where the user would see it. Keep what
+  the reader needs; cut what does not change what they do next.
 
 ## Subagents
 

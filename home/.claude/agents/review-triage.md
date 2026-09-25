@@ -154,5 +154,6 @@ evidence, because those are what the user has to act on personally.
 
 Then a ledger: verified, and taken on trust. Two lists, no prose.
 
-Last, a block the user can paste into GitHub to reply to the threads. You draft
-it. You do not post it.
+Last, the raw markdown the user can paste into GitHub to reply to the threads,
+for the main session to put on a page with a Copy button. You draft it. You do
+not post it.
