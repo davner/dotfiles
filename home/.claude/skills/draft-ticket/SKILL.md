@@ -58,6 +58,11 @@ places: the repo, the user, or an explicit gap marker.
 - **Ask only what the repo cannot answer.** Who hits this, how often, what
   breaks if it waits, which of two behaviors is correct. Cap it at three
   numbered questions in one message, so the user can answer "1 and 3, skip 2".
+- **Find what others already solved.** Before settling a behavior, send
+  `researcher` for three answers, each with a source in Notes: the industry
+  standard, how sibling packages and sister repos already do it, and what the
+  project's peers do. A project names its peers and sister repos in
+  `.claude/ticket-peers.md`; read it when it exists.
 - **Never guess the why.** If the business reason is genuinely unknown after
   asking, write `**TODO(you):** why this matters - I could not determine it` in
   the draft. A visible gap gets filled; a plausible invention does not.
@@ -256,6 +261,11 @@ the solution. Link files as `path/to/file.ts:42`.>
 - [ ] <Binary, observable, testable by someone who did not write it>
 - [ ] <...>
 
+## What the reader sees
+- <One state - loading, empty, failed, signed out, changed elsewhere: what
+  shows, for how long, and whether the reader is on that screen when it does>
+- <...>
+
 ## Out of scope
 - <...>
 
@@ -263,6 +273,10 @@ the solution. Link files as `path/to/file.ts:42`.>
 <Links, designs, related tickets. A ruled-out approach only with the
 constraint that rules it out, stated in the present tense.>
 ```
+
+**What the reader sees** lists every state the reader can land in; omit it
+when nothing is reader-visible. A notice that appears where nobody is looking
+stays until it is seen.
 
 Acceptance criteria are the contract, and they are where most tickets fail:
 
@@ -376,11 +390,13 @@ record for a near-duplicate - a plural, a synonym - and reusing that instead.
 Never propose one that duplicates what Type, Priority, Estimate, or another
 field already holds, since a label that repeats a field drifts from it. The
 user creates labels in Shortcut when filing, never this skill, so an entry can
-name a label nobody created.
+name a label nobody created. `.claude/ticket-peers.md` is the same kind of
+per-project record, naming the peers and sister repos section 1's research
+reads; this skill never writes it.
 
-The pointer is one line naming the record in the project's `CLAUDE.md`, added
-when absent - in the link's target when `CLAUDE.md` is a symlink, in `AGENTS.md`
-when only that exists, and in a new `CLAUDE.md` when neither does.
+The pointer is one line naming the label record in the project's `CLAUDE.md`,
+added when absent - in the link's target when `CLAUDE.md` is a symlink, in
+`AGENTS.md` when only that exists, and in a new `CLAUDE.md` when neither does.
 
 ## 6. How to present it
 
@@ -419,6 +435,8 @@ checklist.
    the title? Section 0 - cut it.
 8. Story: does it pass INVEST ([references/standards.md](references/standards.md))?
    Bug: could a stranger reproduce it from the steps as written?
+9. Is "What the reader sees" present exactly when something is
+   reader-visible, and is each state concrete - what shows, and for how long?
 
 ## 8. Inside the `/ticket` loop
 

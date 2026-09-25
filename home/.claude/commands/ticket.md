@@ -59,10 +59,11 @@ ticket	phase	round	agent	started	ended	seconds
 Timestamps are `date -u +%Y-%m-%dT%H:%M:%SZ`. `round` is `0` outside a round,
 `agent` is `-` where none applies. Phases: `spec` (the lead writing it),
 `approval` (waiting on the user's ticket code), `setup` (worktree, install,
-codegen), `writer`, `tests`, `review` (one row per reviewer, named in `agent`),
-`handoff`, `rework-after-ready` (any change after READY), `squash` (folding a
-branch's commits before its PR), `cleanup` (close-out). The columns are fixed
-and append-only: reordering one or inserting another makes every row written
+codegen), `writer` (including the design options and the user's pick),
+`tests`, `review` (one row per reviewer, named in `agent`), `handoff`,
+`rework-after-ready` (any change after READY), `squash` (folding a branch's
+commits before its PR), `cleanup` (close-out). The columns are fixed and
+append-only: reordering one or inserting another makes every row written
 before it unreadable, and comparison across tickets is the only reason the
 file exists. It lives under `.tickets/`, so it is never committed.
 
@@ -84,14 +85,16 @@ finding licenses:
   not what is slow. Change nothing here.
 
 1. **new <task>** - consult `researcher`/`architect` first only when the
-   design turns on an unknown or has more than one plausible shape. Write the
-   spec: the `draft-ticket` skill produces the paste-ready Shortcut **Title**
-   and **Description** and the sidebar-field recommendations, then this loop
-   adds the engineering half - goal, contracts, files expected to change,
-   tests required, out of scope. Tests required are built from the acceptance
-   criteria: each criterion is a required case cited by its position in the
-   list (the first is 1), followed by the cases a human-facing ticket leaves
-   out - failure paths, edge inputs. The criteria are the floor, not the test
+   design turns on an unknown or has more than one plausible shape; for
+   reader-visible behavior, draft-ticket's prior-art research always runs.
+   Write the spec: the `draft-ticket` skill produces the paste-ready Shortcut
+   **Title** and **Description** and the sidebar-field recommendations, then
+   this loop adds the engineering half - goal, contracts, files expected to
+   change, tests required, out of scope. Tests required are built from the
+   acceptance criteria: each criterion is a required case cited by its
+   position in the list (the first is 1), then each state under "What the
+   reader sees", followed by the cases a human-facing ticket leaves out -
+   failure paths, edge inputs. The criteria are the floor, not the test
    plan. Present it and STOP. The user files it in Shortcut; their reply with
    the ticket code is the approval.
 
@@ -122,17 +125,23 @@ finding licenses:
    (tests, lint, build) run green in the worktree, with the output shown. A
    red or unrun gate bounces straight back to the writer without spawning
    any reviewer - review judgment is never spent on defects a test run
-   catches free. Then, if the spec changes behavior, send `test-writer` into
-   the worktree, with the spec inline, to author the new coverage and commit
-   it to the branch. The worktree has one writer at a time: the resident
-   writer idles while test-writer, debugger, or docs-writer works there. Then
-   run the review round, each agent given the spec inline and the worktree
-   path. Round 1 opens with `code-reviewer` alone as a smoke gate: any
-   Blocking finding goes straight to REWORK and the rest of the panel never
-   spawns, because it would be reviewing a tip about to change. Only a gate
-   pass (no Blocking finding) fans the rest of the round out in parallel; rounds
-   after the first are parallel from the start, since the code is stable
-   enough by then that serializing only spends wall clock.
+   catches free. For a reader-visible change on a ticket with a `port` (one
+   without skips straight to test-writer), the lead starts the app on it
+   (recording `server_pid`), the writer shows two or three options on that
+   URL through the `impeccable` skill, never starting its own server, and
+   the user picks one before test-writer starts, so tests are written
+   against the chosen design. Then, if the spec changes behavior,
+   send `test-writer` into the worktree, with the spec inline, to author the
+   new coverage and commit it to the branch. The worktree has one writer at a
+   time: the resident writer idles while test-writer, debugger, or
+   docs-writer works there. Then run the review round, each agent given the
+   spec inline and the worktree path. Round 1 opens with `code-reviewer`
+   alone as a smoke gate: any Blocking finding goes straight to REWORK and
+   the rest of the panel never spawns, because it would be reviewing a tip
+   about to change. Only a gate pass (no Blocking finding) fans the rest of
+   the round out in parallel; rounds after the first are parallel from the
+   start, since the code is stable enough by then that serializing only
+   spends wall clock.
    Round 1 reviews `git diff <base>...<id>` in full; record the branch tip with
    the round's verdicts, and rounds after the first review only the diff
    since the previous round's recorded tip - the earlier code already passed,
@@ -146,9 +155,10 @@ finding licenses:
      `/comment-audit`, not a round gate.
    - When the diff warrants: `migration-safety` (any migration - mandatory),
      `ui-verifier` (frontend - its verdict covers rendering and WCAG). The
-     lead starts one instance of the app from the worktree on its `port`
-     and hands the agent that URL and the time it was observed, so agents
-     never race to bind the same port.
+     lead starts one instance of the app from the worktree on its `port`,
+     or reuses the one from the options step, and hands the agent that URL
+     and the time it was observed, so agents never race to bind the same
+     port.
      `debugger` and `docs-writer` on their own triggers, sequential like
      test-writer.
    Record each verdict verbatim under `## Verdicts` with the round number.
