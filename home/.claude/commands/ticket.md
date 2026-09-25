@@ -191,8 +191,9 @@ finding licenses:
    add it to that library's skill reference if the user has one, so the next
    project does not pay for it again.
    Then status READY: record the branch tip and suite result under
-   `## Handoff` and report to the user - the branch is the deliverable, and
-   push, PR, merge, and deletion all wait for their word.
+   `## Handoff` - the branch is the deliverable, and push, PR, merge, and
+   deletion all wait for the user's word. Once every ticket in the batch is
+   READY, run the `ship-pack` skill to hand them over, not a prose report.
 
 6. **close <id...>** (only on the user's word, after the PRs merge) - list
    what will go, then: stop the dev servers recorded in each ticket file,

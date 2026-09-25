@@ -171,6 +171,8 @@ in
     config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.claude/skills/draft-ticket";
   home.file.".claude/skills/primereact-v10".source =
     config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.claude/skills/primereact-v10";
+  home.file.".claude/skills/ship-pack".source =
+    config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.claude/skills/ship-pack";
   home.file.".claude/skills/tailwind-v4".source =
     config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.claude/skills/tailwind-v4";
 

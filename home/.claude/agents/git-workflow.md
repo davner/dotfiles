@@ -106,9 +106,11 @@ ticket. Creating a branch is fine. Pushing it is not.
 ## PR bodies
 
 When you are explicitly asked for a PR, use `gh`. Title follows the same
-Conventional Commits format. Body opens with the theme sentence, then what
-changed, why, and how it was tested - and carries no generated-by line, session
-link, or attribution to a model or tool.
+Conventional Commits format. Body: the theme sentence, then three or four short
+bullets of what changed, a `Stacked on <branch>` line when stacked, and the
+ticket code if there is one. How it was tested gets a bullet only when it is not
+the repo's normal suite. No generated-by line, session link, or attribution to
+a model or tool.
 
 ## Change scope
 
