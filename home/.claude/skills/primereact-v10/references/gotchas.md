@@ -1,8 +1,9 @@
 # Verified runtime surprises
 
 Provenance: read from `primereact@10.9.8` source on 2026-08-26, at the cited
-files and lines. Statements here were read from source (and in two cases executed
-in Node), not observed in a running React app.
+files and lines; the Toast entries from `primereact@10.9.9`. Statements here were
+read from source (and in three cases executed in Node), not observed in a running
+React app - except the Toast ref loop and its `useRef` fix, which were.
 
 These are the cases where the types compile, the documentation stays quiet, and
 the runtime does something else. DataTable has enough of them to warrant its own
@@ -144,3 +145,49 @@ back to a deprecated module-level singleton. Because that is `||` rather than `?
 a legitimately falsy context value can fall through to the global. Setting
 `nonce: ''` or, at some call sites, `autoZIndex: false` does not reliably win. Use
 the context setters and avoid relying on falsy config values.
+
+## Toast `remove(message)` matches by deep equality, and functions never match
+
+```js
+return msg._pId !== messageInfo._pId && !ObjectUtils.deepEquals(msg.message, removeMessage);   // toast.esm.js:445
+```
+
+A message passed to `remove` is compared field by field with every message on
+screen, and every one it equals is removed. `deepEquals` compares functions by
+identity (`utils.esm.js:1490`), so a message rebuilt per render with a
+`content` callback or any other function field never matches and never goes
+away. A message you mean to withdraw later is a module-level constant with plain
+string fields; a rebuilt copy of that equals it (executed in Node).
+
+## The Toast ref handle is a new object on every Toast render
+
+`useImperativeHandle` is called with no dependency array (`toast.esm.js:466`),
+so React recreates the handle each time Toast renders and re-attaches the ref. A
+ref *callback* that stores the handle in state re-renders the parent, and an
+inline callback is a new ref, which defeats Toast's `React.memo` (line 377), so
+Toast renders again and the cycle repeats. Take the handle once:
+
+```tsx
+const toastRef = useRef<Toast>(null);
+const [toast, setToast] = useState<Toast | null>(null);
+useEffect(() => setToast(toastRef.current), []);
+return <Toast ref={toastRef} />;
+```
+
+The stored handle stays live because its methods write through
+`setMessagesState`, whose identity React keeps stable across renders (line
+381), and none of them reads the captured `messagesState` (lines 396-448).
+Only its `props` field, and the `onRemove` that `remove` calls, are the first
+render's.
+
+## A Toast message disappears after 3000 ms unless it is `sticky`
+
+```js
+useTimeout(function () { onClose(); }, life || 3000, !sticky && !focused)   // toast.esm.js:229-231
+```
+
+Without `sticky: true` a message closes after `life`, and because that is `||`,
+`life: 0` also means 3000 ms, not forever. Hovering pauses the timer and leaving
+restarts the full delay (lines 257-274). A notice the reader may not be looking
+at when it appears, such as one raised while the tab is in the background,
+needs `sticky: true`.
