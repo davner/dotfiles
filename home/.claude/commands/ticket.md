@@ -22,12 +22,13 @@ it: the entry can be reverted between tickets, and without it a stray
 tree while a ticket is in flight - it deletes them. Ticket frontmatter: id,
 title, code, branch, base (the branch it was cut from - `main` or a parent
 ticket's branch), worktree, port (its dev-server port, empty when the project
-has no server), server_pid (empty when no server runs), status, round,
-created, phase_started (the running phase's start, empty between phases);
-sections `## Spec`, `## Reports` (the writer's), `## Verdicts`,
-`## Handoff`. Status: OPEN -> IN_PROGRESS -> DONE -> (REWORK -> IN_PROGRESS)*
--> READY -> CLOSED, ESCALATED reachable from any REWORK. The writer owns
-IN_PROGRESS -> DONE; the lead owns every other transition.
+has no server), server_pid (empty when no server runs), status,
+spec_version (starts at 1), round, created, phase_started (the running
+phase's start, empty between phases); sections `## Spec`, `## Reports` (the
+writer's), `## Verdicts`, `## Handoff`. Status: OPEN -> IN_PROGRESS ->
+DONE -> (REWORK -> IN_PROGRESS)* -> READY -> CLOSED, ESCALATED reachable from
+any REWORK. The writer owns IN_PROGRESS -> DONE; the lead owns every other
+transition.
 
 Worktrees: a ticket worktree lives inside the main checkout, so it is not the
 isolated tree it looks like. Anything that finds its configuration by walking
@@ -161,12 +162,23 @@ finding licenses:
      port.
      `debugger` and `docs-writer` on their own triggers, sequential like
      test-writer.
-   Record each verdict verbatim under `## Verdicts` with the round number.
+   Record each verdict verbatim under `## Verdicts` with the spec version and
+   round number.
 
 4. **Verdict** - ACCEPT is APPROVE with every score >= 90 and no Blocking
    finding anywhere. Anything else is REWORK: relay Blocking + Should-fix
-   to the same resident writer and bump `round`. After 3
-   failed rounds: status ESCALATED, present the full history, stop.
+   to the same resident writer, except a Should-fix whose fix adds a new
+   mechanism - a state machine, a hold or queue, a listener, a retry, a new
+   dependency - because a fix bigger than the defect it removes is how a
+   ticket grows past its spec. The lead brings that one to the user first,
+   who either approves the fix, which then goes to the writer, or accepts the
+   gap. Accepting is a spec change: the gap is written into the spec on a
+   `Known gaps` line, so every later reviewer reads it as agreed scope, not
+   a miss. `round` bumps only when the writer is sent work; waiting on the
+   user costs none. When the user changes a ticket's scope or design
+   mid-loop, bump `spec_version`, append the change under `## Spec`, and
+   reset `round` to 1. After 3 failed rounds on one spec version: status
+   ESCALATED, present the full history, stop.
 
 5. **On ACCEPT** - when the branch holds several commits for one
    capability, the lead may fold them into one, keeping a
