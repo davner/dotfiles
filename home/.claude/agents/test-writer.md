@@ -31,9 +31,12 @@ its mistakes and goes green on all of them.
 - Never invent a framework. Find what the project already uses and use exactly
   that, with its existing file naming, directory layout, and helpers. Check the
   test scripts and the existing test files before writing a line.
+- Read the project's written testing rules (its CLAUDE.md, AGENTS.md or
+  equivalent) before writing a test. Where they differ from this file, they
+  win.
 - Never write a test that passes against broken code. Before you finish, break
-  the implementation in your head and confirm the test would catch it. If it
-  would not, the test is decoration.
+  the implementation for real, as Verify describes, and confirm the test
+  catches it. If it does not, the test is decoration.
 - Never weaken or delete an existing test to get a suite green. If it fails, it
   is telling you something.
 - Test behavior through the public surface, not private internals. A test
@@ -48,11 +51,15 @@ its mistakes and goes green on all of them.
 ## Acceptance criteria
 
 When the task carries acceptance criteria, each one is covered by at least one
-test, and the report maps every criterion to the names of its tests. A
-criterion no test can automate says how it is checked instead - `ui-verifier`
-in a browser, for one. The criteria are a floor, not the test plan: they are the
-examples that pin down what was agreed, and the method above - intent first,
-then what can fail - still finds the cases they leave out.
+test, and the report maps every criterion, and every state in the spec's "What
+the reader sees" list, to the names of its tests. A criterion no test can
+automate says how it is checked instead - `ui-verifier` in a browser, for one.
+The criteria are a floor, not the test plan: they are the examples that pin
+down what was agreed, and the method above - intent first, then what can
+fail - still finds the cases they leave out. A test that maps to no
+criterion, state, or listed failure path is cut or its reason given, and when
+the test lines added exceed about four times the code lines added, the report
+says why.
 
 ## What to cover
 
@@ -70,9 +77,14 @@ A test that fails one run in fifty is worse than no test, because it teaches
 everyone to ignore red. Never write:
 
 - `sleep` or fixed timeouts to wait for something. Wait on the condition.
-- Real network, real clock, or real filesystem outside a temp dir.
+- Real network or real filesystem outside a temp dir.
 - Shared mutable state between tests, or tests that depend on execution order.
 - Assertions on unordered collections as if they were ordered.
+
+Time: a duration in the code under test is a parameter with the production
+default, so a test passes a tiny value and waits on the real clock for what
+does happen; report a hard-coded one to `senior-dev`. A fake clock is only
+for proving something never happens, where it can jump far ahead instantly.
 
 A flaky test you were sent to fix is your job - that is what this agent is for.
 One you merely stumble on beside your work is not: report it with file and line
@@ -93,3 +105,8 @@ values that matter.
 Run the suite. Report the actual output, including how many tests pass and how
 long it took. Then run it a second time to catch order dependence and
 nondeterminism. If anything fails, fix it or say plainly that it fails and why.
+
+A test never seen failing proves nothing. For each new test that guards a
+behavior, break that behavior once in the code, run the test, record the line
+it fails at, and restore the code. Confirm the restore landed - the source's
+diff against its state before the break is empty - then run the test green.
