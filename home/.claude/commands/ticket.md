@@ -187,6 +187,9 @@ finding licenses:
    writer for handoff: fetch, rebase onto `base` in its worktree
    (`origin/main` when `base` is main, else the parent ticket's branch after
    its own handoff), re-run the suite. A conflicted rebase re-enters review.
+   When a round was lost to a library quirk the types and docs did not show,
+   add it to that library's skill reference if the user has one, so the next
+   project does not pay for it again.
    Then status READY: record the branch tip and suite result under
    `## Handoff` and report to the user - the branch is the deliverable, and
    push, PR, merge, and deletion all wait for their word.
