@@ -201,8 +201,9 @@ to route to it, so usually just delegate. What the descriptions cannot carry:
   agent, no ticket.
 - **A small change: under ~50 hand-written lines, touching no schema,
   money, permissions, or unregenerable data** - `senior-dev` writes it in
-  the main tree; one `code-reviewer` pass gates it. The 90 gate applies,
-  and REQUEST CHANGES escalates it into a real ticket.
+  the main tree; one `code-reviewer` pass gates it. The 90 gate applies:
+  REQUEST CHANGES goes back to `senior-dev` for one fix and one re-score,
+  and a second REQUEST CHANGES escalates it into a real ticket.
 - **Everything else that produces code** - the ticket loop (`/ticket`),
   with `architect` vetting first when the design is genuinely open.
 - **Schema, money, permissions, or unregenerable data** - still a ticket,
