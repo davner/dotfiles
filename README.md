@@ -64,10 +64,10 @@ machine, one configuration each. `./users.sh list` prints them. On a Mac whose
 username is not listed, `./bootstrap.sh` offers to add it - an addition, so the
 other machines keep working.
 
-| macOS username | Flake attribute | git commits as | system |
-| --- | --- | --- | --- |
-| `danavner` | `#danavner` | `ldpavner@gmail.com` | `aarch64-darwin` |
-| `dan.avner` | `#dan-avner` | `dan.avner@noirlab.edu` | `aarch64-darwin` |
+| macOS username | Flake attribute | system |
+| --- | --- | --- |
+| `danavner` | `#danavner` | `aarch64-darwin` |
+| `dan.avner` | `#dan-avner` | `aarch64-darwin` |
 
 The name on a commit is `Dan Avner` either way; only the address follows the
 machine. Adding a Mac is one edit, in `flake.nix`, and `./bootstrap.sh` makes
