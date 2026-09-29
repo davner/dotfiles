@@ -1507,12 +1507,12 @@ $u
       *@*.*) ok "#$attr commits as $email" ;;
       *) bad "#$attr has a git address" "$(grep -v '^warning:' "$WORK/stderr" | head -3)" ;;
     esac
-    # The README documents which address goes with which machine, which is
-    # only useful while it still matches the configuration it describes.
-    if grep -qF "$email" "$DIR/README.md"; then
-      ok "README lists $u's address"
+    # The README's username table is only useful while it lists every
+    # configuration; it leaves the addresses out so they are not published twice.
+    if grep -qF "\`#$attr\`" "$DIR/README.md"; then
+      ok "README lists #$attr"
     else
-      bad "README lists $u's address" "$email is configured but not documented"
+      bad "README lists #$attr" "#$attr is configured but not in the README"
     fi
   done <<<"$listed"
 
