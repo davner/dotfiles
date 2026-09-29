@@ -9,6 +9,9 @@ machine's configuration, not a package anyone installs a version of.
 
 ## 2026-09-29
 
+- **Docs** Trim the README changelog section to the regenerate command ([`56ddb8e`](https://github.com/davner/dotfiles/commit/56ddb8ec81cc0e5bee1142bbc154304e02c23f24))
+- **Tests** Check the README lists each configuration, not its address ([`9161199`](https://github.com/davner/dotfiles/commit/916119966ae0fc8409a43776bf405e295a5d3bb6))
+- **Docs** Fold how-it-works into a condensed README ([`417614d`](https://github.com/davner/dotfiles/commit/417614dae033945e3d07dcf8e6f54b52b646c2ca))
 - **Docs** Drop commit email addresses from the README ([`859f2aa`](https://github.com/davner/dotfiles/commit/859f2aae18c4879645f889faed77db7e225c3047))
 - **Docs** Explain how the agent workflow fits together ([`2538a12`](https://github.com/davner/dotfiles/commit/2538a12bcd4c930fc69f38738fa1606e40db9109))
 - **Added** claude: Give a small change one rework before it escalates ([`01194f3`](https://github.com/davner/dotfiles/commit/01194f3ee760ae18fa1b458db10e310927408726))
