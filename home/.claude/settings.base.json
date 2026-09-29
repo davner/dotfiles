@@ -29,7 +29,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "[ ! -x \"$HOME/.claude/guard-bash.sh\" ] || \"$HOME/.claude/guard-bash.sh\"",
+            "command": "\"$HOME/.claude/guard-bash.sh\"",
             "timeout": 5,
             "statusMessage": "Checking command"
           }
