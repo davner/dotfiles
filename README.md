@@ -9,6 +9,16 @@ One branch serves every machine. The configuration is keyed by macOS username,
 so moving between the work Mac and the personal one needs no edit and leaves
 nothing to undo.
 
+The repo has two halves:
+
+| Half | Lives in | Covered by |
+| --- | --- | --- |
+| The Nix setup for the Macs | `flake.nix`, `configuration.nix`, `home.nix`, the scripts | This README |
+| A Claude Code agent workflow: subagents, rules, hooks, and a ticket loop | `home/AGENTS.md`, `home/.claude/` | [How it works](docs/how-it-works.md) |
+
+The second half is written up for reading and borrowing ideas from, not as
+something to install.
+
 ## Commands
 
 Start here: clone anywhere and run bootstrap. The clone's location never
@@ -65,12 +75,6 @@ it for you - it appends the username with an empty record. Fill in the address
 before the first rebuild: a record without one fails the build rather than
 quietly committing from the wrong one.
 
-Forking this? The same mechanism adopts you: `./bootstrap.sh` offers to add
-your username, and the build then stops until you fill in `email` on your
-record in `flake.nix`. Change `user.name` in `home.nix` too, or your commits
-will say Dan Avner. After that it is pruning: the packages in `home.nix` and
-the casks in `configuration.nix` are one person's taste.
-
 Dots become dashes in the attribute name. That is not cosmetic:
 `darwin-rebuild` splits its `--flake …#attr` argument on `.`, so a literal
 dotted attribute can never resolve. The scripts handle the substitution.
@@ -86,12 +90,15 @@ dotted attribute can never resolve. The scripts handle the substitution.
 | `home/AGENTS.md` | Global coding-agent instructions, linked to `~/.claude/CLAUDE.md` and friends |
 | `home/.claude/agents/` | The subagent roster, one file per agent; linked to `~/.claude/agents/`, where Claude Code picks them up by name |
 | `AGENTS.md` | Notes for agents working *on this repo*. A different file from the one above |
-| `home/.claude/*.sh` | Statusline, session naming, and the comment-audit hook |
+| `home/.claude/commands/` | Slash commands; the directory is linked to `~/.claude/commands/` |
+| `home/.claude/skills/<name>/` | The skills this repo writes, each linked on its own so the hand-installed skills in `~/.claude/skills/` stay |
+| `home/.claude/*.sh` | Statusline, session naming, the `guard-bash.sh` and `comment-audit.sh` hooks, and the script behind `/context-audit` |
 | `home/.claude/settings.base.json` | The durable half of Claude Code's user settings, merged into `~/.claude/settings.json` at activation so `/config` never dirties this repo |
 | `home/.config/yt-dlp/` | YouTube download aliases writing into iCloud, and the tone helper. Has its own README |
 | `users.sh` | The only thing that parses the per-user records |
 | `test.sh` | The checks below |
 | `cliff.toml` | How `CHANGELOG.md` is generated |
+| `docs/` | Explanation pages, starting with [How it works](docs/how-it-works.md) |
 
 Dotfiles under `home/` are linked, not copied: editing
 `~/.config/wezterm/wezterm.lua` edits the file in this repo, with no rebuild in
@@ -103,31 +110,52 @@ between.
 picks up by name. Most cannot edit files: they report findings, and a writer
 applies them. They run in every project, not just this one.
 
-| Agent | Does | Edits files |
-| --- | --- | --- |
-| `architect` | Designs a change before code exists, then self-reviews the plan | no |
-| `senior-dev` | Primary writer. Builds features, applies every reviewer's fixes | yes |
-| `test-writer` | Writes tests in whatever framework the project already uses | yes |
-| `debugger` | Reproduces a failure first, then fixes the cause | yes |
-| `docs-writer` | Makes docs match the code, running every example it touches | yes |
-| `code-reviewer` | Correctness bugs, error paths, drift from the repo's conventions | no |
-| `migration-safety` | Runs a migration forward and back before it meets real data | no |
-| `ui-verifier` | Loads the app in a real browser: what renders, plus WCAG by keyboard and screen reader | no |
-| `review-triage` | Turns an external PR review into a plan, checking each claim | no |
-| `doc-auditor` | Finds plans, TODOs and READMEs that stopped being true | no |
-| `comment-auditor` | Reads every comment in a scope against its code, triaging by number | no |
-| `fresh-eyes` | Uses the product cold and scores how far a stranger gets | no |
-| `researcher` | Answers what the repo cannot, with citations | no |
-| `git-workflow` | Staging, commit messages, branches. Git only, never code | no |
+| Agent | Does | Edits files | Model |
+| --- | --- | --- | --- |
+| `architect` | Designs a change before code exists, then self-reviews the plan | no | `inherit` |
+| `senior-dev` | Primary writer. Builds features, applies every reviewer's fixes | yes | `inherit` |
+| `test-writer` | Writes tests in whatever framework the project already uses | yes | `sonnet` |
+| `debugger` | Reproduces a failure first, then fixes the cause | yes | `inherit` |
+| `docs-writer` | Makes docs match the code, running every example it touches | yes | `inherit` |
+| `code-reviewer` | Correctness bugs, error paths, drift from the repo's conventions | no | `sonnet` |
+| `migration-safety` | Runs a migration forward and back before it meets real data | no | `inherit` |
+| `ui-verifier` | Loads the app in a real browser: what renders, plus WCAG by keyboard and screen reader | no | `sonnet` |
+| `review-triage` | Turns an external PR review into a plan, checking each claim | no | `inherit` |
+| `doc-auditor` | Finds plans, TODOs and READMEs that stopped being true | no | `inherit` |
+| `comment-auditor` | Reads every comment in a scope against its code, triaging by number | no | `haiku` |
+| `fresh-eyes` | Uses the product cold and scores how far a stranger gets | no | `inherit` |
+| `researcher` | Answers what the repo cannot, with citations | no | `inherit` |
+| `git-workflow` | Staging, commit messages, branches. Git only, never code | no | `haiku` |
+
+Model comes from each agent's `model:` frontmatter. `inherit` means the agent
+runs on whatever model the calling session uses. `/ticket` overrides that for
+`senior-dev` and boots it on `opus`.
 
 Two things shape how they behave. `home/AGENTS.md` is loaded into all of them,
 so the guardrails there apply everywhere and no agent file repeats them. And
-`comment-audit.sh` runs as a hook after every write, flagging comments that
-narrate the edit history instead of the reason.
+two hooks registered in `settings.base.json` run inside every agent:
 
-Works without nix: copy `home/.claude/agents/` to `~/.claude/agents/`. Before
-editing the files, read the bullets in the root `AGENTS.md` on why their
-`memory` and `skills` frontmatter fields are deliberately absent.
+| Hook | When | Does |
+| --- | --- | --- |
+| `guard-bash.sh` | Before every Bash command | Blocks wildcard `git add`, force pushes, `git clean -x`, and commit messages that credit an AI or break the message-shape rules |
+| `comment-audit.sh` | After every write or edit | Flags comments that narrate the edit history or the session, and comment blocks over two lines |
+
+The commands and skills the agents work through:
+
+| Command | Does |
+| --- | --- |
+| [`/ticket`](home/.claude/commands/ticket.md) | The ticket loop: spec, a writer in a worktree, review rounds that pass only when every reviewer scores 90 or more out of 100 and none reports a Blocking finding ([terms](docs/how-it-works.md#terms)), the branch as the deliverable |
+| [`/comment-audit`](home/.claude/commands/comment-audit.md) | Fans out `comment-auditor` over a scope and presents one numbered triage |
+| [`/context-audit`](home/.claude/commands/context-audit.md) | Checks context files against size caps, trimming only what the user approves |
+
+| Skill | Does |
+| --- | --- |
+| [`draft-ticket`](home/.claude/skills/draft-ticket/SKILL.md) | Drafts a Shortcut ticket's title, description, and field choices; the spec step of `/ticket` |
+| [`ship-pack`](home/.claude/skills/ship-pack/SKILL.md) | Hands over a batch of ready branches as one page of PR text and commands |
+| [`primereact-v10`](home/.claude/skills/primereact-v10/SKILL.md) | PrimeReact v10 reference and version guardrails |
+| [`tailwind-v4`](home/.claude/skills/tailwind-v4/SKILL.md) | Tailwind CSS v4 reference and version guardrails |
+
+[How it works](docs/how-it-works.md) explains how these fit together.
 
 ## Tests
 
