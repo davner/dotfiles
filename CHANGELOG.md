@@ -9,6 +9,8 @@ machine's configuration, not a package anyone installs a version of.
 
 ## 2026-10-01
 
+- **Added** claude: Add cc-flow to print the ticket workflow ([`fe8397a`](https://github.com/davner/dotfiles/commit/fe8397a504f83fc0969301d64b16e11c871c2b4f))
+- **Changed** claude: Rename claude-push to cc-push ([`cbe21fc`](https://github.com/davner/dotfiles/commit/cbe21fc4fa1db455dca16c9c3d6e82d925eaa680))
 - **Docs** Note which skills read domain.md and run without setup ([`3292b12`](https://github.com/davner/dotfiles/commit/3292b123f6e5b3444f3ae797ea2db5a7217fde7b))
 - **Fixed** claude: Name the right folders in the git clean -x guard ([`1c4b348`](https://github.com/davner/dotfiles/commit/1c4b3487e67722ae14370041397c2c65ab8ee8be))
 - **Fixed** claude: Let tdd take its seams from the spec ([`e978dea`](https://github.com/davner/dotfiles/commit/e978deacc7bc17959bddeab4c3ecd65dded84bce))
