@@ -145,10 +145,10 @@ cannot bring back - a new file not yet added is gone for good. Remove the files
 you created by name, or ask the user to run it."
   fi
 
-  # .tickets/ is gitignored, so -x is the flag that reaches a live worktree.
+  # Working notes such as .scratch/ are gitignored, so -x is the flag that reaches them.
   if [[ $seg =~ ^git[[:space:]]+clean([[:space:]]|$) ]] && [[ $seg =~ [[:space:]]-[a-zA-Z]*x ]]; then
-    reason="git clean -x deletes ignored files, which includes the live
-worktrees under .tickets/ and anything else git was told not to track."
+    reason="git clean -x deletes ignored files, which includes specs and tickets
+under .scratch/, local env files, and anything else git was told not to track."
   fi
 
   if [[ $seg =~ ^git[[:space:]]+branch([[:space:]]|$) ]] &&
