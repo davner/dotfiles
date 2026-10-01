@@ -42,9 +42,9 @@ directory-level link would displace them. Adding a skill is a new
 link checks from those lines by sed, so a typo fails a test instead of leaving
 a dangling link.
 
-`to-spec`, `to-tickets`,
-`implement-spec` and `code-review` point at `setup-dan-skills`;
-`domain-modeling` honors the paths in `docs/agents/domain.md`; `pr` returns only a paste-ready title and body; `prototype`,
+`to-spec`, `to-tickets` and
+`implement-spec` point at `setup-dan-skills`, and `code-review` runs without it;
+every skill that reads the glossary honors the paths in `docs/agents/domain.md`; `pr` returns only a paste-ready title and body; `prototype`,
 `code-review`, `implement`, `implement-spec`, `retro` and `setup-dan-skills`
 call `impeccable` for UI work. `setup-dan-skills`, `tailwind-v4` and
 `primereact-v10` are original to this repo.
