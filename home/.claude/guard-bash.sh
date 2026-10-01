@@ -118,9 +118,9 @@ repo, so an agent never sets or clears it. Ask the user to run the git config
 command themselves."
   fi
   # The same switch behind the user's zsh function, which agent shells load too.
-  if [[ $seg =~ ^claude-push([[:space:]]|$) ]] && ! [[ $seg =~ ^claude-push[[:space:]]+status([[:space:]]|$) ]]; then
-    reason="claude-push flips the user's switch for letting agents push from a
-repo, so an agent never runs it. \`claude-push status\` only reads it; ask the
+  if [[ $seg =~ ^cc-push([[:space:]]|$) ]] && ! [[ $seg =~ ^cc-push[[:space:]]+status([[:space:]]|$) ]]; then
+    reason="cc-push flips the user's switch for letting agents push from a
+repo, so an agent never runs it. \`cc-push status\` only reads it; ask the
 user to flip it themselves."
   fi
 

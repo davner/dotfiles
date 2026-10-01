@@ -179,10 +179,10 @@ git restore .
 git restore -- .
 git config claude.allowPush true
 git config --unset claude.allowPush
-claude-push
-claude-push on
-claude-push off
-cd /tmp && claude-push
+cc-push
+cc-push on
+cc-push off
+cd /tmp && cc-push
 gh pr create --title "feat: x" --body "y"
 gh pr new
 gh pr merge 12 --squash
@@ -662,7 +662,7 @@ git restore home/AGENTS.md
 git checkout -- home/AGENTS.md
 git restore --staged .
 git config --get claude.allowPush
-claude-push status
+cc-push status
 gh pr view 12
 gh pr list --state open
 gh pr checks 12
@@ -1369,26 +1369,26 @@ eq "no name means no --name, not an empty one" "--dangerously-skip-permissions
 --remote-control
 --foo" "$(cc_argv "$FAKEHOME")"
 
-# claude-push writes the opt-in guard-bash.sh reads, so what it stores is what
+# cc-push writes the opt-in guard-bash.sh reads, so what it stores is what
 # decides whether an agent may push: run it and read the config back.
-CPREPO="$WORK/claude-push"
+CPREPO="$WORK/cc-push"
 git init -q "$CPREPO"
-cp_run() { (cd "$1" && zsh -c "source '$FN'; claude-push $2" 2>&1); }
+cp_run() { (cd "$1" && zsh -c "source '$FN'; cc-push $2" 2>&1); }
 cp_val() { git -C "$CPREPO" config --local --get claude.allowPush; }
 cp_run "$CPREPO" "" >/dev/null
-eq "claude-push with no argument turns an unset switch on" "true" "$(cp_val)"
+eq "cc-push with no argument turns an unset switch on" "true" "$(cp_val)"
 cp_run "$CPREPO" "" >/dev/null
-eq "claude-push with no argument flips on to off" "false" "$(cp_val)"
+eq "cc-push with no argument flips on to off" "false" "$(cp_val)"
 cp_run "$CPREPO" on >/dev/null
-eq "claude-push on sets true" "true" "$(cp_val)"
+eq "cc-push on sets true" "true" "$(cp_val)"
 cp_run "$CPREPO" off >/dev/null
-eq "claude-push off sets false" "false" "$(cp_val)"
+eq "cc-push off sets false" "false" "$(cp_val)"
 cp_run "$CPREPO" status >/dev/null
-eq "claude-push status leaves the switch alone" "false" "$(cp_val)"
+eq "cc-push status leaves the switch alone" "false" "$(cp_val)"
 if cp_run "$WORK" "" >/dev/null; then
-  bad "claude-push outside a repo fails" "it returned success"
+  bad "cc-push outside a repo fails" "it returned success"
 else
-  ok "claude-push outside a repo fails"
+  ok "cc-push outside a repo fails"
 fi
 
 # ~/.zshrc is generated, so the only thing tying it to the file above is this

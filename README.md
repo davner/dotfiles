@@ -49,7 +49,7 @@ with no rebuild. Adding or removing a linked file does need `./rebuild.sh`.
 | `home/AGENTS.md` | Global agent rules, linked to `~/.claude/CLAUDE.md`, Codex and opencode |
 | `home/.claude/skills/` | The skills below, linked one by one into `~/.claude/skills/` |
 | `home/.claude/*.sh`, `settings.base.json` | Hooks and status line; the settings merged into `~/.claude/settings.json` |
-| `home/.config/zsh/functions.zsh` | Shell functions: `cc` (named Claude session), `claude-push` (push switch) |
+| `home/.config/zsh/functions.zsh` | Shell functions: `cc` (named Claude session), `cc-push` (push switch) |
 
 ## Claude Code
 
@@ -178,7 +178,7 @@ flow again at `/grill-with-docs`.
 
 | When | Script | Does |
 | --- | --- | --- |
-| Before every shell command | `guard-bash.sh` | Blocks risky git (`add .`, `reset --hard`, `clean -f`, `branch -D`, `checkout .`, force push, plain push unless the repo opted in with `claude-push on`), opening or merging a PR with `gh` or `gh-axi` in any repo, and commit messages that credit an AI or break the one-line shape |
+| Before every shell command | `guard-bash.sh` | Blocks risky git (`add .`, `reset --hard`, `clean -f`, `branch -D`, `checkout .`, force push, plain push unless the repo opted in with `cc-push on`), opening or merging a PR with `gh` or `gh-axi` in any repo, and commit messages that credit an AI or break the one-line shape |
 | After every file write | `comment-audit.sh` | Flags code comments that tell history or refer to the session |
 | Session start | `session-name.sh` | Names the session after its repo |
 | Always | `statusline.sh` | Shows model, context used, and rate limits |

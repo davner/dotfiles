@@ -20,8 +20,8 @@ cc() {
 # Flips whether agents may run a plain `git push` in the current repo, the
 # opt-in guard-bash.sh reads. It writes the repo's local config, so it never
 # follows you to another repo. `on`/`off` set it outright, `status` only reads.
-claude-push() {
-  git rev-parse --git-dir >/dev/null 2>&1 || { echo "claude-push: not inside a git repo" >&2; return 1; }
+cc-push() {
+  git rev-parse --git-dir >/dev/null 2>&1 || { echo "cc-push: not inside a git repo" >&2; return 1; }
   local now want
   now="$(git config --local --get claude.allowPush)"
   case "$1" in
@@ -29,7 +29,7 @@ claude-push() {
     off) want=false ;;
     status) echo "claude.allowPush=${now:-unset} in $(git rev-parse --show-toplevel)"; return 0 ;;
     '') if [[ $now == true ]]; then want=false; else want=true; fi ;;
-    *) echo "usage: claude-push [on|off|status]" >&2; return 2 ;;
+    *) echo "usage: cc-push [on|off|status]" >&2; return 2 ;;
   esac
   git config --local claude.allowPush "$want" &&
     echo "claude.allowPush=$want in $(git rev-parse --show-toplevel)"
