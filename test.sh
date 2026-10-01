@@ -164,6 +164,32 @@ else
   bad "the lead hands the review round one app instance" \
     "ticket.md no longer says the lead starts the app and shares its URL"
 fi
+git reset --hard
+git reset --hard HEAD~1
+git -C src reset --hard
+git clean -fd
+git clean -f
+git clean --force
+git branch -D topic
+git branch --delete --force topic
+git branch -d -f topic
+git checkout .
+git checkout -- .
+git restore .
+git restore -- .
+git config claude.allowPush true
+git config --unset claude.allowPush
+claude-push
+claude-push on
+claude-push off
+cd /tmp && claude-push
+gh pr create --title "feat: x" --body "y"
+gh pr new
+gh pr merge 12 --squash
+gh-axi pr create --title "feat: x"
+gh-axi pr merge 12
+npx -y gh-axi pr create --title "feat: x"
+npx gh-axi pr merge 12 --squash
 
 # --------------------------------------------------------------------------
 section "draft-ticket skill"
@@ -605,6 +631,9 @@ git commit -m 'fix: short' && cat >/tmp/x <<'EOF'
 one
 two
 three
+git -C "a b" push
+cd /tmp && git reset --hard
+git restore --staged .
 four
 EOF
 CMD
@@ -647,6 +676,59 @@ CASES
 
   # The hook runs under whatever bash is on PATH, and a stock macOS /bin/bash is
   # 3.2 - where an empty array expanded under `set -u` aborts the whole script
+
+  # A push is judged against the repo it runs in, so these carry a cwd and
+  # real repos: one opted in, one not, and a directory that is no repo at all.
+  guard_in() { printf '{"tool_name":"Bash","tool_input":{"command":%s},"cwd":%s}' \
+    "$(printf '%s' "$2" | jq -Rs .)" "$(printf '%s' "$1" | jq -Rs .)" |
+    "$GUARD" >/dev/null 2>&1; echo $?; }
+  PUSHES="$WORK/pushes"
+  mkdir -p "$PUSHES/norepo" "$PUSHES/with space"
+  git init -q "$PUSHES/opted" && git -C "$PUSHES/opted" config claude.allowPush true
+  git init -q "$PUSHES/closed"
+  git init -q "$PUSHES/with space/opted" &&
+    git -C "$PUSHES/with space/opted" config claude.allowPush true
+  eq "push from a repo that has not opted in is blocked" "2" \
+    "$(guard_in "$PUSHES/closed" 'git push origin main')"
+  eq "push from an opted-in repo is allowed" "0" \
+    "$(guard_in "$PUSHES/opted" 'git push origin main')"
+  eq "push outside any repo is blocked" "2" "$(guard_in "$PUSHES/norepo" 'git push')"
+  eq "push with no cwd in the payload is blocked" "2" "$(guard 'git push')"
+  eq "-C names the repo, not the cwd (opted in)" "0" \
+    "$(guard_in "$PUSHES/closed" "git -C $PUSHES/opted push")"
+  eq "-C names the repo, not the cwd (closed)" "2" \
+    "$(guard_in "$PUSHES/opted" "git -C $PUSHES/closed push")"
+  eq "a relative -C resolves against the cwd" "0" "$(guard_in "$PUSHES" 'git -C opted push')"
+  eq "a quoted -C with a space resolves" "0" \
+    "$(guard_in "$PUSHES" 'git -C "with space/opted" push')"
+  eq "cd into an opted-in repo, then push, is allowed" "0" \
+    "$(guard_in "$PUSHES" 'cd opted && git push')"
+  eq "cd into a closed repo, then push, is blocked" "2" \
+    "$(guard_in "$PUSHES/opted" "cd $PUSHES/closed && git push")"
+  eq "the last cd wins" "2" "$(guard_in "$PUSHES" 'cd opted && cd ../closed && git push')"
+  # shellcheck disable=SC2016  # the unexpanded variable is the case under test
+  eq "a cd this cannot resolve blocks the push" "2" \
+    "$(guard_in "$PUSHES/opted" 'cd "$SOMEWHERE" && git push')"
+  eq "--git-dir hides the repo, so the push is blocked" "2" \
+    "$(guard_in "$PUSHES/opted" 'git --git-dir=../closed/.git push')"
+  forced=""
+  while IFS= read -r c; do
+    [ -n "$c" ] || continue
+    [ "$(guard_in "$PUSHES/opted" "$c")" = "2" ] || forced="$forced
+    let through: $c"
+  done <<'CASES'
+git push --force origin main
+git push --force-with-lease
+git push -f
+git push -uf origin main
+git push origin +main
+git -C . push --force
+CASES
+  if [ -z "$forced" ]; then
+    ok "a force push is blocked even in an opted-in repo"
+  else
+    bad "a force push is blocked even in an opted-in repo" "$forced"
+  fi
   # and the guard silently passes everything.
   if [ -x /bin/bash ] && ! /bin/bash -c 'echo "${BASH_VERSINFO[0]}"' | grep -qx 5; then
     old_bash=""
@@ -685,8 +767,18 @@ git add ./src/foo.ts
 git add -u home/AGENTS.md
 git status --short
 git log --oneline -5
-git push origin main
-git clean -fd
+git reset HEAD home/AGENTS.md
+git clean -n
+git branch -d topic
+git restore home/AGENTS.md
+git checkout -- home/AGENTS.md
+git restore --staged .
+git config --get claude.allowPush
+claude-push status
+gh pr view 12
+gh pr list --state open
+gh pr checks 12
+npx -y gh-axi pr view 42 --comments
 git commit -m "fix: a real message"
 echo "git add ."
 nix develop --command ./test.sh
@@ -1277,6 +1369,28 @@ NOW="$(date +%s)"
 # on it, and the offset is drift tolerance rather than an arbitrary number. The
 # script reads the clock after this line runs and floors what is left, so an
 # exact 259200 (3d) or 900 (15m) renders as 2d or 14m the moment one second has
+# claude-push writes the opt-in guard-bash.sh reads, so what it stores is what
+# decides whether an agent may push: run it and read the config back.
+CPREPO="$WORK/claude-push"
+git init -q "$CPREPO"
+cp_run() { (cd "$1" && zsh -c "source '$FN'; claude-push $2" 2>&1); }
+cp_val() { git -C "$CPREPO" config --local --get claude.allowPush; }
+cp_run "$CPREPO" "" >/dev/null
+eq "claude-push with no argument turns an unset switch on" "true" "$(cp_val)"
+cp_run "$CPREPO" "" >/dev/null
+eq "claude-push with no argument flips on to off" "false" "$(cp_val)"
+cp_run "$CPREPO" on >/dev/null
+eq "claude-push on sets true" "true" "$(cp_val)"
+cp_run "$CPREPO" off >/dev/null
+eq "claude-push off sets false" "false" "$(cp_val)"
+cp_run "$CPREPO" status >/dev/null
+eq "claude-push status leaves the switch alone" "false" "$(cp_val)"
+if cp_run "$WORK" "" >/dev/null; then
+  bad "claude-push outside a repo fails" "it returned success"
+else
+  ok "claude-push outside a repo fails"
+fi
+
 # passed. That is a real second on a loaded CI runner, not a theoretical one.
 # Round these off and the suite starts failing a few times a week.
 sl_out="$(printf '{"model":{"display_name":"Opus 5"},"context_window":{"used_percentage":8},"rate_limits":{"five_hour":{"used_percentage":23.5,"resets_at":%d},"seven_day":{"used_percentage":41.2,"resets_at":%d}}}' \

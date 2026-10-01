@@ -6,6 +6,40 @@ set -uo pipefail
 payload=$(cat)
 cmd=$(jq -r '.tool_input.command // empty' <<<"$payload")
 [[ -n $cmd ]] || exit 0
+here=$(jq -r '.cwd // empty' <<<"$payload")
+
+# One shell word, quoted or bare, so a quoted path with a space stays whole.
+WORD="(\"[^\"]*\"|'[^']*'|[^[:space:]]+)"
+
+unquote() {
+  local s=$1
+  case $s in
+    \"*\") s=${s#\"} s=${s%\"} ;;
+    \'*\') s=${s#\'} s=${s%\'} ;;
+  esac
+  printf '%s' "$s"
+}
+
+resolve_dir() { # base, word -> absolute directory, or fail when it cannot be known
+  local base=$1 d
+  d=$(unquote "$2")
+  case $d in
+    \~) d=$HOME ;;
+    \~/*) d=$HOME/${d#\~/} ;;
+  esac
+  [[ -n $d && $d != - && $d != *'$'* && $d != *'`'* ]] || return 1
+  if [[ $d != /* ]]; then
+    [[ -n $base ]] || return 1
+    d=$base/$d
+  fi
+  printf '%s' "$d"
+}
+
+# The repo's own config, not the global one, so opting in is a per-repo act.
+push_allowed() { # directory -> success when that repo has opted in to pushes
+  [[ -n $1 && -d $1 ]] || return 1
+  [[ $(git -C "$1" config --local --get claude.allowPush 2>/dev/null) == true ]]
+}
 
 # A blocked command hides behind `&&` as well as at a line start, so each
 # segment is judged alone - which also keeps `echo "git add ."` from matching.
@@ -14,7 +48,42 @@ segments=$(printf '%s\n' "$cmd" | sed -E 's/(\&\&|\|\||;|\|)/\n/g')
 reason=""
 while IFS= read -r seg; do
   seg="${seg#"${seg%%[![:space:]]*}"}"
+  seg="${seg%"${seg##*[![:space:]]}"}"
   [[ -n $seg ]] || continue
+
+  # Followed so a push is checked against the repo it runs in; a `cd` this
+  # cannot resolve leaves the directory unknown, and an unknown one never pushes.
+  if [[ $seg =~ ^cd([[:space:]]+(.*))?$ ]]; then
+    if [[ -z ${BASH_REMATCH[2]} ]]; then
+      here=$HOME
+    else
+      here=$(resolve_dir "$here" "${BASH_REMATCH[2]}") || here=""
+    fi
+    continue
+  fi
+
+  # Global options go before the subcommand, so they are peeled off here and
+  # every rule below can match `git <subcommand>` whatever preceded it.
+  repo=$here
+  if [[ $seg =~ ^git[[:space:]]+(.*)$ ]]; then
+    rest=${BASH_REMATCH[1]}
+    while :; do
+      if [[ $rest =~ ^-C[[:space:]]+${WORD}[[:space:]]*(.*)$ ]]; then
+        repo=$(resolve_dir "$repo" "${BASH_REMATCH[1]}") || repo=""
+        rest=${BASH_REMATCH[2]}
+      elif [[ $rest =~ ^--(git-dir|work-tree)(=|[[:space:]]+)${WORD}[[:space:]]*(.*)$ ]]; then
+        repo=""
+        rest=${BASH_REMATCH[4]}
+      elif [[ $rest =~ ^-c[[:space:]]+${WORD}[[:space:]]*(.*)$ ]]; then
+        rest=${BASH_REMATCH[2]}
+      elif [[ $rest =~ ^--?[a-zA-Z][-a-zA-Z]*(=[^[:space:]]*)?([[:space:]]+(.*))?$ ]]; then
+        rest=${BASH_REMATCH[3]}
+      else
+        break
+      fi
+    done
+    seg="git $rest"
+  fi
 
   if [[ $seg =~ ^git[[:space:]]+add([[:space:]]|$) ]]; then
     if [[ $seg =~ [[:space:]](\.|-A|--all|:/)([[:space:]]|$) ]]; then
@@ -24,16 +93,82 @@ this task actually touched, by name."
     fi
   fi
 
-  if [[ $seg =~ ^git[[:space:]]+push([[:space:]]|$) ]] &&
-    [[ $seg =~ (--force|--force-with-lease|[[:space:]]-f([[:space:]]|$)) ]]; then
-    reason="A force push rewrites history the user did not ask you to rewrite.
+  if [[ $seg =~ ^git[[:space:]]+push([[:space:]]|$) ]]; then
+    # A `+` on a refspec forces that one ref exactly as --force forces them all.
+    if [[ $seg =~ (--force|--force-with-lease|[[:space:]]-[a-zA-Z]*f[a-zA-Z]*([[:space:]]|$)|[[:space:]]\+[^[:space:]]) ]]; then
+      reason="A force push rewrites history the user did not ask you to rewrite.
 Ask for it in words and let them run it."
+    elif ! push_allowed "$repo"; then
+      reason="git push is off unless the repo has opted in, and this one has not:
+
+  ${repo:-(no directory could be worked out from the command)}
+
+Push only when the user asked for it. The user opts a repo in once by running
+\`git config claude.allowPush true\` inside it; until they do, hand them the
+push command to run themselves."
+    fi
+  fi
+
+  # Setting the opt-in is left to the user, or this rule would unlock itself.
+  if [[ $seg =~ ^git[[:space:]]+config([[:space:]]|$) ]] &&
+    [[ $(tr '[:upper:]' '[:lower:]' <<<"$seg") == *claude.allowpush* ]] &&
+    ! [[ $seg =~ [[:space:]](--get|--get-all|get)([[:space:]]|$) ]]; then
+    reason="claude.allowPush is the user's switch for letting agents push from a
+repo, so an agent never sets or clears it. Ask the user to run the git config
+command themselves."
+  fi
+  # The same switch behind the user's zsh function, which agent shells load too.
+  if [[ $seg =~ ^claude-push([[:space:]]|$) ]] && ! [[ $seg =~ ^claude-push[[:space:]]+status([[:space:]]|$) ]]; then
+    reason="claude-push flips the user's switch for letting agents push from a
+repo, so an agent never runs it. \`claude-push status\` only reads it; ask the
+user to flip it themselves."
+  fi
+
+  # Opening or merging a PR puts work in front of other people, so it stays the user's act.
+  if [[ $seg =~ ^gh[[:space:]]+pr[[:space:]]+(create|new|merge)([[:space:]]|$) ]] ||
+    [[ $seg =~ ^(npx[[:space:]]+(-y[[:space:]]+|--yes[[:space:]]+)?)?gh-axi[[:space:]]+pr[[:space:]]+(create|merge)([[:space:]]|$) ]]; then
+    reason="Opening or merging a pull request is the user's call, in every repo.
+Write the PR title and body on a page with a Copy button and hand them over;
+the user opens and merges it themselves."
+  fi
+
+  if [[ $seg =~ ^git[[:space:]]+reset([[:space:]]|$) ]] && [[ $seg =~ [[:space:]]--hard([[:space:]]|$) ]]; then
+    reason="git reset --hard throws away every uncommitted change in the tree,
+including edits the user or another agent is making right now, and git keeps no
+copy. Name the paths to restore, or ask the user to run it."
+  fi
+
+  if [[ $seg =~ ^git[[:space:]]+clean([[:space:]]|$) ]] &&
+    [[ $seg =~ ([[:space:]]-[a-zA-Z]*f|[[:space:]]--force([[:space:]]|$)) ]]; then
+    reason="git clean -f deletes untracked files, which git has never seen and
+cannot bring back - a new file not yet added is gone for good. Remove the files
+you created by name, or ask the user to run it."
   fi
 
   # .tickets/ is gitignored, so -x is the flag that reaches a live worktree.
   if [[ $seg =~ ^git[[:space:]]+clean([[:space:]]|$) ]] && [[ $seg =~ [[:space:]]-[a-zA-Z]*x ]]; then
     reason="git clean -x deletes ignored files, which includes the live
 worktrees under .tickets/ and anything else git was told not to track."
+  fi
+
+  if [[ $seg =~ ^git[[:space:]]+branch([[:space:]]|$) ]] &&
+    { [[ $seg =~ [[:space:]]-[a-zA-Z]*D ]] ||
+      { [[ $seg =~ [[:space:]](-[a-zA-Z]*d|--delete) ]] &&
+        [[ $seg =~ [[:space:]](-[a-zA-Z]*f|--force) ]]; }; }; then
+    reason="git branch -D deletes a branch even when its commits are merged
+nowhere else, and they are then reachable only through the reflog. Use
+git branch -d, which refuses unless the work is safe, or ask the user."
+  fi
+
+  # --staged alone only unstages, so it loses nothing and stays allowed.
+  if [[ $seg =~ ^git[[:space:]]+(checkout|restore)([[:space:]]|$) ]] &&
+    [[ $seg =~ [[:space:]](\.|\./|:/)([[:space:]]|$) ]] &&
+    ! { [[ $seg =~ ^git[[:space:]]+restore ]] &&
+      [[ $seg =~ [[:space:]](--staged|-S)([[:space:]]|$) ]] &&
+      ! [[ $seg =~ [[:space:]](--worktree|-W)([[:space:]]|$) ]]; }; then
+    reason="Checking out or restoring the whole tree discards every uncommitted
+edit in it, including ones the user or another agent is making right now. Name
+the paths this task changed and restore only those."
   fi
 
 done <<<"$segments"
