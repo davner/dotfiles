@@ -40,7 +40,7 @@ Use this template for the body:
 
 ## Sections
 
-Skip all preambles and keep prose brief. Use the user's domain language from `GLOSSARY.md`.
+Skip all preambles and keep prose brief. Use the user's domain language from the glossary at the path `docs/agents/domain.md` names, else `GLOSSARY.md`.
 
 ### Summary
 
