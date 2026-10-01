@@ -10,31 +10,52 @@ touched a shell script or a workflow, since bare it silently skips both.
 runs the full suite plus a real `nix build` of every configuration on Mondays.
 Anything slow belongs in weekly.yml, not in the push path.
 
-Deliberate decisions in this repo - do NOT silently revert them:
+## Agent skills
 
-- `homebrew.onActivation.cleanup = "zap"` in `configuration.nix` is intentional. It forces the good habit of declaring every Homebrew package in the Nix config instead of installing things ad-hoc, which keeps the machine reproducible. Do not soften it to `uninstall` or `none`.
-- `homebrew.onActivation.upgrade = true` alongside it is also intentional, and the pair is easy to get wrong. `autoUpdate` only refreshes Homebrew's metadata; without `upgrade`, an already-installed cask is left at whatever version it landed on and a rebuild never moves it. That is how Claude Code's cask sat at an old version while Claude Code nagged about a newer one on every launch. Do not drop it because rebuilds got slower. The cask declared is `claude-code@latest`, which tracks the npm release; plain `claude-code` is the stable channel and runs days behind it. The two conflict, so a hand-installed copy of the other one fails activation at install, before `zap` can remove it - uninstall it by hand. An installed version still below npm is the cask not having published yet, so compare `brew info --cask claude-code@latest` against `npm view @anthropic-ai/claude-code version` before chasing it. `~/.claude.json` may also report `installMethod: native` left over from an older hand-install under `~/.local/share/claude/versions`; PATH resolves to the cask binary, so those builds are dead weight rather than what runs.
-- `flake.nix` exposes one `darwinConfigurations` entry per username in its `users` attrset, and `bootstrap.sh`/`rebuild.sh` select the one matching whoever runs them. Do not collapse this back to a single `user = "..."` value that a script rewrites in place: that swap dirtied `flake.nix` on every switch between the work and personal machine, and whichever value got committed broke activation on the other one. Entries are additive; adding a machine must not remove an existing username. Each username maps to a record of what differs per machine - the git address and the platform - so a new Mac is one edit in one file rather than a username here and an address somewhere else.
-- `users.sh` is the only thing that parses that attrset, and it holds `flake.nix` to a shape: one quoted username per line, each opening an attrset record, terminated by the `# end users` marker it appends above. Reformatting the attrset onto one line or dropping the marker breaks both scripts, which is why `test.sh` asserts the shape. `users.sh add` writes an empty record, since it runs before nix is known to work and cannot fill one in; every field it leaves out has to stay optional at the point it is read, which is why `configuration.nix` defaults `hostPlatform` rather than indexing `cfg.system` directly. Without that default the missing-email error is replaced by a module-system stack trace, and the trace is what a fresh Mac would see. `users.sh` also deliberately uses nothing but bash, sed and awk - `bootstrap.sh` calls it on a machine where nix was installed seconds ago and may not work yet.
-- Dots in a username become dashes in its flake attribute (`dan.avner` -> `#dan-avner`). This is not cosmetic. `darwin-rebuild` splits its `--flake ...#attr` argument on `.` and then appends `.system`, so a literal dotted attribute is parsed as several path segments and can never resolve. Any code that maps a username to a flake attribute has to apply the same substitution.
-- `home-manager.backupFileExtension = "backup"` in `flake.nix` is intentional. A pre-existing dotfile that this config also manages is moved aside instead of failing the activation, and nothing is overwritten in place. Do not reach for `force = true` on the file options instead: it silently destroys whatever was there. When activation reports that a `.backup` would itself be clobbered, an older backup is still on disk - read it and delete it.
-- `home/.claude/settings.base.json` holds the durable half of Claude Code's user settings - hooks, `statusLine`, `skipDangerousModePermissionPrompt`, `agentPushNotifEnabled` - and `~/.claude/settings.json` is deliberately **not** symlinked. `~/.claude/settings.json` is the only user-scope file Claude Code reads, and `/config`, `/model` and `/effort` all persist into it, so a link routes every mid-session preference change into this working tree. A `home.activation` step in `home.nix` runs `claude-settings-merge` instead, which deep-merges base over whatever is already there with `jq -s '.[0] * .[1]'`. Base wins on the keys it names, so a hook change reaches every machine on the next rebuild; every other key survives, which is what leaves `/config` owning its own file. **Never put `model`, `effortLevel` or `theme` in `settings.base.json`**: base wins, so a rebuild would revert the `/config` change and reintroduce the same fight in the other direction. `test.sh` asserts both halves - that those three keys are absent, and that `home.nix` does not link `settings.json`. The cost of the split is that those three are no longer version-controlled, so a fresh Mac uses Claude Code's defaults until one `/config`. A user-level `settings.local.json` is not a fix to reach for: Claude Code documents four settings files and none of them is `~/.claude/settings.local.json`, so the copy the `impeccable` installer writes there is probably never read - `/status` names the files actually read, if you need to settle it.
-- `CHANGELOG.md` is generated from the commit history by `git-cliff` using `cliff.toml`. Never hand-edit it, and never hand-write an entry into it. Do not regenerate it as part of a change either: `changelog.yml` does that on every push to `main`, so a regenerated file in a feature branch only creates a conflict with the bot commit. Because entries come straight from commit subjects, a vague subject line is a vague changelog entry - that is now a second reason to write them carefully. The commit it pushes also lands on `origin/main` while your own work is still unpushed, so a plain `git pull` records a merge whose entire content is a changelog regeneration. Pull with `git pull --rebase`, or `--ff-only` and rebase by hand, so `Merge remote-tracking branch 'origin/main'` never enters the history for this.
-- Never commit `.no-mistakes/` validation evidence to this public repo. `.no-mistakes/` is gitignored; if a validation pipeline stages evidence into a branch, drop it before merging.
-- `.tickets/` is gitignored ticket-loop state - specs, reports, and live git worktrees under `.tickets/*/tree/`. Never commit it, and never run `git clean -dfx` while a ticket is in flight: that deletes the live worktrees.
-- Skills written in this repo live in `home/.claude/skills/<name>/` and are linked into `~/.claude/skills/` **one entry per skill**, never as the whole `skills/` directory. That directory also holds the hand-installed third-party skills, and a directory-level symlink would displace all of them. Adding a skill is therefore a new `home.file.".claude/skills/<name>"` line in `home.nix`; `test.sh` derives its symlink-target checks from that file by sed, so a typo becomes a failing test rather than a dangling link. This is the only category of skill the rebuild manages - the `npx skills add` ones are still hand-installed, per "Installing the skills" below.
-- Subagents in `home/.claude/agents/` deliberately omit the `memory` frontmatter field. Enabling it auto-enables the Read, Write, and Edit tools, which would silently break the read-only boundary that every agent carrying `disallowedTools: Write, Edit, NotebookEdit` depends on. Do not count or enumerate them here; the frontmatter is the list. It also drops an `agent-memory/` directory into every repo they run in. Turn it on per-agent only for ones that can write anyway.
-- Those agents also deliberately omit the `skills` frontmatter field, even where a skill is obviously relevant. Skills here are hand-installed with `npx skills add` and are absent on a fresh machine, so preloading one would make the agent depend on a step the Nix rebuild does not perform. The prompts invoke skills at runtime instead, which degrades gracefully.
-- Agent prompts must stay stack-agnostic. These are user-level agents that load in every project, so they discover a repo's framework, test runner, and conventions rather than assuming a stack. They also must not restate the rules in `home/AGENTS.md`: that file is loaded into every custom subagent already.
+- Tracker: Shortcut, paste-ready; specs and tickets in `docs/specs/`. See `docs/agents/issue-tracker.md`.
+- Domain docs: glossary at `docs/GLOSSARY.md`, ADRs in `docs/adr/`. See `docs/agents/domain.md`.
+
+## Deliberate decisions
+
+Each has an ADR in `docs/adr/` with the reason. Read the ADR before changing
+the thing it names; revert one only with the user's explicit word.
+
+- Homebrew cleanup is `zap` ([0001](docs/adr/0001-homebrew-cleanup-zap.md)) and upgrades on every rebuild, with `claude-code@latest` as the cask ([0002](docs/adr/0002-homebrew-upgrade-on-activation.md)).
+- One `darwinConfigurations` entry per username ([0003](docs/adr/0003-one-darwin-configuration-per-user.md)); `users.sh` owns the attrset's shape ([0004](docs/adr/0004-users-attrset-shape.md)); dots in a username become dashes in its flake attribute ([0005](docs/adr/0005-dots-become-dashes-in-flake-attributes.md)).
+- home-manager backs up clashing files instead of forcing ([0006](docs/adr/0006-home-manager-backups.md)).
+- Claude settings are merged from `settings.base.json`, not linked; `model`, `effortLevel` and `theme` stay out of the base file ([0007](docs/adr/0007-claude-settings-merge-not-link.md)).
+- `CHANGELOG.md` is generated by `git-cliff` on `main`: never hand-edit or regenerate it, and pull with `--rebase` ([0008](docs/adr/0008-changelog-generated-by-git-cliff.md)).
+
+## Rules without an ADR
+
+- Never commit `.no-mistakes/` validation evidence to this public repo. It is
+  gitignored; if a validation pipeline stages evidence into a branch, drop it
+  before merging.
+
+## Skills this repo owns
+
+Every skill under `home/.claude/skills/<name>/` is linked into
+`~/.claude/skills/` **one entry per skill**, never as the whole directory:
+that directory also holds the hand-installed third-party skills, and a
+directory-level link would displace them. Adding a skill is a new
+`home.file.".claude/skills/<name>"` line in `home.nix`; `test.sh` derives its
+link checks from those lines by sed, so a typo fails a test instead of leaving
+a dangling link.
+
+`to-spec`, `to-tickets`,
+`implement-spec` and `code-review` point at `setup-dan-skills`;
+`domain-modeling` honors the paths in `docs/agents/domain.md`; `pr` returns only a paste-ready title and body; `prototype`,
+`code-review`, `implement`, `implement-spec`, `retro` and `setup-dan-skills`
+call `impeccable` for UI work. `setup-dan-skills`, `tailwind-v4` and
+`primereact-v10` are original to this repo.
 
 ## Installing the skills
 
-`home/AGENTS.md` names the skills every machine should have and points here for
-the install steps, so this section is read on demand from any project - keep the
-heading name stable. The third-party skills are not managed by `home.nix`; a
-rebuild neither installs nor removes them. Every one but `impeccable` is
-installed with `npx skills add`, which writes to `~/.agents/skills/` and symlinks
-into `~/.claude/skills/`. `impeccable` has its own installer and lands as a real
+The third-party skills are not managed by `home.nix`; a rebuild neither
+installs nor removes them, and `home/AGENTS.md` points here for the steps, so
+keep this heading's name stable. Every one but `impeccable` is installed with
+`npx skills add`, which writes to `~/.agents/skills/` and symlinks into
+`~/.claude/skills/`. `impeccable` has its own installer and lands as a real
 directory under `~/.claude/skills/` with no `~/.agents/` entry at all, so check
 both locations before deciding a skill is missing. On a fresh machine:
 
@@ -68,5 +89,5 @@ skills remove <name> -g -y` followed by the install line above.
 
 - Keep this file for knowledge useful to almost every future agent session in this project.
 - Do not repeat what the codebase already shows; point to the authoritative file or command instead.
+- A decision that is hard to reverse and surprising gets an ADR in `docs/adr/` and a one-line pointer here.
 - Prefer rewriting or pruning existing entries over appending new ones.
-- When updating this file, preserve this bar for all agents and keep entries concise.

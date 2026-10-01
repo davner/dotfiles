@@ -98,8 +98,7 @@ run() { # run a repo script with the stubs in place; never touches real $HOME
 
 SCRIPTS=(bootstrap.sh rebuild.sh users.sh test.sh
   home/.claude/statusline.sh home/.claude/session-name.sh
-  home/.claude/comment-audit.sh home/.claude/guard-bash.sh
-  home/.claude/context-audit.sh)
+  home/.claude/comment-audit.sh home/.claude/guard-bash.sh)
 
 # --------------------------------------------------------------------------
 section "syntax and lint"
@@ -135,90 +134,6 @@ else
 fi
 
 # --------------------------------------------------------------------------
-section "ticket loop"
-# The timings file is append-only and compared across tickets, so its columns
-# are a contract: reordering one silently invalidates every row already
-# written. Pinning the header here makes changing it a deliberate act.
-TICKET_MD="$DIR/home/.claude/commands/ticket.md"
-TIMINGS_HEADER="$(printf 'ticket\tphase\tround\tagent\tstarted\tended\tseconds')"
-if grep -qF "$TIMINGS_HEADER" "$TICKET_MD"; then
-  ok "the timings header is the agreed columns, tab separated"
-else
-  bad "the timings header is the agreed columns, tab separated" \
-    "ticket.md no longer documents: $TIMINGS_HEADER"
-fi
-missing=""
-for phase in spec approval setup writer tests review handoff; do
-  grep -qF "\`$phase\`" "$TICKET_MD" || missing="$missing $phase"
-done
-if [ -z "$missing" ]; then
-  ok "every timing phase is named in ticket.md"
-else
-  bad "every timing phase is named in ticket.md" "undocumented:$missing"
-fi
-# The lead starts one app and hands out the URL, so no agent races another
-# for the port - a lost race reads as a defect in the branch.
-if grep -q 'never race to' "$TICKET_MD"; then
-  ok "the lead hands the review round one app instance"
-else
-  bad "the lead hands the review round one app instance" \
-    "ticket.md no longer says the lead starts the app and shares its URL"
-fi
-git reset --hard
-git reset --hard HEAD~1
-git -C src reset --hard
-git clean -fd
-git clean -f
-git clean --force
-git branch -D topic
-git branch --delete --force topic
-git branch -d -f topic
-git checkout .
-git checkout -- .
-git restore .
-git restore -- .
-git config claude.allowPush true
-git config --unset claude.allowPush
-claude-push
-claude-push on
-claude-push off
-cd /tmp && claude-push
-gh pr create --title "feat: x" --body "y"
-gh pr new
-gh pr merge 12 --squash
-gh-axi pr create --title "feat: x"
-gh-axi pr merge 12
-npx -y gh-axi pr create --title "feat: x"
-npx gh-axi pr merge 12 --squash
-
-# --------------------------------------------------------------------------
-section "draft-ticket skill"
-# The skill drafts text a human pastes. The moment it can file a ticket it
-# stops being safe to run unattended, and that boundary lives only in the
-# prose - so pin the sentence that states it.
-DRAFT_MD="$DIR/home/.claude/skills/draft-ticket/SKILL.md"
-if grep -qF 'Nothing here files, edits, or moves a ticket.' "$DRAFT_MD"; then
-  ok "draft-ticket still says it never files a ticket"
-else
-  bad "draft-ticket still says it never files a ticket" \
-    "SKILL.md dropped the boundary that keeps it a drafting tool"
-fi
-# Both halves of "tied into the ticket loop, callable on its own": the loop has
-# to name the skill, and the skill has to say what it does when called alone.
-if grep -qF 'draft-ticket' "$TICKET_MD"; then
-  ok "the ticket loop's spec step uses the skill"
-else
-  bad "the ticket loop's spec step uses the skill" \
-    "ticket.md no longer routes its Title and Description through draft-ticket"
-fi
-if grep -qF 'Called on its own, the skill ends at section 6' "$DRAFT_MD"; then
-  ok "draft-ticket still stops at the draft when called alone"
-else
-  bad "draft-ticket still stops at the draft when called alone" \
-    "SKILL.md no longer says a standalone call starts no ticket loop"
-fi
-
-# --------------------------------------------------------------------------
 section "bash guard hook"
 # The rules this enforces are absolute in home/AGENTS.md, which is exactly why
 # they are a hook: a prompt is advice and a hook is a decision. The allow cases
@@ -249,6 +164,32 @@ git push --force-with-lease
 git push -f
 git clean -dfx
 git clean -xfd
+git reset --hard
+git reset --hard HEAD~1
+git -C src reset --hard
+git clean -fd
+git clean -f
+git clean --force
+git branch -D topic
+git branch --delete --force topic
+git branch -d -f topic
+git checkout .
+git checkout -- .
+git restore .
+git restore -- .
+git config claude.allowPush true
+git config --unset claude.allowPush
+claude-push
+claude-push on
+claude-push off
+cd /tmp && claude-push
+gh pr create --title "feat: x" --body "y"
+gh pr new
+gh pr merge 12 --squash
+gh-axi pr create --title "feat: x"
+gh-axi pr merge 12
+npx -y gh-axi pr create --title "feat: x"
+npx gh-axi pr merge 12 --squash
 CASES
   if [ -z "$blocked" ]; then
     ok "the absolute rules are blocked"
@@ -631,9 +572,6 @@ git commit -m 'fix: short' && cat >/tmp/x <<'EOF'
 one
 two
 three
-git -C "a b" push
-cd /tmp && git reset --hard
-git restore --staged .
 four
 EOF
 CMD
@@ -676,6 +614,68 @@ CASES
 
   # The hook runs under whatever bash is on PATH, and a stock macOS /bin/bash is
   # 3.2 - where an empty array expanded under `set -u` aborts the whole script
+  # and the guard silently passes everything.
+  if [ -x /bin/bash ] && ! /bin/bash -c 'echo "${BASH_VERSINFO[0]}"' | grep -qx 5; then
+    old_bash=""
+    while IFS= read -r c; do
+      [ -n "$c" ] || continue
+      payload="$(printf '{"tool_name":"Bash","tool_input":{"command":%s}}' \
+        "$(printf '%s' "$c" | jq -Rs .)")"
+      here="$(printf '%s' "$payload" | "$GUARD" >/dev/null 2>&1; echo $?)"
+      there="$(printf '%s' "$payload" | /bin/bash "$GUARD" >/dev/null 2>&1; echo $?)"
+      [ "$here" = "$there" ] || old_bash="$old_bash
+    $c: exit $here here, exit $there under /bin/bash"
+    done <<'CASES'
+git commit -m "fix: a real message"
+git commit -m "As requested, rename the helper function"
+git commit -m "fix: x" -m "one"
+git commit --amend --no-edit
+git add .
+git -C "a b" push
+cd /tmp && git reset --hard
+git restore --staged .
+CASES
+    if [ -z "$old_bash" ]; then
+      ok "nothing in the guard needs a bash newer than /bin/bash"
+    else
+      bad "nothing in the guard needs a bash newer than /bin/bash" "$old_bash"
+    fi
+  else
+    skip "guard-bash.sh under an older /bin/bash (this one is bash 5)"
+  fi
+
+  allowed=""
+  while IFS= read -r c; do
+    [ -n "$c" ] || continue
+    [ "$(guard "$c")" = "0" ] || allowed="$allowed
+    blocked: $c"
+  done <<'CASES'
+git add home/.claude/guard-bash.sh
+git add ./src/foo.ts
+git add -u home/AGENTS.md
+git status --short
+git log --oneline -5
+git reset HEAD home/AGENTS.md
+git clean -n
+git branch -d topic
+git restore home/AGENTS.md
+git checkout -- home/AGENTS.md
+git restore --staged .
+git config --get claude.allowPush
+claude-push status
+gh pr view 12
+gh pr list --state open
+gh pr checks 12
+npx -y gh-axi pr view 42 --comments
+git commit -m "fix: a real message"
+echo "git add ."
+nix develop --command ./test.sh
+CASES
+  if [ -z "$allowed" ]; then
+    ok "ordinary work is not blocked"
+  else
+    bad "ordinary work is not blocked" "$allowed"
+  fi
 
   # A push is judged against the repo it runs in, so these carry a cwd and
   # real repos: one opted in, one not, and a directory that is no repo at all.
@@ -728,65 +728,6 @@ CASES
     ok "a force push is blocked even in an opted-in repo"
   else
     bad "a force push is blocked even in an opted-in repo" "$forced"
-  fi
-  # and the guard silently passes everything.
-  if [ -x /bin/bash ] && ! /bin/bash -c 'echo "${BASH_VERSINFO[0]}"' | grep -qx 5; then
-    old_bash=""
-    while IFS= read -r c; do
-      [ -n "$c" ] || continue
-      payload="$(printf '{"tool_name":"Bash","tool_input":{"command":%s}}' \
-        "$(printf '%s' "$c" | jq -Rs .)")"
-      here="$(printf '%s' "$payload" | "$GUARD" >/dev/null 2>&1; echo $?)"
-      there="$(printf '%s' "$payload" | /bin/bash "$GUARD" >/dev/null 2>&1; echo $?)"
-      [ "$here" = "$there" ] || old_bash="$old_bash
-    $c: exit $here here, exit $there under /bin/bash"
-    done <<'CASES'
-git commit -m "fix: a real message"
-git commit -m "As requested, rename the helper function"
-git commit -m "fix: x" -m "one"
-git commit --amend --no-edit
-git add .
-CASES
-    if [ -z "$old_bash" ]; then
-      ok "nothing in the guard needs a bash newer than /bin/bash"
-    else
-      bad "nothing in the guard needs a bash newer than /bin/bash" "$old_bash"
-    fi
-  else
-    skip "guard-bash.sh under an older /bin/bash (this one is bash 5)"
-  fi
-
-  allowed=""
-  while IFS= read -r c; do
-    [ -n "$c" ] || continue
-    [ "$(guard "$c")" = "0" ] || allowed="$allowed
-    blocked: $c"
-  done <<'CASES'
-git add home/.claude/guard-bash.sh
-git add ./src/foo.ts
-git add -u home/AGENTS.md
-git status --short
-git log --oneline -5
-git reset HEAD home/AGENTS.md
-git clean -n
-git branch -d topic
-git restore home/AGENTS.md
-git checkout -- home/AGENTS.md
-git restore --staged .
-git config --get claude.allowPush
-claude-push status
-gh pr view 12
-gh pr list --state open
-gh pr checks 12
-npx -y gh-axi pr view 42 --comments
-git commit -m "fix: a real message"
-echo "git add ."
-nix develop --command ./test.sh
-CASES
-  if [ -z "$allowed" ]; then
-    ok "ordinary work is not blocked"
-  else
-    bad "ordinary work is not blocked" "$allowed"
   fi
 fi
 if grep -q 'guard-bash.sh' "$DIR/home/.claude/settings.base.json"; then
@@ -1084,6 +1025,48 @@ else
 fi
 
 # --------------------------------------------------------------------------
+section "skills"
+# The symlink check above only reads home.nix, so a skill folder home.nix never
+# names is a skill that never loads, and nothing else notices.
+SKILLS_DIR="$DIR/home/.claude/skills"
+on_disk="$(find "$SKILLS_DIR" -mindepth 1 -maxdepth 1 -type d -exec basename {} \; | sort)"
+linked="$(sed -nE 's|.*home\.file\."\.claude/skills/([^"]+)"\.source.*|\1|p' "$DIR/home.nix" | sort -u)"
+unlinked="$(comm -23 <(echo "$on_disk") <(echo "$linked") | tr '\n' ' ')"
+if [ -z "${unlinked// /}" ]; then
+  ok "home.nix links every skill in the repo"
+else
+  bad "home.nix links every skill in the repo" "no home.file line: $unlinked"
+fi
+# Claude Code invokes a skill by the `name` in its frontmatter, not its folder.
+mismatched=""
+for d in $on_disk; do
+  n="$(sed -nE 's/^name: *(.+)$/\1/p' "$SKILLS_DIR/$d/SKILL.md" 2>/dev/null | head -1)"
+  [ "$n" = "$d" ] || mismatched="$mismatched $d(name:$n)"
+done
+if [ -z "$mismatched" ]; then
+  ok "every skill's name matches its folder"
+else
+  bad "every skill's name matches its folder" "$mismatched"
+fi
+# The README table is how a human learns a skill exists, and nothing else
+# notices when it stops matching what is on disk.
+in_readme="$(sed -n '/^### Skills$/,/^### /p' "$DIR/README.md" |
+  grep -oE 'home/\.claude/skills/[a-z0-9-]+/SKILL\.md' |
+  sed -E 's|home/\.claude/skills/([^/]+)/SKILL\.md|\1|' | sort -u)"
+missing="$(comm -23 <(echo "$on_disk") <(echo "$in_readme") | tr '\n' ' ')"
+phantom="$(comm -13 <(echo "$on_disk") <(echo "$in_readme") | tr '\n' ' ')"
+if [ -z "${missing// /}" ]; then
+  ok "README documents every skill"
+else
+  bad "README documents every skill" "on disk but not in the table: $missing"
+fi
+if [ -z "${phantom// /}" ]; then
+  ok "the README skill table has no phantom rows"
+else
+  bad "the README skill table has no phantom rows" "in the table but not on disk: $phantom"
+fi
+
+# --------------------------------------------------------------------------
 section "comment audit hook"
 # It runs on every Write, Edit and MultiEdit in every session, so a break lands
 # everywhere at once and a false positive teaches everyone to ignore it. Both
@@ -1199,164 +1182,6 @@ else
 fi
 
 # --------------------------------------------------------------------------
-section "context audit"
-# It only reports, so its failure mode is a wrong number quietly steering a
-# trim decision: a miscounted body, a cap applied to the wrong kind of file,
-# or a config glob silently matching nothing.
-CTX="$DIR/home/.claude/context-audit.sh"
-CTXWORK="$WORK/ctx"
-mkdir -p "$CTXWORK/agents" "$CTXWORK/scoped/.claude" "$CTXWORK/scoped/docs" \
-  "$CTXWORK/rootonly/docs" "$CTXWORK/deepglob/.claude" "$CTXWORK/deepglob/docs/a/b"
-
-printf '# small\n' >"$CTXWORK/small.md"
-seq 1 201 >"$CTXWORK/long.md"
-# 150 lines of 200 chars: past the byte cap while comfortably under the line
-# cap, which is exactly the case the byte half exists for.
-awk 'BEGIN { s = sprintf("%200s", "x"); for (i = 0; i < 150; i++) print s }' >"$CTXWORK/wide.md"
-{
-  printf -- '---\nname: big\ndescription: fits\n---\n'
-  seq 1 401
-} >"$CTXWORK/agents/big.md"
-{
-  printf -- '---\nname: chatty\ndescription: >\n'
-  for _ in $(seq 1 30); do printf '  twenty characters..\n'; done
-  printf -- '---\nbody\n'
-} >"$CTXWORK/agents/chatty.md"
-
-out="$("$CTX" "$CTXWORK/small.md" 2>/dev/null)"
-rc=$?
-eq "a file under both caps exits 0" "0" "$rc"
-contains "the passing file is reported ok" "$out" "ok"
-
-out="$("$CTX" "$CTXWORK/small.md" "$CTXWORK/long.md" 2>/dev/null)"
-rc=$?
-eq "a file over 200 lines exits 1" "1" "$rc"
-contains "the long file is reported over" "$out" "over"
-
-out="$("$CTX" "$CTXWORK/wide.md" 2>/dev/null)"
-rc=$?
-eq "short lines past 25600 bytes exit 1" "1" "$rc"
-
-# A missing final newline is invisible in an editor, so an off-by-one here is
-# a silent pass exactly on the boundary the tool enforces.
-{
-  seq 1 200
-  printf 'no trailing newline'
-} >"$CTXWORK/noeol.md"
-out="$("$CTX" "$CTXWORK/noeol.md" 2>/dev/null)"
-rc=$?
-eq "an over-cap file with no trailing newline exits 1" "1" "$rc"
-contains "the unterminated last line is counted" "$out" "201"
-
-out="$("$CTX" "$CTXWORK/agents/big.md" 2>/dev/null)"
-rc=$?
-eq "an agent body over 400 lines exits 1" "1" "$rc"
-contains "the agent body row carries the agent cap" "$out" "400L"
-
-out="$("$CTX" "$CTXWORK/agents/chatty.md" 2>/dev/null)"
-rc=$?
-eq "an agent description over 500 chars exits 1" "1" "$rc"
-contains "the over verdict lands on the description row" \
-  "$(printf '%s\n' "$out" | grep '(description)')" "over"
-
-# An opening fence that never closes counts the whole file as body, so a
-# malformed agent file can never report a body of zero and slip under the cap.
-{
-  printf -- '---\nname: unclosed\n'
-  seq 1 401
-} >"$CTXWORK/agents/unclosed.md"
-out="$("$CTX" "$CTXWORK/agents/unclosed.md" 2>/dev/null)"
-rc=$?
-eq "an unclosed frontmatter fence counts the whole file as body" "1" "$rc"
-
-# The agent caps must also apply when the path is bare-relative, with no
-# leading directory in front of agents/.
-out="$(cd "$CTXWORK" && "$CTX" agents/big.md 2>/dev/null)"
-rc=$?
-eq "a bare relative agents/ path gets the agent caps" "1" "$rc"
-contains "the relative path's row carries the agent cap" "$out" "400L"
-
-printf '# root\n' >"$CTXWORK/scoped/CLAUDE.md"
-seq 1 201 >"$CTXWORK/scoped/docs/nested.md"
-printf '# scoped in\ndocs/*.md\nCLAUDE.md\n' >"$CTXWORK/scoped/.claude/context-audit"
-out="$(cd "$CTXWORK/scoped" && "$CTX" 2>/dev/null)"
-rc=$?
-eq "a config glob pulls a nested file in" "1" "$rc"
-contains "the nested file appears in the table" "$out" "nested.md"
-eq "a config line re-matching the root file adds no second row" \
-  "1" "$(printf '%s\n' "$out" | grep -c 'CLAUDE.md')"
-
-# The test relies on the bash on PATH having globstar; without it the script
-# refuses the `**` line rather than matching it one level deep.
-printf '# deep\ndocs/**/*.md\n' >"$CTXWORK/deepglob/.claude/context-audit"
-printf '# root\n' >"$CTXWORK/deepglob/CLAUDE.md"
-seq 1 201 >"$CTXWORK/deepglob/docs/a/b/deep.md"
-out="$(cd "$CTXWORK/deepglob" && "$CTX" 2>/dev/null)"
-rc=$?
-eq "a ** config glob reaches a deeply nested file" "1" "$rc"
-contains "the deep file appears in the table" "$out" "docs/a/b/deep.md"
-
-printf '# root\n' >"$CTXWORK/rootonly/CLAUDE.md"
-seq 1 201 >"$CTXWORK/rootonly/docs/nested.md"
-out="$(cd "$CTXWORK/rootonly" && "$CTX" 2>/dev/null)"
-rc=$?
-eq "absent config audits the root only" "0" "$rc"
-case "$out" in
-  *nested.md*) bad "absent config leaves nested files alone" "nested.md was audited with no config listing it" ;;
-  *) ok "absent config leaves nested files alone" ;;
-esac
-
-"$CTX" "$CTXWORK/absent.md" >/dev/null 2>"$WORK/ctx-stderr"
-rc=$?
-eq "a nonexistent named file exits 2" "2" "$rc"
-contains "the missing file is named on stderr" "$(cat "$WORK/ctx-stderr")" "absent.md"
-
-# --------------------------------------------------------------------------
-section "agent roster"
-# Claude Code routes by the `name` in the frontmatter, not by the filename, so a
-# typo there is an agent nothing can reach and no build ever complains about.
-AGENTS_DIR="$DIR/home/.claude/agents"
-mismatched=""
-undescribed=""
-for f in "$AGENTS_DIR"/*.md; do
-  a="$(basename "$f" .md)"
-  n="$(sed -nE 's/^name: (.+)$/\1/p' "$f" | head -1)"
-  [ "$n" = "$a" ] || mismatched="$mismatched $a(name:$n)"
-  grep -q '^description: >' "$f" || undescribed="$undescribed $a"
-done
-if [ -z "$mismatched" ]; then
-  ok "every agent's name matches its filename"
-else
-  bad "every agent's name matches its filename" "$mismatched"
-fi
-if [ -z "$undescribed" ]; then
-  ok "every agent has a description block"
-else
-  bad "every agent has a description block" "no description: >:$undescribed"
-fi
-
-# The README table is how a human learns the roster exists. It is only useful
-# while it still lists what is on disk, and nothing else notices when it slips.
-on_disk="$(basename -s .md "$AGENTS_DIR"/*.md | sort)"
-# The backticks are literal markdown in the table, and sed needs \1 unexpanded,
-# so single quotes are exactly right here.
-# shellcheck disable=SC2016
-in_readme="$(sed -n '/^## Agents/,/^## Tests/p' "$DIR/README.md" |
-  sed -nE 's/^\| `([a-z0-9-]+)` \|.*/\1/p' | sort)"
-missing="$(comm -23 <(echo "$on_disk") <(echo "$in_readme") | tr '\n' ' ')"
-phantom="$(comm -13 <(echo "$on_disk") <(echo "$in_readme") | tr '\n' ' ')"
-if [ -z "${missing// /}" ]; then
-  ok "README documents every agent"
-else
-  bad "README documents every agent" "on disk but not in the table: $missing"
-fi
-if [ -z "${phantom// /}" ]; then
-  ok "the README agent table has no phantom rows"
-else
-  bad "the README agent table has no phantom rows" "in the table but not on disk: $phantom"
-fi
-
-# --------------------------------------------------------------------------
 section "status line"
 # Claude Code renders whatever this prints, so a crash costs the whole line.
 # Most of the payload is optional, and the interesting cases are the ones where
@@ -1369,28 +1194,6 @@ NOW="$(date +%s)"
 # on it, and the offset is drift tolerance rather than an arbitrary number. The
 # script reads the clock after this line runs and floors what is left, so an
 # exact 259200 (3d) or 900 (15m) renders as 2d or 14m the moment one second has
-# claude-push writes the opt-in guard-bash.sh reads, so what it stores is what
-# decides whether an agent may push: run it and read the config back.
-CPREPO="$WORK/claude-push"
-git init -q "$CPREPO"
-cp_run() { (cd "$1" && zsh -c "source '$FN'; claude-push $2" 2>&1); }
-cp_val() { git -C "$CPREPO" config --local --get claude.allowPush; }
-cp_run "$CPREPO" "" >/dev/null
-eq "claude-push with no argument turns an unset switch on" "true" "$(cp_val)"
-cp_run "$CPREPO" "" >/dev/null
-eq "claude-push with no argument flips on to off" "false" "$(cp_val)"
-cp_run "$CPREPO" on >/dev/null
-eq "claude-push on sets true" "true" "$(cp_val)"
-cp_run "$CPREPO" off >/dev/null
-eq "claude-push off sets false" "false" "$(cp_val)"
-cp_run "$CPREPO" status >/dev/null
-eq "claude-push status leaves the switch alone" "false" "$(cp_val)"
-if cp_run "$WORK" "" >/dev/null; then
-  bad "claude-push outside a repo fails" "it returned success"
-else
-  ok "claude-push outside a repo fails"
-fi
-
 # passed. That is a real second on a loaded CI runner, not a theoretical one.
 # Round these off and the suite starts failing a few times a week.
 sl_out="$(printf '{"model":{"display_name":"Opus 5"},"context_window":{"used_percentage":8},"rate_limits":{"five_hour":{"used_percentage":23.5,"resets_at":%d},"seven_day":{"used_percentage":41.2,"resets_at":%d}}}' \
@@ -1565,6 +1368,28 @@ myrepo
 eq "no name means no --name, not an empty one" "--dangerously-skip-permissions
 --remote-control
 --foo" "$(cc_argv "$FAKEHOME")"
+
+# claude-push writes the opt-in guard-bash.sh reads, so what it stores is what
+# decides whether an agent may push: run it and read the config back.
+CPREPO="$WORK/claude-push"
+git init -q "$CPREPO"
+cp_run() { (cd "$1" && zsh -c "source '$FN'; claude-push $2" 2>&1); }
+cp_val() { git -C "$CPREPO" config --local --get claude.allowPush; }
+cp_run "$CPREPO" "" >/dev/null
+eq "claude-push with no argument turns an unset switch on" "true" "$(cp_val)"
+cp_run "$CPREPO" "" >/dev/null
+eq "claude-push with no argument flips on to off" "false" "$(cp_val)"
+cp_run "$CPREPO" on >/dev/null
+eq "claude-push on sets true" "true" "$(cp_val)"
+cp_run "$CPREPO" off >/dev/null
+eq "claude-push off sets false" "false" "$(cp_val)"
+cp_run "$CPREPO" status >/dev/null
+eq "claude-push status leaves the switch alone" "false" "$(cp_val)"
+if cp_run "$WORK" "" >/dev/null; then
+  bad "claude-push outside a repo fails" "it returned success"
+else
+  ok "claude-push outside a repo fails"
+fi
 
 # ~/.zshrc is generated, so the only thing tying it to the file above is this
 # line. The -r guard is part of the contract: the file arrives by symlink, and

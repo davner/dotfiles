@@ -153,28 +153,61 @@ in
   # than nudges, so it has to exist before the tool call it judges.
   home.file.".claude/guard-bash.sh".source =
     config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.claude/guard-bash.sh";
-  # not a hook: the /context-audit command runs it on demand, and its findings
-  # go to the user, never back to the model mid-task.
-  home.file.".claude/context-audit.sh".source =
-    config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.claude/context-audit.sh";
-  # the subagent roster. one file per agent, claude picks them up by name.
-  home.file.".claude/agents".source =
-    config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.claude/agents";
-  # slash commands, picked up by filename the same way. this repo owns the
-  # whole directory, so unlike skills it can link as one.
-  home.file.".claude/commands".source =
-    config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.claude/commands";
   # Skills are linked one at a time, never as the whole `skills/` directory:
   # ~/.claude/skills also holds the hand-installed ones, and a directory-level
   # link would displace every one of them.
-  home.file.".claude/skills/draft-ticket".source =
-    config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.claude/skills/draft-ticket";
+  home.file.".claude/skills/code-review".source =
+    config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.claude/skills/code-review";
+  home.file.".claude/skills/codebase-design".source =
+    config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.claude/skills/codebase-design";
+  home.file.".claude/skills/diagnosing-bugs".source =
+    config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.claude/skills/diagnosing-bugs";
+  home.file.".claude/skills/domain-modeling".source =
+    config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.claude/skills/domain-modeling";
+  home.file.".claude/skills/grill-me".source =
+    config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.claude/skills/grill-me";
+  home.file.".claude/skills/grill-with-docs".source =
+    config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.claude/skills/grill-with-docs";
+  home.file.".claude/skills/grilling".source =
+    config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.claude/skills/grilling";
+  home.file.".claude/skills/handoff".source =
+    config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.claude/skills/handoff";
+  home.file.".claude/skills/implement".source =
+    config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.claude/skills/implement";
+  home.file.".claude/skills/implement-spec".source =
+    config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.claude/skills/implement-spec";
+  home.file.".claude/skills/improve-codebase-architecture".source =
+    config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.claude/skills/improve-codebase-architecture";
+  home.file.".claude/skills/pr".source =
+    config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.claude/skills/pr";
   home.file.".claude/skills/primereact-v10".source =
     config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.claude/skills/primereact-v10";
-  home.file.".claude/skills/ship-pack".source =
-    config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.claude/skills/ship-pack";
+  home.file.".claude/skills/prototype".source =
+    config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.claude/skills/prototype";
+  home.file.".claude/skills/research".source =
+    config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.claude/skills/research";
+  home.file.".claude/skills/retro".source =
+    config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.claude/skills/retro";
+  home.file.".claude/skills/setup-dan-skills".source =
+    config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.claude/skills/setup-dan-skills";
+  home.file.".claude/skills/setup-pre-commit".source =
+    config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.claude/skills/setup-pre-commit";
   home.file.".claude/skills/tailwind-v4".source =
     config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.claude/skills/tailwind-v4";
+  home.file.".claude/skills/tdd".source =
+    config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.claude/skills/tdd";
+  home.file.".claude/skills/teach".source =
+    config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.claude/skills/teach";
+  home.file.".claude/skills/to-questionnaire".source =
+    config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.claude/skills/to-questionnaire";
+  home.file.".claude/skills/to-spec".source =
+    config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.claude/skills/to-spec";
+  home.file.".claude/skills/to-tickets".source =
+    config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.claude/skills/to-tickets";
+  home.file.".claude/skills/wait-what".source =
+    config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.claude/skills/wait-what";
+  home.file.".claude/skills/writing-for-agents".source =
+    config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.claude/skills/writing-for-agents";
 
   home.file.".claude/CLAUDE.md".source =
     config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/AGENTS.md";
