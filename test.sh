@@ -1391,6 +1391,24 @@ else
   ok "cc-push outside a repo fails"
 fi
 
+# cc-flow is a hand-copied cheat sheet, so the drift worth catching is a skill
+# renamed or removed while the table still tells you to type its old name.
+FLOW_OUT="$(zsh -c "source '$FN'; cc-flow" 2>&1)"
+FLOW_MISSING=""
+for name in $(printf '%s\n' "$FLOW_OUT" | grep -oE '/[a-z][a-z-]+' | sort -u); do
+  [ -f "$DIR/home/.claude/skills${name}/SKILL.md" ] || FLOW_MISSING="$FLOW_MISSING $name"
+done
+if [ -z "$FLOW_MISSING" ]; then
+  ok "every skill cc-flow names exists"
+else
+  bad "every skill cc-flow names exists" "no such skill:$FLOW_MISSING"
+fi
+# Piped output is what `cc-flow | less` sees; escape codes there print as junk.
+case "$FLOW_OUT" in
+  *$'\e'*) bad "cc-flow prints no color into a pipe" "found an escape code" ;;
+  *) ok "cc-flow prints no color into a pipe" ;;
+esac
+
 # ~/.zshrc is generated, so the only thing tying it to the file above is this
 # line. The -r guard is part of the contract: the file arrives by symlink, and
 # an unguarded source would print an error on every new shell if it dangled.
