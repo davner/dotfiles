@@ -14,4 +14,4 @@ Build user interface work through `impeccable`, and check it once on desktop and
 
 Once done, use /code-review to review the work.
 
-Commit your work to the current branch.
+Commit your work to the current branch. When that is the repo's default branch, create a branch for the work first and commit there.
