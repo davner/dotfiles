@@ -179,6 +179,14 @@ The blast radius is the potential impact or scope of the changes introduced by t
 
 When the change is visual and the app runs, capture before and after screenshots, desktop and mobile (Chrome device emulation through `chrome-devtools-axi`), into a temp folder outside the repo. Name each for its spot (`before-desktop.png`, `after-mobile.png`), and in the body's Evidence section put a marker where each belongs: `<!-- drag after-mobile.png here -->`. GitHub only shows images uploaded through its editor, so the user drags each file onto its marker when opening the PR. A change with nothing to see carries its evidence as test output in the body instead.
 
+## Authorship
+
+Before publishing, prove no AI is credited. Save the body to a temp file and, from the repo, run this skill's `scripts/provenance.sh <base> --body <file>`, where `<base>` is `git merge-base origin/main HEAD` after a `git fetch`. Run it; its rules live in `guard-bash.sh`, so there is nothing to read. It checks the author, committer, and message of every commit in the PR, and the body, for any agent, model, or bot.
+
+- Exit 0, `CLEAN`: put the command and its raw output on the page as the proof.
+- Exit 1, `FLAGGED`: publish nothing. Tell the user which commit or the body, and why, as printed.
+- Exit 2, `UNVERIFIED`: publish nothing. Tell the user what it could not check.
+
 ## Output
 
-Publish one page with the harness's page-publishing tool (in Claude Code, the Artifact tool), or write a local HTML file when there is none. It holds the title, then the body markdown, each with a Copy button that copies its raw text, then each screenshot shown under its file name with a download button. In the reply, give only the page link. Pushing, opening, and merging the PR stay with the user.
+Publish one page with the harness's page-publishing tool (in Claude Code, the Artifact tool), or write a local HTML file when there is none. It holds the title, then the body markdown, each with a Copy button that copies its raw text, then each screenshot shown under its file name with a download button, then the authorship proof. In the reply, give only the page link and the authorship verdict. Pushing, opening, and merging the PR stay with the user.

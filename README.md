@@ -159,7 +159,7 @@ flow again at `/grill-with-docs`.
 | Build | [`tdd`](home/.claude/skills/tdd/SKILL.md) | Test first, one slice at a time |
 | Build | [`diagnosing-bugs`](home/.claude/skills/diagnosing-bugs/SKILL.md) | Reproduce, narrow down, fix, and guard a hard bug |
 | Review | [`code-review`](home/.claude/skills/code-review/SKILL.md) | Standards and spec, checked separately |
-| Review | [`pr`](home/.claude/skills/pr/SKILL.md) | Writes the PR title and body with the ticket ID, plus before/after screenshots to drag in, on a Copy page; you open the PR |
+| Review | [`pr`](home/.claude/skills/pr/SKILL.md) | Writes the PR title and body with the ticket ID, plus before/after screenshots to drag in and proof that no AI is credited, on a Copy page; you open the PR |
 | Review | [`retro`](home/.claude/skills/retro/SKILL.md) | What to change in the setup after a session |
 | Help | [`handoff`](home/.claude/skills/handoff/SKILL.md) | Writes a summary so a fresh session can pick up the work |
 | Help | [`research`](home/.claude/skills/research/SKILL.md) | Answers a question from primary sources, saved as markdown |
