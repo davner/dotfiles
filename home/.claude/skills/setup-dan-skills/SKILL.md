@@ -52,4 +52,4 @@ Setup is done when the tracker file, `domain.md`, and the block are written and 
 
 ## 5. UI projects
 
-When the repo has a user interface, offer `/impeccable init` when it has no `PRODUCT.md`, `/impeccable document` when it has UI code but no `DESIGN.md`, and `/impeccable hooks on` for the design detector after UI edits. Each is an offer the user accepts or skips.
+When the repo has a user interface, offer `/impeccable init` when it has no `PRODUCT.md`, `/impeccable document` when it has UI code but no `DESIGN.md`, and, in the user's own repos only, `/impeccable hooks on` for the design detector after UI edits; in a shared repo the hook is already on by default and `hooks on` would write a shared `.impeccable/config.json`. Each is an offer the user accepts or skips.
