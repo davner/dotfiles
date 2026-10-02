@@ -1,6 +1,6 @@
 ---
 name: setup-dan-skills
-description: "Configure this repo for the planning and review skills: which tracker (Shortcut or Jira) and where specs, tickets, the glossary, and ADRs are saved. Run once per repo before /to-spec, /to-tickets, /implement-spec, or code-review."
+description: "Configure this repo for the planning and review skills: which tracker (Shortcut or Jira) and where specs, tickets, the TODO list, the glossary, and ADRs are saved. Run once per repo before /to-spec, /to-tickets, /implement-spec, or code-review."
 disable-model-invocation: true
 ---
 
@@ -23,7 +23,7 @@ Read what already exists before asking anything:
 Lead each question with the recommended answer so a one-word reply accepts it. Something found in step 1 beats the default: propose what the repo already uses.
 
 1. **Tracker**: Shortcut (recommended), story IDs like `sc-1234`; or Jira, then ask for the project key (`KEY-123`).
-2. **Specs and tickets folder**: `.scratch/` (recommended), gitignored so working notes stay out of commits; or a committed folder such as `docs/specs/` when the team reviews specs in PRs.
+2. **Scratch folder** for specs, tickets, and the TODO list: `.scratch/` (recommended), gitignored so working notes stay out of commits; or a committed folder such as `docs/specs/` when the team reviews specs in PRs.
 3. **Glossary**: `GLOSSARY.md` at the repo root (recommended), or a path the user names.
 4. **ADRs**: `docs/adr/` (recommended), or a folder the user names.
 
@@ -34,7 +34,7 @@ Fill in [issue-tracker.md](issue-tracker.md) and [domain.md](domain.md) with the
 ```markdown
 ## Agent skills
 
-- Tracker: <Shortcut | Jira KEY>, paste-ready; specs and tickets in `<folder>`. See `docs/agents/issue-tracker.md`.
+- Tracker: <Shortcut | Jira KEY>, paste-ready; specs, tickets, and the TODO list in `<folder>`. See `docs/agents/issue-tracker.md`.
 - Domain docs: glossary at `<path>`, ADRs in `<folder>`. See `docs/agents/domain.md`.
 ```
 
@@ -42,7 +42,7 @@ Fill in [issue-tracker.md](issue-tracker.md) and [domain.md](domain.md) with the
 
 - `docs/agents/issue-tracker.md` and `docs/agents/domain.md`, from the filled-in templates
 - the `## Agent skills` block into `CLAUDE.md`; when only `AGENTS.md` exists, into that; when neither exists, ask which to create. An existing block is updated in place.
-- the specs folder into `.gitignore`, only when the user chose to ignore it
+- the scratch folder into `.gitignore`, only when the user chose to ignore it
 
 Setup is done when all three files are written and the user has seen the final block. Tell them the files can be edited directly later, and that re-running this skill is for switching trackers or moving a folder.
 
