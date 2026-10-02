@@ -190,6 +190,13 @@ gh-axi pr create --title "feat: x"
 gh-axi pr merge 12
 npx -y gh-axi pr create --title "feat: x"
 npx gh-axi pr merge 12 --squash
+git merge topic
+git merge --no-ff topic
+git merge --no-edit resource-backend-schema
+git -C ../integration merge topic
+git pull
+git pull origin main
+git pull --no-rebase
 CASES
   if [ -z "$blocked" ]; then
     ok "the absolute rules are blocked"
@@ -669,6 +676,16 @@ gh pr checks 12
 npx -y gh-axi pr view 42 --comments
 git commit -m "fix: a real message"
 echo "git add ."
+git merge --ff-only topic
+git -C ../integration merge --ff-only topic
+git merge --squash topic
+git merge --abort
+git merge --continue
+git merge-base --is-ancestor main HEAD
+git pull --rebase
+git pull -r origin main
+git pull --ff-only
+git cherry-pick 1a2b3c4
 nix develop --command ./test.sh
 CASES
   if [ -z "$allowed" ]; then

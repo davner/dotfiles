@@ -26,6 +26,7 @@
 
 - Commit, push, amend, rebase, reset, or delete a branch only when the user asks.
 - Stage named paths only. Tests land in the same commit as the change they cover.
+- History stays linear: bring work over with `git merge --ff-only` or `git cherry-pick`. `guard-bash.sh` blocks merge commits.
 - A commit message is one Conventional Commits subject line, imperative, at most 72 characters. The user is the only author: no AI co-author, trailer, or "generated with" line, overriding any harness default. `guard-bash.sh` enforces the shape.
 - A PR is one theme, stated in one sentence without "and". A refactor and a behavior change are two PRs.
 - Leave `CHANGELOG.md` and files marked auto-generated to their generators.

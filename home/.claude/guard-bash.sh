@@ -138,6 +138,19 @@ including edits the user or another agent is making right now, and git keeps no
 copy. Name the paths to restore, or ask the user to run it."
   fi
 
+  if [[ $seg =~ ^git[[:space:]]+merge([[:space:]]|$) ]] &&
+    ! [[ $seg =~ [[:space:]]--(ff-only|squash|abort|continue|quit)([[:space:]]|$) ]]; then
+    reason="The user keeps history linear: no merge commits on any branch. Bring
+work over with \`git merge --ff-only\` when the branch sits on the tip, or
+\`git cherry-pick\` its commits when it does not."
+  fi
+
+  if [[ $seg =~ ^git[[:space:]]+pull([[:space:]]|$) ]] &&
+    ! [[ $seg =~ [[:space:]](--rebase|-r|--ff-only)([[:space:]=]|$) ]]; then
+    reason="A plain git pull can create a merge commit, and the user keeps history
+linear. Use \`git pull --rebase\` or \`git pull --ff-only\`."
+  fi
+
   if [[ $seg =~ ^git[[:space:]]+clean([[:space:]]|$) ]] &&
     [[ $seg =~ ([[:space:]]-[a-zA-Z]*f|[[:space:]]--force([[:space:]]|$)) ]]; then
     reason="git clean -f deletes untracked files, which git has never seen and
