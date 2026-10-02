@@ -9,6 +9,7 @@ machine's configuration, not a package anyone installs a version of.
 
 ## 2026-10-02
 
+- **Added** claude: Keep impeccable settings personal in shared repos ([`851b814`](https://github.com/davner/dotfiles/commit/851b814833acce6b707a9011e614e5d76e11d0d3))
 - **Added** claude: Show the push command and PR link on the pr page ([`038b580`](https://github.com/davner/dotfiles/commit/038b580b17cd20222cad1c5e3b4ec4644b41b2dc))
 - **Added** claude: Keep the tracker file personal in shared repos ([`385e8b6`](https://github.com/davner/dotfiles/commit/385e8b64c991dae26bf8a2be4c835bc74a8ece22))
 - **Other** Restore the per-repo issue tracker file ([`f03931c`](https://github.com/davner/dotfiles/commit/f03931cf2c6375fb07e23180a67350a5ec68491b))
