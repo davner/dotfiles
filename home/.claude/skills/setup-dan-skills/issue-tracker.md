@@ -1,6 +1,6 @@
 # Issue tracker: <Shortcut | Jira>, paste-ready
 
-Work for this repo is tracked in <Shortcut | Jira>. The agent never creates, edits, or closes anything there: it writes specs and tickets as local markdown, then hands them over on a page the user copies from. The user files them and closes them.
+Work for this repo is tracked in <Shortcut | Jira>. The agent never creates, edits, or closes anything there: it writes specs and tickets as local markdown for the agents' own use, and when the work is done hands over one ticket per PR on a page the user copies from. The user files those and closes them.
 
 ## Locations
 
@@ -12,8 +12,8 @@ Work for this repo is tracked in <Shortcut | Jira>. The agent never creates, edi
 ## When a skill says "publish to the issue tracker"
 
 1. Write the spec or ticket files under `<scratch>/<feature-slug>/`, creating the directory if needed. A ticket's blocking edges are a `Blocked by:` line naming ticket numbers and titles; a triage label is a `Status:` line near the top of the file.
-2. Publish one paste-ready page with the harness's page-publishing tool (in Claude Code, the Artifact tool); where there is none, write a local HTML file and give its path. The page holds one section per spec or ticket, in dependency order, each with a Copy button that copies that item's raw markdown: a title line, then the body, with `Blocked by` spelled out as text so the user can set the links by hand.
-3. Tell the user the files are written and the page is up. Filing is theirs.
+2. The spec and the per-ticket files stay local: they are the agents' reference and work plan, not what the user files. Tell the user so.
+3. What the user files is one ticket per PR, handed over when the work is done: one paste-ready page made with the harness's page-publishing tool (in Claude Code, the Artifact tool), or a local HTML file where there is none. The page holds one section per PR ticket, each with a Copy button that copies its raw markdown: a title line, then the body, with `Blocked by` spelled out as text so the user can set the links by hand. Filing is theirs.
 
 ## Tracker IDs
 

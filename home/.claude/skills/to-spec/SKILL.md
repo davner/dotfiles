@@ -1,6 +1,6 @@
 ---
 name: to-spec
-description: "Turn the current conversation into a spec and publish it to the project issue tracker: no interview, just synthesis of what you've already discussed."
+description: "Turn the current conversation into a spec saved locally as the reference the agents build from: no interview, just synthesis of what you've already discussed."
 disable-model-invocation: true
 ---
 
@@ -18,7 +18,7 @@ When the work settles how a user interface should look, carry the confirmed `imp
 
 Check with the user that these seams match their expectations.
 
-3. Write the spec using the template below, then publish it to the project issue tracker. Apply the `ready-for-agent` triage label - no need for additional triage.
+3. Write the spec using the template below and save it where `docs/agents/issue-tracker.md` puts specs, with the `ready-for-agent` triage label - no need for additional triage. Close by telling the user the spec is the reference the agents build from, not a ticket to file: the tickets to file arrive one per PR on the recap page when the work is done.
 
 <spec-template>
 

@@ -1,6 +1,6 @@
 ---
 name: to-tickets
-description: Break a plan, spec, or the current conversation into a set of tracer-bullet tickets, each declaring its blocking edges, published to the configured tracker (edges as text in one file per ticket locally, or native blocking links on a real tracker).
+description: Break a plan, spec, or the current conversation into tracer-bullet tickets grouped into the fewest PRs, each ticket with its blocking edges and first red test, saved as one local file per ticket.
 disable-model-invocation: true
 ---
 
@@ -37,30 +37,37 @@ Break the work into **tracer bullet** tickets.
 
 Give each ticket its **blocking edges**: the other tickets that must complete before it can start. A ticket with no blockers can start immediately.
 
+Give each ticket its **First red test**: the one test that must fail before the ticket's code exists, named by behaviour at a seam the spec agreed. A ticket that changes no behaviour (a pure rename, docs) says `none` and names the existing check that must stay green instead.
+
+Group the tickets into **PRs**. Tickets are the agent's work plan; a PR is what the user reviews, files and merges, and every extra PR is one more for the user to manage. Use the fewest PRs a reviewer can still follow: one PR unless a split is forced (a part must ship first, or the diff would be too large to review). Tickets in one PR land in dependency order on one branch.
+
 **Wide refactors are the exception to vertical slicing.** A **wide refactor** is one mechanical change (rename a column, retype a shared symbol) whose **blast radius** fans across the whole codebase, so a single edit breaks thousands of call sites at once and no vertical slice can land green. Don't force it into a tracer bullet; sequence it as **expand–contract**. First expand: add the new form beside the old so nothing breaks. Then migrate the call sites over in batches sized by blast radius (per package, per directory), each batch its own ticket blocked by the expand, keeping CI green batch to batch because the old form still exists. Finally contract: delete the old form once no caller remains, in a ticket blocked by every migrate batch. When even the batches can't stay green alone, keep the sequence but let them share an integration branch that all block a final integrate-and-verify ticket; green is promised only there.
 
 ### 4. Quiz the user
 
-Present the proposed breakdown as a numbered list. For each ticket, show:
+Present the proposed breakdown, leading with the PR count and what each PR delivers. Then list the tickets, numbered, and for each show:
 
 - **Title**: short descriptive name
+- **PR**: which PR it lands in
 - **Blocked by**: which other tickets (if any) must complete first
 - **What it delivers**: the end-to-end behaviour this ticket makes work
+- **First red test**: the failing test it starts from, or `none` and the check it keeps green
 
 Ask the user:
 
 - Does the granularity feel right? (too coarse / too fine)
+- Can any PRs be combined?
 - Are the blocking edges correct: does each ticket only depend on tickets that genuinely gate it?
 - Should any tickets be merged or split further?
 
 Iterate until the user approves the breakdown.
 
-### 5. Publish the tickets to the configured tracker
+### 5. Save the tickets
 
-Publish the approved tickets the way `docs/agents/issue-tracker.md` describes: the tracker is paste-ready, so nothing is created in Shortcut or Jira.
+Save the approved tickets the way `docs/agents/issue-tracker.md` describes: the tracker is paste-ready, so nothing is created in Shortcut or Jira.
 
 - Write one file per ticket under `<specs folder>/<feature-slug>/issues/<NN>-<slug>.md`, numbered from `01` in dependency order (blockers first), using the per-ticket file template below: one ticket per file, never a single combined file. Each file's "Blocked by" lists the numbers and titles it depends on.
-- Then publish the paste-ready page: one section per ticket in dependency order, each with a Copy button holding that ticket's markdown in the issue-template shape, "Blocked by" spelled out as text so the user can link the tickets by hand when filing.
+- Tell the user the files are the agent's work plan and nothing needs filing yet: the paste-ready tickets, one per PR in the issue-template shape, arrive on the recap page when the work is done (`/implement-spec` step 8).
 
 Work the **frontier**: any ticket whose blockers are all done. For a purely linear chain that means top to bottom.
 
@@ -74,6 +81,10 @@ Do NOT close or modify any parent issue.
 
 **Blocked by:** the numbers/titles of the tickets that gate this one, or "None (can start immediately)".
 
+**PR:** the PR this ticket lands in, by number and one-line theme.
+
+**First red test:** the behaviour the first failing test pins, or `none` plus the check that must stay green.
+
 **Status:** ready-for-agent
 
 - [ ] Acceptance criterion 1
@@ -83,13 +94,15 @@ Do NOT close or modify any parent issue.
 
 <issue-template>
 
+One per PR, filled in when the work is done.
+
 ## Parent
 
 A reference to the parent issue on the tracker (if the source was an existing issue, otherwise omit this section).
 
 ## What to build
 
-The end-to-end behaviour this ticket makes work, from the user's perspective, not layer-by-layer implementation.
+The end-to-end behaviour this PR makes work, from the user's perspective, not layer-by-layer implementation.
 
 ## Acceptance criteria
 
@@ -98,7 +111,7 @@ The end-to-end behaviour this ticket makes work, from the user's perspective, no
 
 ## Blocked by
 
-- A reference to each blocking ticket, or "None (can start immediately)".
+- A reference to each PR's ticket that must merge first, or "None (can start immediately)".
 
 </issue-template>
 
