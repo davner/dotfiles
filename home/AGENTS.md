@@ -34,5 +34,6 @@
 ## Skills
 
 - The flow for new work: `/grill-with-docs` (`/grill-me` outside a repo), then `/to-spec` and `/to-tickets`, then `/implement` or `/implement-spec`, reviewed by `code-review`, and `/retro` afterwards. Run `/setup-dan-skills` once in a repo before the tracker skills.
+- The tracker file is the repo's `docs/agents/issue-tracker.md`, else the personal copy at `~/.claude/repos/<repo>/issue-tracker.md`, where `<repo>` is the main checkout's folder name (`basename "$(dirname "$(git rev-parse --path-format=absolute --git-common-dir)")"`). Shared repos keep it personal so the team never sees it.
 - UI work goes through `impeccable`; a look that is still open goes through the `prototype` skill, which calls impeccable and stops for the user before `PRODUCT.md` or `DESIGN.md` changes. A new screen or visual direction is prototyped in a fresh session: `/handoff` out, prototype, `/handoff` the verdict back. Test mobile in Chrome device emulation, not a narrowed window.
 - Third-party skills are installed by hand. When one is missing, follow "Installing the skills" in `~/.dotfiles/CLAUDE.md`.

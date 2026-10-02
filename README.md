@@ -55,9 +55,11 @@ with no rebuild. Adding or removing a linked file does need `./rebuild.sh`.
 
 ### Workflow
 
-Run `/setup-dan-skills` once in each repo. It asks four things (tracker:
-Shortcut or Jira; where specs and tickets go; glossary path; ADR folder) and
-saves the answers, so the other skills never ask again.
+Run `/setup-dan-skills` once in each repo. It asks five things (whether the
+repo is shared with a team; tracker: Shortcut or Jira; where specs and tickets
+go; glossary path; ADR folder) and saves the answers, so the other skills never
+ask again. In a shared repo the glossary and ADRs are committed for everyone,
+while the tracker file stays in `~/.claude/repos/<repo>/` and out of the repo.
 
 Then, for a piece of work:
 

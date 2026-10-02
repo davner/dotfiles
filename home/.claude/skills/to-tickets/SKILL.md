@@ -8,7 +8,7 @@ disable-model-invocation: true
 
 Break a plan, spec, or conversation into a set of **tickets**: tracer-bullet vertical slices, each declaring the tickets that **block** it.
 
-The issue tracker and triage label vocabulary should have been provided to you. If not, tell the user to run `/setup-dan-skills`.
+Read the tracker file, which also gives the triage label vocabulary. If there is none, tell the user to run `/setup-dan-skills`.
 
 ## Process
 
@@ -64,7 +64,7 @@ Iterate until the user approves the breakdown.
 
 ### 5. Save the tickets
 
-Save the approved tickets the way `docs/agents/issue-tracker.md` describes: the tracker is paste-ready, so nothing is created in Shortcut or Jira.
+Save the approved tickets the way the tracker file describes: the tracker is paste-ready, so nothing is created in Shortcut or Jira.
 
 - Write one file per ticket under `<specs folder>/<feature-slug>/issues/<NN>-<slug>.md`, numbered from `01` in dependency order (blockers first), using the per-ticket file template below: one ticket per file, never a single combined file. Each file's "Blocked by" lists the numbers and titles it depends on.
 - Tell the user the files are the agent's work plan and nothing needs filing yet: the paste-ready tickets, one per PR in the issue-template shape, arrive on the recap page when the work is done (`/implement-spec` step 8).
