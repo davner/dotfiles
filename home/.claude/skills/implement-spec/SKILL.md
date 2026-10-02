@@ -26,7 +26,7 @@ Tickets that touch a user interface are built through `impeccable` and checked o
 
 3. Create the integration branch. If the issue tracker closes work through PRs, or the user asks for one, open a draft PR once the first ticket lands in step 5 (a branch with no commits ahead of main can't open one), marked as closing the spec and tickets.
 
-4. Use **implementer subagents** to implement each ticket, each in its own worktree on its own branch. Each implementer subagent:
+4. Use **implementer subagents** to implement each ticket, each in its own worktree on its own branch. Hand each one its ticket's absolute path in this checkout, since a new worktree has no copy of a gitignored scratch folder. Each implementer subagent:
    - confirms its worktree is based on the integration branch before starting, and recreates its branch from the integration tip if not;
    - calls the Skill tool with `tdd` to build the ticket, starting from the ticket's **First red test** and pasting that red run into its report (a ticket whose First red test is `none` names the existing check it kept green instead);
    - leaves linear commits on its own branch and reports done. Integrating is the orchestrator's job.

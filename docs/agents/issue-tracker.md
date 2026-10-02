@@ -4,14 +4,14 @@ Work for this repo is tracked in Shortcut. The agent never creates, edits, or cl
 
 ## Locations
 
-- Scratch folder: `docs/specs/` (specs and tickets; committed)
-- One feature per directory: `docs/specs/<feature-slug>/`
-- The spec is `docs/specs/<feature-slug>/spec.md`
-- Tickets are one file per ticket at `docs/specs/<feature-slug>/issues/<NN>-<slug>.md`, numbered from `01`, never a single combined tickets file
+- Scratch folder: `.scratch/` (specs and tickets; gitignored)
+- One feature per directory: `.scratch/<feature-slug>/`
+- The spec is `.scratch/<feature-slug>/spec.md`
+- Tickets are one file per ticket at `.scratch/<feature-slug>/issues/<NN>-<slug>.md`, numbered from `01`, never a single combined tickets file
 
 ## When a skill says "publish to the issue tracker"
 
-1. Write the spec or ticket files under `docs/specs/<feature-slug>/`, creating the directory if needed. A ticket's blocking edges are a `Blocked by:` line naming ticket numbers and titles; a triage label is a `Status:` line near the top of the file.
+1. Write the spec or ticket files under `.scratch/<feature-slug>/`, creating the directory if needed. A ticket's blocking edges are a `Blocked by:` line naming ticket numbers and titles; a triage label is a `Status:` line near the top of the file.
 2. The spec and the per-ticket files stay local: they are the agents' reference and work plan, not what the user files. Tell the user so.
 3. What the user files is one ticket per PR, handed over when the work is done: one paste-ready page made with the harness's page-publishing tool (in Claude Code, the Artifact tool), or a local HTML file where there is none. The page holds one section per PR ticket, each with a Copy button that copies its raw markdown: a title line, then the body, with `Blocked by` spelled out as text so the user can set the links by hand. Filing is theirs.
 

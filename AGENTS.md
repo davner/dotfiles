@@ -12,7 +12,7 @@ Anything slow belongs in weekly.yml, not in the push path.
 
 ## Agent skills
 
-- Tracker: Shortcut, paste-ready; specs and tickets in `docs/specs/`. See `docs/agents/issue-tracker.md`.
+- Tracker: Shortcut, paste-ready; specs and tickets in a gitignored `.scratch/`. See `docs/agents/issue-tracker.md`.
 - Domain docs: glossary at `docs/GLOSSARY.md`, ADRs in `docs/adr/`. See `docs/agents/domain.md`.
 
 ## Deliberate decisions
