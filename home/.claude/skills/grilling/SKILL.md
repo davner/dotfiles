@@ -25,18 +25,6 @@ Each round the user answers reshapes the tree: settled decisions push the fronti
 
 Finding _facts_ is your job, never the user's. When a frontier question needs a fact from the environment (filesystem, tools, etc.), dispatch a sub-agent to find it; don't ask the user for anything you could look up yourself. Don't block on it: a running exploration is an unsettled prerequisite, so only the questions downstream of it wait for the sub-agent to report; ask the rest of the frontier now. The _decisions_ are the user's: put each to them and wait.
 
-In a repo, the TODO list is `TODO.md` in the scratch folder the tracker line of the `## Agent skills` block names, else `.scratch/TODO.md`. Read its open items before the first round, and say which ones touch this plan. When a branch turns out to be separate work rather than part of this plan, take it off the tree and append it to the TODO list, telling the user; outside a repo, list such work at the end instead.
-
-Create the list with a `# TODO` heading if it is missing. Append only: never rewrite, reorder, or delete another entry. Each entry carries what a fresh session needs to pick it up:
-
-```markdown
-- [ ] **<short title>** - added YYYY-MM-DD
-  - From: <the session or spec it came out of>
-  - Why: <the problem, in a sentence or two>
-  - Known: <decisions already made; files, ADRs, or tickets involved>
-  - Next: <the first step, and the skill to start with>
-```
-
-The work that finishes an item ticks it: `- [x] **<title>** - added YYYY-MM-DD, done YYYY-MM-DD`. An item the user drops is ticked with `dropped YYYY-MM-DD: <reason>`.
+In a repo, read the open items of the TODO list (the one `docs/agents/issue-tracker.md` names, else `.scratch/TODO.md`) before the first round, and say which ones touch this plan. When a branch turns out to be separate work rather than part of this plan, take it off the tree and add it to that TODO list in the entry format `docs/agents/issue-tracker.md` gives (in a repo without one, the format in `setup-dan-skills/issue-tracker.md`), telling the user; outside a repo, list such work at the end instead.
 
 The session is done when the frontier is empty: every branch of the design tree visited, nothing left silently assumed. Do not act on it until the user confirms you have reached a shared understanding.

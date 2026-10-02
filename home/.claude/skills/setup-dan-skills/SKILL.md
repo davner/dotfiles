@@ -6,14 +6,14 @@ disable-model-invocation: true
 
 # Setup Dan's Skills
 
-Write the per-repo configuration that `to-spec`, `to-tickets`, `implement-spec`, `code-review`, `grilling`, and `pr` read: a short `## Agent skills` block in the repo's `CLAUDE.md`, whose tracker line names the tracker and the scratch folder, and `docs/agents/domain.md`.
+Write the per-repo configuration that `to-spec`, `to-tickets`, `implement-spec`, and `code-review` read: `docs/agents/issue-tracker.md`, `docs/agents/domain.md`, and a short `## Agent skills` block in the repo's `CLAUDE.md`.
 
 ## 1. Look around
 
 Read what already exists before asking anything:
 
 - `CLAUDE.md` and `AGENTS.md` at the repo root, and whether either already has an `## Agent skills` block
-- `docs/agents/`: a previous run of this skill. An old `docs/agents/issue-tracker.md` holds a tracker and a folder to carry into the tracker line.
+- `docs/agents/`: a previous run of this skill
 - `.scratch/`, `docs/specs/`, or another folder of spec and ticket markdown
 - a glossary (`GLOSSARY.md`, `docs/GLOSSARY.md`) and an ADR folder (`docs/adr/`, `docs/decisions/`)
 - `.gitignore`
@@ -29,23 +29,22 @@ Lead each question with the recommended answer so a one-word reply accepts it. S
 
 ## 3. Show the drafts
 
-Fill in [domain.md](domain.md) with the answers, draft the `## Agent skills` block below, and show both. Apply the user's edits before writing.
+Fill in [issue-tracker.md](issue-tracker.md) and [domain.md](domain.md) with the answers, draft the `## Agent skills` block below, and show all three. Apply the user's edits before writing.
 
 ```markdown
 ## Agent skills
 
-- Tracker: <Shortcut (`sc-1234`) | Jira (`KEY-123`)>, paste-ready; specs, tickets, and the TODO list in `<folder>`.
+- Tracker: <Shortcut | Jira KEY>, paste-ready; specs, tickets, and the TODO list in `<folder>`. See `docs/agents/issue-tracker.md`.
 - Domain docs: glossary at `<path>`, ADRs in `<folder>`. See `docs/agents/domain.md`.
 ```
 
 ## 4. Write
 
-- `docs/agents/domain.md`, from the filled-in template
+- `docs/agents/issue-tracker.md` and `docs/agents/domain.md`, from the filled-in templates
 - the `## Agent skills` block into `CLAUDE.md`; when only `AGENTS.md` exists, into that; when neither exists, ask which to create. An existing block is updated in place.
 - the scratch folder into `.gitignore`, only when the user chose to ignore it
-- remove an old `docs/agents/issue-tracker.md`, once its tracker and folder are in the tracker line
 
-Setup is done when the block and `docs/agents/domain.md` are written and the user has seen the final block. Tell them the files can be edited directly later, and that re-running this skill is for switching trackers or moving a folder.
+Setup is done when all three files are written and the user has seen the final block. Tell them the files can be edited directly later, and that re-running this skill is for switching trackers or moving a folder.
 
 ## 5. UI projects
 
