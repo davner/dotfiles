@@ -189,4 +189,4 @@ Before publishing, prove no AI is credited. Save the body to a temp file and, fr
 
 ## Output
 
-Publish one page with the harness's page-publishing tool (in Claude Code, the Artifact tool), or write a local HTML file when there is none. It holds the title, then the body markdown, each with a Copy button that copies its raw text, then each screenshot shown under its file name with a download button, then the authorship proof. In the reply, give only the page link and the authorship verdict. Pushing, opening, and merging the PR stay with the user.
+Publish one page with the harness's page-publishing tool (in Claude Code, the Artifact tool), or write a local HTML file when there is none. It holds the title, then the body markdown, each with a Copy button that copies its raw text, then each screenshot shown under its file name with its full local path and a Copy button for that path (published pages block downloads, so the user drags the file from that folder), then the authorship proof. In the reply, give only the page link and the authorship verdict. Pushing, opening, and merging the PR stay with the user.
