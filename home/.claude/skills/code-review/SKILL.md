@@ -10,7 +10,7 @@ Two-axis review of the diff between `HEAD` and a fixed point the user supplies:
 
 Both axes run as **parallel sub-agents** so they don't pollute each other's context, then this skill aggregates their findings.
 
-The issue tracker is described in `docs/agents/issue-tracker.md`. When that file is missing, review anyway: skip the tracker as a spec source in step 2, and mention once in the report that `/setup-dan-skills` sets it up.
+The tracker line in the repo's `## Agent skills` block (in `CLAUDE.md` or `AGENTS.md`) names the tracker and the scratch folder. When there is none, review anyway: skip the tracker as a spec source in step 2, and mention once in the report that `/setup-dan-skills` sets it up.
 
 ## Process
 
@@ -28,7 +28,7 @@ Before going further, confirm the fixed point resolves (`git rev-parse <fixed-po
 
 Look for the originating spec, in this order:
 
-1. Issue references in the commit messages (`#123`, `Closes #45`, GitLab `!67`, etc.), fetched via the workflow in `docs/agents/issue-tracker.md`.
+1. Issue references in the commit messages (`#123`, `Closes #45`, GitLab `!67`, etc.), or tracker IDs (`sc-1234`, `KEY-123`), each found as the ticket file in the scratch folder whose `Tracker:` line matches.
 2. A path the user passed as an argument.
 3. A spec file under `docs/`, `specs/`, or `.scratch/` matching the branch name or feature.
 4. If nothing is found, ask the user where the spec is. If they say there isn't one, the **Spec** sub-agent will skip and report "no spec available".

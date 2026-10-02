@@ -6,9 +6,9 @@ disable-model-invocation: true
 
 You have been provided a spec. This spec should have tickets associated with it, describing how to implement the spec.
 
-The issue tracker should have been provided to you. If not, tell the user to run `/setup-dan-skills`.
+The **tracker line** in the repo's `## Agent skills` block (in `CLAUDE.md` or `AGENTS.md`) names the tracker and the scratch folder. If there is none, tell the user to run `/setup-dan-skills`.
 
-The goal is the entire spec implemented on a single **integration branch**, with every ticket resolved the way the issue tracker closes work.
+The goal is the entire spec implemented on a single **integration branch**, with every ticket closed (step 9).
 
 The tickets are not a list of steps. They are a **task graph** with blocking relationships between them. This means there is always a **frontier** of tickets which are ready to be grabbed.
 
@@ -24,7 +24,7 @@ Tickets that touch a user interface are built through `impeccable` and checked o
 
 2. (optional) Use an **exploration subagent** to conduct any exploration required by the tickets - relevant codebase files or external documentation. Ensure the exploration subagent can save files - it should save its markdown notes in a directory outside the repo, accessible by all future subagents. This lets **implementer subagents** focus on implementation rather than exploration.
 
-3. Create the integration branch. If the issue tracker closes work through PRs, or the user asks for one, open a draft PR once the first ticket lands in step 5 (a branch with no commits ahead of main can't open one), marked as closing the spec and tickets.
+3. Create the integration branch. If the user asks for one, open a draft PR once the first ticket lands in step 5 (a branch with no commits ahead of main can't open one), marked as closing the spec and tickets.
 
 4. Use **implementer subagents** to implement each ticket, each in its own worktree on its own branch. Hand each one its ticket's absolute path in this checkout, since a new worktree has no copy of a gitignored scratch folder. Each implementer subagent:
    - confirms its worktree is based on the integration branch before starting, and recreates its branch from the integration tip if not;
@@ -39,6 +39,6 @@ Tickets that touch a user interface are built through `impeccable` and checked o
 
 8. Publish the **recap page**: every file the branch touched, grouped by purpose, each with a plain-words line on why it changed, and below that one paste-ready ticket per PR the tickets were grouped into, each with a Copy button. The tickets are what the user files; the spec and the work items stay local.
 
-9. If a draft PR exists, mark it ready for review. Otherwise, resolve each ticket the way the issue tracker closes work, and report the integration branch.
+9. If a draft PR exists, mark it ready for review. Otherwise, close each ticket: set `Status: done` in its file, tick any TODO item that named this work (`- [x] **<title>** - added YYYY-MM-DD, done YYYY-MM-DD`), and name its tracker ID in the report so the user can close it in the tracker. Report the integration branch.
 
 10. Clean up all **implementer subagent** worktrees.
