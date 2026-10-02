@@ -11,6 +11,10 @@ metadata:
 
 Produce the two things a pull request description needs, a title and a body, and nothing else. The user opens the PR; this skill only writes its text.
 
+Where this skill names a `docs/agents/` file, read it from the package that holds the changed files, else from the repo root.
+
+Before writing, read the subjects of the PR's commits (`git log --format=%s <base>..HEAD`). When they hold more than one theme, such as a feature beside a refactor, tell the user it could be split, then title the main theme.
+
 The title is one Conventional Commits line in the imperative, at most 72 characters, naming the PR's one theme and ending with the ticket ID in brackets, e.g. `feat: time out a hung SSO refresh [sc-10510]`.
 
 Find the ticket ID (Shortcut `sc-1234`, or Jira `KEY-123` per `docs/agents/issue-tracker.md`) in the branch name, a `Tracker:` line in the ticket file, or the commit messages; when none has it, ask the user. The body's first line names it: `Shortcut: sc-1234` or `Jira: KEY-123`, a link when the tracker URL is known.
@@ -169,6 +173,10 @@ Screenshots are S-tier - when the environment is set up for it and the change is
 
 Execution-based evidence is A-tier. Test results, console output. Show the exact test that now fails and passes, using pseudocode.
 
+Take test evidence from runs already in this session (the `tdd` red and green runs, the implement reports) or from CI. Don't run the suite. With no results in hand, name the test in pseudocode and say it was not run here.
+
+When one command shows the before without switching branches, run it against the old code from `git show <base>:<path>`; otherwise label the evidence "after only".
+
 ### Merge Danger
 
 Describe whether it's a one-way or two-way door. You can walk back through two-way doors, but not one-way doors. A PR that is cheap to roll back is lower risk. Changes that involve destructive actions or hard-to-reverse decisions are one-way doors.
@@ -182,6 +190,8 @@ When the change is visual and the app runs, capture before and after screenshots
 ## Authorship
 
 Before publishing, prove no AI is credited. Save the body to a temp file and, from the repo, run this skill's `scripts/provenance.sh <base> --body <file>`, where `<base>` is `git merge-base origin/main HEAD` after a `git fetch`. Run it; its rules live in `guard-bash.sh`, so there is nothing to read. It checks the author, committer, and message of every commit in the PR, and the body, for any agent, model, or bot.
+
+Run it on the final body, and again after any edit to the body. On the page, show `<base>` as the literal commit ID.
 
 - Exit 0, `CLEAN`: put the command and its raw output on the page as the proof.
 - Exit 1, `FLAGGED`: publish nothing. Tell the user which commit or the body, and why, as printed.
