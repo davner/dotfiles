@@ -42,5 +42,8 @@
     "command": "~/.claude/statusline.sh"
   },
   "skipDangerousModePermissionPrompt": true,
-  "agentPushNotifEnabled": true
+  "agentPushNotifEnabled": true,
+  "worktree": {
+    "baseRef": "head"
+  }
 }
