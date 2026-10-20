@@ -134,10 +134,8 @@ A small, clear change can go straight to `/implement`, and a bug starts with
 `diagnosing-bugs`. When you open a PR, `pr` writes its body.
 
 Keep steps 1 to 3 in one conversation, and clear it only after `/to-tickets`,
-so the spec and tickets build on everything the grilling settled. When a
-decision is waiting on someone else, `/to-questionnaire` writes them the
-questions, and their answers go into `/to-spec`. `/research` and
-`/improve-codebase-architecture` produce ideas and findings that start the
+so the spec and tickets build on everything the grilling settled. `/research`
+and `/improve-codebase-architecture` produce ideas and findings that start the
 flow again at `/grill-with-docs`.
 
 ### Skills
@@ -145,11 +143,9 @@ flow again at `/grill-with-docs`.
 | Stage | Skill | What it does |
 | --- | --- | --- |
 | Setup | [`setup-dan-skills`](home/.claude/skills/setup-dan-skills/SKILL.md) | Configures a repo once: tracker and where docs go |
-| Setup | [`setup-pre-commit`](home/.claude/skills/setup-pre-commit/SKILL.md) | Adds pre-commit hooks for formatting, types and tests |
 | Align | [`grill-me`](home/.claude/skills/grill-me/SKILL.md) | Interviews you until a plan has no open questions |
 | Align | [`grill-with-docs`](home/.claude/skills/grill-with-docs/SKILL.md) | The same, recording the glossary and ADRs as it goes |
 | Align | [`grilling`](home/.claude/skills/grilling/SKILL.md) | The interview engine behind both |
-| Align | [`to-questionnaire`](home/.claude/skills/to-questionnaire/SKILL.md) | Turns a decision you cannot make alone into questions for someone else |
 | Design | [`prototype`](home/.claude/skills/prototype/SKILL.md) | Throwaway variants to answer "what should this look like?" |
 | Design | [`domain-modeling`](home/.claude/skills/domain-modeling/SKILL.md) | Keeps the glossary and ADRs |
 | Design | [`codebase-design`](home/.claude/skills/codebase-design/SKILL.md) | Vocabulary for small interfaces over deep modules |
@@ -166,7 +162,6 @@ flow again at `/grill-with-docs`.
 | Help | [`handoff`](home/.claude/skills/handoff/SKILL.md) | Writes a summary so a fresh session can pick up the work |
 | Help | [`research`](home/.claude/skills/research/SKILL.md) | Answers a question from primary sources, saved as markdown |
 | Help | [`teach`](home/.claude/skills/teach/SKILL.md) | Teaches a concept over several sessions |
-| Help | [`wait-what`](home/.claude/skills/wait-what/SKILL.md) | Re-explains a message that did not land |
 | Help | [`writing-for-agents`](home/.claude/skills/writing-for-agents/SKILL.md) | How to write skills and agent rules files |
 | Stack | [`primereact-v10`](home/.claude/skills/primereact-v10/SKILL.md) | PrimeReact v10 reference |
 | Stack | [`tailwind-v4`](home/.claude/skills/tailwind-v4/SKILL.md) | Tailwind CSS v4 reference |

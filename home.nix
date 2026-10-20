@@ -190,22 +190,16 @@ in
     config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.claude/skills/retro";
   home.file.".claude/skills/setup-dan-skills".source =
     config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.claude/skills/setup-dan-skills";
-  home.file.".claude/skills/setup-pre-commit".source =
-    config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.claude/skills/setup-pre-commit";
   home.file.".claude/skills/tailwind-v4".source =
     config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.claude/skills/tailwind-v4";
   home.file.".claude/skills/tdd".source =
     config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.claude/skills/tdd";
   home.file.".claude/skills/teach".source =
     config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.claude/skills/teach";
-  home.file.".claude/skills/to-questionnaire".source =
-    config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.claude/skills/to-questionnaire";
   home.file.".claude/skills/to-spec".source =
     config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.claude/skills/to-spec";
   home.file.".claude/skills/to-tickets".source =
     config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.claude/skills/to-tickets";
-  home.file.".claude/skills/wait-what".source =
-    config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.claude/skills/wait-what";
   home.file.".claude/skills/writing-for-agents".source =
     config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.claude/skills/writing-for-agents";
 

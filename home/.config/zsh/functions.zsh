@@ -67,7 +67,6 @@ cc-flow() {
   printf "  %-21s ${c}%-19s${r} %s\n" \
     "Small, clear change" /implement        "Skip 1-3, build it right away" \
     "A bug"               /diagnosing-bugs  "Reproduce, fix, then /code-review" \
-    "Context too full"    /handoff          "Summary to start a fresh session" \
-    "Didn't follow that"  /wait-what        "Re-explains the last message"
+    "Context too full"    /handoff          "Summary to start a fresh session"
   printf "\n"
 }
