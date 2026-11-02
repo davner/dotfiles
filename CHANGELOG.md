@@ -9,6 +9,7 @@ machine's configuration, not a package anyone installs a version of.
 
 ## 2026-11-02
 
+- **Docs** Log out after bootstrap so macOS registers the Nix fonts ([`8915c93`](https://github.com/davner/dotfiles/commit/8915c930525cbe25cbf4f0384de70e7344eb5b7f))
 - **Added** Add the making-clipart-gifs skill ([`27dbc05`](https://github.com/davner/dotfiles/commit/27dbc05d9ed03fa72c8e2135a019f4e9233800fa))
 - **Added** yt-dlp: Split the tone alias and add a --cut range ([`999654e`](https://github.com/davner/dotfiles/commit/999654e9f7c36a53a09af906e3a48c51c785806d))
 - **Docs** Rebase rule for implementers and zsh word-splitting rule ([`2cf29da`](https://github.com/davner/dotfiles/commit/2cf29da9cab4f0eef7c7fc64706c084da2758cb9))
