@@ -31,9 +31,11 @@ Tickets that touch a user interface are built through `impeccable` and checked o
    - calls the Skill tool with `tdd` to build the ticket, starting from the ticket's **First red test**. Every behaviour is its own red → green slice, and the report pastes the red run of each one (a ticket whose First red test is `none` names the existing check it kept green instead);
    - leaves linear commits on its own branch and reports done. Integrating is the orchestrator's job.
 
-5. Once an **implementer subagent** completes, check its report has a red run for every behaviour it added; send back any slice that lacks one to be redone red-first. Then bring its commits onto the integration branch yourself: `git merge --ff-only` when its branch sits on the integration tip, otherwise `git cherry-pick` its own commits. History stays linear. Re-run the checks on the integration tip before moving on.
+5. Once an **implementer subagent** completes, check its report has a red run for every behaviour it added; send back any slice that lacks one to be redone red-first. Then bring its commits onto the integration branch yourself with `git merge --ff-only`. When its branch no longer sits on the integration tip, send it back to its implementer to rebase onto the tip and re-run its checks; the implementer resolves its own conflicts. History stays linear. Run the checks on every commit that comes over, stopping at the first failure, not only on the tip.
 
 6. If this changes the **frontier** of available tickets, kick off more **implementer subagents** to work on the new tickets. This allows for maximum concurrency.
+
+   When the user or a finding changes a decision mid-build, edit that decision where it lives in the spec (Implementation Decisions, Out of Scope, a ticket's criteria) before the next implementer starts, so every pointer to the spec leads to what is true now.
 
 7. Once all tickets are complete, call the Skill tool with `code-review` on the integration branch. Fix all issues raised by the code review in a single **implementer subagent**.
 

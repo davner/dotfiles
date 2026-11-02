@@ -11,6 +11,7 @@
 - Prefer a maintained library to hand-rolling, and hand-rolling to an abandoned one. For one-off operational work, take the direct path.
 - A change is done when no doc in the repo still describes the old behavior.
 - Before anything that spawns many subagents, explain the cost and get approval.
+- The shell is zsh: an unquoted variable stays one word. Keep a command with arguments in a function or an array, never in a string variable.
 
 ## Writing
 
