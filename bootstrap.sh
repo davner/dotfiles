@@ -94,3 +94,5 @@ sudo "$NIX_BIN" run github:nix-darwin/nix-darwin/nix-darwin-26.05#darwin-rebuild
 # (Determinate adds nix to new shells' PATH) and re-run ./bootstrap.sh.
 
 echo "==> Done. Use ./rebuild.sh for future changes."
+echo "    Log out and back in once: macOS only registers the fonts Nix"
+echo "    installed to ~/Library/Fonts/HomeManager at the start of a session."

@@ -199,6 +199,7 @@ inputs update.
 | `home.nix: no git email for "X"` | Fill in `email` on that record in `flake.nix` |
 | `Existing file '…' would be clobbered` | An older `.backup` is still there: read it, then delete it |
 | `nix: command not found` during bootstrap | Open a new terminal, then re-run |
+| WezTerm says it cannot load `Hack Nerd Font` | Log out and back in: macOS scans `~/Library/Fonts/HomeManager` only at the start of a session, and bootstrap created it mid-session |
 | A rebuild made things worse | `darwin-rebuild --list-generations`, then `sudo darwin-rebuild --switch-to-generation N` |
 
 `CHANGELOG.md` is generated; to rebuild it by hand: `nix develop --command git-cliff -o CHANGELOG.md`.
