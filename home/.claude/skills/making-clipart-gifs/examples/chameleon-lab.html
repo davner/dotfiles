@@ -1,0 +1,448 @@
+<title>Sidereal Chameleons</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700&family=Hanken+Grotesk:wght@400;600&display=swap">
+<style>
+/* Sidereal's own world, committed dark: three specimen cards in a row, one shared control bar */
+:root {
+  --bg: #050507;
+  --panel: #0c0d10;
+  --raise: #15161a;
+  --line: #26272d;
+  --fg: #edece7;
+  --muted: #8a8a94;
+  --accent: #9be7ff;
+  --accent-ink: #050507;
+  --display: "Unbounded", ui-sans-serif, system-ui, sans-serif;
+  --body: "Hanken Grotesk", ui-sans-serif, system-ui, -apple-system, sans-serif;
+  color-scheme: dark;
+}
+body {
+  background: var(--bg); color: var(--fg); font-family: var(--body);
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 40px 56px;
+}
+main { max-width: 980px; margin: 0 auto; display: grid; gap: 24px; }
+.eyebrow { margin: 0; font-size: 0.72rem; letter-spacing: 0.22em; text-transform: uppercase; color: var(--accent); }
+h1 { font-family: var(--display); font-weight: 700; font-size: clamp(1.9rem, 6vw, 2.8rem); line-height: 1.02; text-transform: uppercase; margin: 0; text-wrap: balance; }
+h2 { font-family: var(--display); font-weight: 500; font-size: 0.95rem; text-transform: uppercase; letter-spacing: 0.02em; margin: 0; }
+.lede { margin: 0; color: var(--muted); line-height: 1.6; max-width: 62ch; }
+.controls { display: flex; flex-wrap: wrap; gap: 12px 20px; align-items: center; }
+.group { display: flex; gap: 6px; align-items: center; }
+.label { font-size: 0.7rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); margin-right: 4px; }
+button {
+  font: 600 0.88rem var(--body); color: var(--fg); background: var(--raise);
+  border: 1px solid var(--line); border-radius: 2px; padding: 7px 12px; cursor: pointer;
+}
+button[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 2px; display: grid; align-content: start; min-width: 0; }
+.stage { aspect-ratio: 1 / 1; display: grid; place-items: center; border-bottom: 1px solid var(--line); }
+.stage canvas { width: 100%; height: auto; aspect-ratio: 1 / 1; display: block; image-rendering: pixelated; }
+.cards[data-bg="white"] .stage { background: #ffffff; }
+.cards[data-bg="space"] .stage { background: #050507; }
+.cards[data-bg="clear"] .stage {
+  background-color: #1a1b20;
+  background-image: conic-gradient(#2a2b31 25%, transparent 0 50%, #2a2b31 0 75%, transparent 0);
+  background-size: 20px 20px;
+}
+.meta { padding: 14px 16px 16px; display: grid; gap: 6px; }
+.species { font-size: 0.7rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--accent); }
+.meta p { margin: 0; color: var(--muted); line-height: 1.5; font-size: 0.92rem; }
+.spec { font-variant-numeric: tabular-nums; font-size: 0.8rem; color: var(--muted); }
+.error { color: var(--fg); font-size: 0.9rem; text-align: center; max-width: 30ch; }
+</style>
+
+<main>
+  <p class="eyebrow">Sidereal Software mascot</p>
+  <h1>Three Chameleons</h1>
+  <p class="lede">Late-90s 3D clip art, rebuilt lean. Each body is a drawn side outline with depth, so it reads tall and flat like a real chameleon instead of an egg. Each one is a real species with one gag per loop.</p>
+
+  <div class="controls">
+    <div class="group">
+      <button id="play" aria-pressed="true">Pause</button>
+    </div>
+    <div class="group" role="group" aria-label="Background">
+      <span class="label">Background</span>
+      <button data-bg="white" aria-pressed="true">White</button>
+      <button data-bg="space" aria-pressed="false">Dark</button>
+      <button data-bg="clear" aria-pressed="false">Clear</button>
+    </div>
+  </div>
+
+  <div class="cards" id="cards" data-bg="white">
+    <article class="card">
+      <div class="stage" role="img" aria-label="Green veiled chameleon with a tall crest catching a gold star with its tongue"><canvas width="200" height="200"></canvas></div>
+      <div class="meta"><span class="species">Veiled</span><h2>Star snatcher</h2><p>Tall helmet crest, yellow side stripe. A star drifts in and the tongue snaps it up.</p><span class="spec">12 frames · 150 ms · 1.5 s rest</span></div>
+    </article>
+    <article class="card">
+      <div class="stage" role="img" aria-label="Panther chameleon shifting color from green to orange, violet and blue"><canvas width="200" height="200"></canvas></div>
+      <div class="meta"><span class="species">Panther</span><h2>Nebula shift</h2><p>Low crest, banded body. Cycles through the Dumbbell Nebula's orange, violet and blue, then back to green.</p><span class="spec">16 frames · 150 ms · rests on green and violet</span></div>
+    </article>
+    <article class="card">
+      <div class="stage" role="img" aria-label="Three-horned Jackson's chameleon rolling each eye a different way, then looking at the viewer and blinking"><canvas width="200" height="200"></canvas></div>
+      <div class="meta"><span class="species">Jackson's</span><h2>Eye check</h2><p>Three horns. Each eye scans its own patch of sky, then both snap to you and it blinks.</p><span class="spec">12 frames · 150 ms · 1.2 s stare</span></div>
+    </article>
+  </div>
+</main>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(() => {
+  const FRAME_MS = 150;
+  const cardsEl = document.getElementById('cards');
+  const views = [...document.querySelectorAll('.stage canvas')];
+  const query = new URLSearchParams(location.search);
+  const exporting = query.has('frame');
+
+  if (!window.THREE) {
+    document.querySelectorAll('.stage').forEach(s => { s.innerHTML = '<p class="error">The 3D library did not load. Check your connection and reload the page.</p>'; });
+    return;
+  }
+
+  const V = (x, y, z) => new THREE.Vector3(x, y, z);
+  // Render 4x large and shrink: the shrink is what gives old clip art its soft edges.
+  const PX = exporting ? Number(query.get('px')) || 800 : 800;
+  const glCanvas = document.createElement('canvas');
+  const renderer = new THREE.WebGLRenderer({ canvas: glCanvas, antialias: false, alpha: true, preserveDrawingBuffer: true });
+  renderer.setPixelRatio(1);
+  renderer.setSize(PX, PX, false);
+
+  // Seeded so skin patterns are identical in every frame and every render.
+  let seed = 11;
+  const rand = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+  const skinTexture = ({ base, band, stripe, dots }, repeat = [1, 1], offset = [0, 0]) => {
+    const c = document.createElement('canvas');
+    c.width = 256; c.height = 128;
+    const g = c.getContext('2d');
+    g.fillStyle = base;
+    g.fillRect(0, 0, 256, 128);
+    if (band) {
+      g.fillStyle = band;
+      for (let x = 6; x < 256; x += 32) {
+        g.beginPath();
+        g.moveTo(x + rand() * 6, 0); g.lineTo(x + 14 + rand() * 6, 0);
+        g.lineTo(x + 10 + rand() * 6, 64); g.lineTo(x + rand() * 4, 64);
+        g.fill();
+      }
+    }
+    if (stripe) {
+      g.fillStyle = stripe;
+      g.beginPath();
+      for (let x = 0; x <= 256; x += 8) g.lineTo(x, 66 + 3 * Math.sin(x / 11));
+      for (let x = 256; x >= 0; x -= 8) g.lineTo(x, 76 + 3 * Math.sin(x / 11));
+      g.fill();
+    }
+    for (let i = 0; i < 2200; i++) {
+      g.fillStyle = rand() < 0.55 ? 'rgba(0,0,0,0.22)' : (dots || 'rgba(255,255,255,0.25)');
+      g.fillRect(rand() * 256, rand() * 128, 2, 2);
+    }
+    const t = new THREE.CanvasTexture(c);
+    t.wrapS = t.wrapT = THREE.RepeatWrapping;
+    t.repeat.set(...repeat);
+    t.offset.set(...offset);
+    return t;
+  };
+
+  const phong = (color, shininess, specular, extra) => new THREE.MeshPhongMaterial(Object.assign({ color, shininess, specular }, extra));
+  const matte = map => phong(0xffffff, 12, 0x161a16, { map });
+  const add = (geom, mat, parent) => { const o = new THREE.Mesh(geom, mat); parent.add(o); return o; };
+  const sphere = (r, mat, parent, seg = 16) => add(new THREE.SphereGeometry(r, seg, Math.round(seg * 0.7)), mat, parent);
+  const UNIT_CYL = new THREE.CylinderGeometry(1, 1, 1, 10);
+  const rod = (r, mat, parent) => { const o = add(UNIT_CYL, mat, parent); o.userData.r = r; return o; };
+  const place = (o, a, b) => {
+    const d = b.clone().sub(a), len = d.length();
+    o.position.copy(a).addScaledVector(d, 0.5);
+    o.quaternion.setFromUnitVectors(V(0, 1, 0), d.normalize());
+    o.scale.set(o.userData.r, len, o.userData.r);
+  };
+  // A side outline given depth: flat flanks and a sharp ridge, the true chameleon silhouette.
+  const slab = (pts, depth, bevel, mat, parent) => {
+    const shape = new THREE.Shape(pts.map(([x, y]) => new THREE.Vector2(x, y)));
+    const geom = new THREE.ExtrudeGeometry(shape, { depth, bevelEnabled: true, bevelThickness: bevel, bevelSize: bevel * 0.8, bevelSegments: 3, curveSegments: 4 });
+    geom.translate(0, 0, -depth / 2);
+    return add(geom, mat, parent);
+  };
+
+  const makeScene = () => {
+    const scene = new THREE.Scene();
+    scene.add(new THREE.AmbientLight(0xffffff, 0.45));
+    const key = new THREE.DirectionalLight(0xffffff, 0.8);
+    key.position.set(-2, 4, 5);
+    scene.add(key);
+    const rim = new THREE.DirectionalLight(0x9be7ff, 0.4);
+    rim.position.set(1, 2, -4);
+    scene.add(rim);
+    return scene;
+  };
+
+  const ROD_MAT = phong(0x737780, 30, 0x1a1a1a);
+  const CAP_MAT = phong(0x6cb8d2, 30, 0x1a2a2a);
+  const PUPIL = phong(0x050505, 60, 0x888888);
+  const MOUTH = phong(0x8a1f33, 20, 0x222222);
+
+  const bodyOutline = (len, height, belly) => {
+    const top = [], bottom = [];
+    for (let k = 0; k <= 14; k++) {
+      const u = k / 14, x = -0.5 + u * len;
+      const ridge = 0.06 + height * Math.pow(Math.sin(Math.PI * Math.min(1, u * 1.05)), 0.7);
+      top.push([x, ridge + (k % 2 ? 0.022 : 0)]);
+    }
+    top.push([-0.5 + len + 0.03, 0.12], [-0.5 + len + 0.04, -0.02]);
+    for (let k = 14; k >= 0; k--) {
+      const u = k / 14, x = -0.5 + u * len;
+      bottom.push([x, -0.03 - belly * Math.sin(Math.PI * u)]);
+    }
+    return top.concat(bottom);
+  };
+
+  const buildChameleon = (scene, o) => {
+    const rig = new THREE.Group();
+    rig.rotation.z = o.slope;
+    scene.add(rig);
+    const ROD_Y = 0;
+    place(rod(0.04, ROD_MAT, rig), V(-1.7, ROD_Y, 0), V(0.85, ROD_Y, 0));
+    sphere(0.065, CAP_MAT, rig, 12).position.set(0.87, ROD_Y, 0);
+
+    const cham = new THREE.Group();
+    cham.position.set(0, ROD_Y + 0.35, 0);
+    rig.add(cham);
+    const len = 0.85;
+    const bodyMat = matte(skinTexture(o.palette, [1.2, 1 / 0.5], [0.6, 0.25]));
+    const skin = matte(skinTexture({ ...o.palette, band: null, stripe: null }, [3, 3]));
+    const body = slab(bodyOutline(len, o.height, o.belly), 0.13, 0.04, bodyMat, cham);
+
+    for (const [sx, fx] of [[0.2, 0.22], [-0.3, -0.34]]) for (const s of [1, -1]) {
+      const S = V(sx, -0.02, 0.08 * s), K = V(sx + 0.1, -0.17, 0.15 * s), F = V(fx, -0.31, 0.045 * s);
+      place(rod(0.028, skin, cham), S, K);
+      place(rod(0.024, skin, cham), K, F);
+      sphere(0.03, skin, cham, 8).position.copy(K);
+      for (const dz of [0.035, -0.035]) {
+        const toe = sphere(1, skin, cham, 8);
+        toe.scale.set(0.045, 0.022, 0.022);
+        toe.position.set(fx, -0.335, 0.045 * s + dz * 0.6);
+      }
+    }
+
+    const tail = [];
+    for (let i = 0; i < 70; i++) tail.push(sphere(1, skin, cham, 10));
+    const tailPoint = (t, curl) => {
+      if (t < 0.28) {
+        const u = t / 0.28;
+        return V(-0.5 - 0.28 * u, 0.02 - 0.3 * u, 0);
+      }
+      const u = (t - 0.28) / 0.72, r = 0.22 * (1 - 0.85 * u) * curl, a = 0.9 + u * 2.2 * Math.PI;
+      return V(-0.92 + r * Math.cos(a), -0.4 + r * Math.sin(a), 0.03);
+    };
+    const setTail = curl => tail.forEach((b, k) => {
+      const t = k / (tail.length - 1);
+      b.position.copy(tailPoint(t, curl));
+      b.scale.setScalar(0.045 * (1 - 0.7 * t));
+    });
+    setTail(1);
+
+    const head = new THREE.Group();
+    head.position.set(-0.5 + len + 0.12, 0.08, 0);
+    head.rotation.z = 0.12;
+    cham.add(head);
+    slab(o.headTop, 0.09, 0.035, skin, head);
+    const jaw = new THREE.Group();
+    jaw.position.set(-0.1, -0.02, 0);
+    head.add(jaw);
+    slab(o.jaw.map(([x, y]) => [x + 0.1, y + 0.02]), 0.075, 0.03, skin, jaw);
+    sphere(0.05, MOUTH, head, 10).position.set(0.12, -0.04, 0);
+    (o.horns || []).forEach(([x, y, z, len, tilt]) => {
+      const horn = add(new THREE.ConeGeometry(0.032, len, 8), o.hornMat, head);
+      horn.position.set(x, y, z);
+      horn.rotation.z = -Math.PI / 2 + tilt;
+    });
+
+    const eyes = [1, -1].map(s => {
+      const turret = new THREE.Group();
+      turret.position.set(o.eye[0], o.eye[1], (0.07 + o.eyeR * 0.5) * s);
+      head.add(turret);
+      sphere(o.eyeR, skin, turret, 16);
+      const ring = o.ringMat ? add(new THREE.TorusGeometry(o.eyeR * 0.42, o.eyeR * 0.14, 8, 18), o.ringMat, turret) : null;
+      if (ring) ring.position.z = o.eyeR * 0.9;
+      const pupil = sphere(o.eyeR * 0.32, PUPIL, turret, 10);
+      pupil.position.z = o.eyeR * 0.93;
+      return { turret, ring, pupil };
+    });
+
+    const setEyes = (targets, blink) => {
+      scene.updateMatrixWorld(true);
+      eyes.forEach((e, k) => {
+        e.turret.lookAt(targets[k]);
+        e.pupil.visible = !blink;
+        if (e.ring) e.ring.visible = !blink;
+      });
+    };
+    return { rig, cham, body, head, jaw, eyes, setEyes, setTail, bodyMat, skin, mouthLocal: V(0.3, -0.02, 0) };
+  };
+
+  const cameraFor = (pos, look, fov = 34) => {
+    const c = new THREE.PerspectiveCamera(fov, 1, 0.1, 50);
+    c.position.set(...pos);
+    c.lookAt(...look);
+    return c;
+  };
+  const lerp = (a, b, t) => a.clone().lerp(b, t);
+  const smooth = t => t * t * (3 - 2 * t);
+
+  const veiled = () => {
+    const scene = makeScene();
+    const c = buildChameleon(scene, {
+      slope: 0.42, height: 0.24, belly: 0.1,
+      palette: { base: '#2fae3f', band: '#1d7a30', stripe: '#e4ee5a', dots: 'rgba(190,250,140,0.35)' },
+      headTop: [[0.3, 0.0], [0.22, 0.06], [0.1, 0.11], [0.0, 0.17], [-0.07, 0.3], [-0.12, 0.42], [-0.19, 0.3], [-0.22, 0.12], [-0.18, 0.0], [-0.04, -0.02], [0.2, -0.015]],
+      jaw: [[0.28, -0.02], [0.1, -0.03], [-0.08, -0.03], [-0.15, -0.08], [-0.07, -0.15], [0.1, -0.1], [0.22, -0.055]],
+      eye: [0.06, 0.06], eyeR: 0.07, ringMat: phong(0xf2e23a, 40, 0x666622),
+    });
+    const tongueMat = phong(0xec6f8a, 40, 0x886666);
+    const tongue = rod(0.02, tongueMat, scene);
+    const tip = sphere(0.042, tongueMat, scene, 12);
+    const starShape = new THREE.Shape();
+    for (let k = 0; k < 10; k++) {
+      const r = k % 2 ? 0.07 : 0.16, a = Math.PI / 2 + k * Math.PI / 5;
+      k ? starShape.lineTo(r * Math.cos(a), r * Math.sin(a)) : starShape.moveTo(r * Math.cos(a), r * Math.sin(a));
+    }
+    const sg = new THREE.ExtrudeGeometry(starShape, { depth: 0.04, bevelEnabled: true, bevelThickness: 0.025, bevelSize: 0.02, bevelSegments: 1 });
+    sg.center();
+    const star = add(sg, phong(0xffcf2e, 40, 0x887744, { emissive: 0x3a2a00 }), scene);
+    scene.updateMatrixWorld(true);
+    const rest = c.head.localToWorld(c.mouthLocal.clone());
+    const CATCH = rest.clone().add(V(0.5, 0.42, 0)), START = CATCH.clone().add(V(0.36, 0.42, 0.15));
+    const camera = cameraFor([0.1, 0.5, 3.75], [0.05, 0.3, 0]);
+    return {
+      scene, camera, N: 12, holds: { 11: 1500 },
+      setFrame(i) {
+        let s = null, t = null, open = 0;
+        if (i <= 5) s = lerp(START, CATCH, smooth(i / 5));
+        if (i === 5) { t = lerp(rest, CATCH, 0.55); open = 0.35; }
+        if (i === 6) { s = CATCH.clone(); t = CATCH.clone(); open = 0.42; }
+        if (i === 7) { s = lerp(CATCH, rest, 0.5); t = s.clone(); open = 0.3; }
+        if (i === 8) { s = rest.clone(); open = 0.16; }
+        if (i === 9) open = 0.06;
+        c.jaw.rotation.z = -open;
+        star.visible = !!s;
+        if (s) { star.position.copy(s); star.rotation.set(0.15, 0.5 * Math.sin(i * 0.9), i * 0.25); star.scale.setScalar(i === 8 ? 0.5 : 1); }
+        tongue.visible = tip.visible = !!t;
+        if (t) { place(tongue, rest, t); tip.position.copy(t); }
+        c.setTail(1 + 0.05 * Math.sin(i / 12 * Math.PI * 2));
+        const look = s || (i >= 10 ? START : CATCH.clone().add(V(0.5, -0.3, 0.8)));
+        c.setEyes([look, look], i === 10);
+      },
+    };
+  };
+
+  const panther = () => {
+    const scene = makeScene();
+    const c = buildChameleon(scene, {
+      slope: 0.26, height: 0.2, belly: 0.09,
+      palette: { base: '#dcdcdc', band: '#8c8c8c', stripe: '#ffffff', dots: 'rgba(255,255,255,0.4)' },
+      headTop: [[0.3, 0.0], [0.27, 0.08], [0.16, 0.12], [0.02, 0.15], [-0.12, 0.2], [-0.2, 0.13], [-0.22, 0.02], [-0.16, -0.01], [0.2, -0.015]],
+      jaw: [[0.28, -0.02], [0.1, -0.03], [-0.08, -0.03], [-0.15, -0.07], [-0.07, -0.13], [0.1, -0.09], [0.22, -0.05]],
+      eye: [0.06, 0.07], eyeR: 0.068, ringMat: null,
+    });
+    const keys = [0x37b64a, 0xff8a50, 0xa46bff, 0x4fb8ff, 0x37b64a].map(h => new THREE.Color(h));
+    const tint = new THREE.Color();
+    const camera = cameraFor([0.1, 0.35, 3.0], [-0.12, 0.08, 0]);
+    return {
+      scene, camera, N: 16, holds: { 0: 1000, 8: 700 },
+      setFrame(i) {
+        const p = i / 16 * 4, k = Math.floor(p);
+        tint.copy(keys[k]).lerp(keys[k + 1], smooth(p - k));
+        c.bodyMat.color.copy(tint);
+        c.skin.color.copy(tint).lerp(new THREE.Color(0xffffff), 0.12);
+        c.setTail(1 + 0.04 * Math.sin(i / 16 * Math.PI * 2));
+        const a = i / 16 * Math.PI * 2;
+        c.setEyes([V(1.6, 0.6 + 0.3 * Math.sin(a), 1.5), V(1.2, 0.2 + 0.3 * Math.cos(a), -1.4)], i === 12);
+      },
+    };
+  };
+
+  const jackson = () => {
+    const scene = makeScene();
+    const hornMat = phong(0xa8965f, 20, 0x1a1a10);
+    const c = buildChameleon(scene, {
+      slope: 0.3, height: 0.18, belly: 0.09,
+      palette: { base: '#45c45e', band: '#33a04a', stripe: null, dots: 'rgba(200,255,180,0.45)' },
+      headTop: [[0.28, 0.0], [0.25, 0.07], [0.14, 0.12], [0.0, 0.15], [-0.1, 0.19], [-0.2, 0.15], [-0.22, 0.03], [-0.16, -0.01], [0.2, -0.015]],
+      jaw: [[0.27, -0.02], [0.1, -0.03], [-0.08, -0.03], [-0.15, -0.07], [-0.07, -0.13], [0.1, -0.09], [0.21, -0.05]],
+      horns: [[0.36, 0.06, 0, 0.24, 0.25], [0.14, 0.16, 0.06, 0.22, 0.45], [0.14, 0.16, -0.06, 0.22, 0.45]], hornMat,
+      eye: [0.05, 0.06], eyeR: 0.085, ringMat: phong(0xe9f27a, 30, 0x555522),
+    });
+    const camera = cameraFor([0.25, 0.45, 3.1], [-0.08, 0.12, 0]);
+    return {
+      scene, camera, N: 12, holds: { 0: 600, 7: 1200 },
+      setFrame(i) {
+        c.setTail(1 + 0.05 * Math.sin(i / 12 * Math.PI * 2));
+        c.head.rotation.y = i >= 6 && i <= 9 ? 0.35 : 0;
+        c.head.rotation.z = 0.12;
+        scene.updateMatrixWorld(true);
+        const h = c.head.getWorldPosition(V(0, 0, 0));
+        const a = i / 6 * Math.PI;
+        const scan = [h.clone().add(V(1.2 * Math.cos(a), 1.0 + 0.4 * Math.sin(a), 1.0)), h.clone().add(V(-1.4, -0.4 + 0.5 * Math.cos(a), -0.8 + 0.6 * Math.sin(a)))];
+        const toViewer = [camera.position.clone(), camera.position.clone()];
+        c.setEyes(i >= 6 && i <= 9 ? toViewer : scan, i === 8);
+      },
+    };
+  };
+
+  const designs = [veiled(), panther(), jackson()];
+
+  const draw = (k, i, bg) => {
+    const d = designs[k];
+    d.setFrame(i);
+    renderer.setClearColor(bg === 'space' ? 0x050507 : 0xffffff, bg === 'clear' ? 0 : 1);
+    renderer.render(d.scene, d.camera);
+  };
+
+  if (exporting) {
+    document.body.replaceChildren(glCanvas);
+    document.body.style.cssText = 'margin:0;padding:0;background:transparent';
+    glCanvas.style.cssText = `width:${PX}px;height:${PX}px;display:block`;
+    const k = Number(query.get('design')) || 0;
+    draw(k, Number(query.get('frame')) % designs[k].N, query.get('bg') || 'white');
+    return;
+  }
+
+  const ctxs = views.map(v => { const g = v.getContext('2d'); g.imageSmoothingQuality = 'high'; return g; });
+  const state = designs.map(() => ({ frame: 0, acc: 0 }));
+  const show = k => {
+    draw(k, state[k].frame, cardsEl.dataset.bg);
+    ctxs[k].clearRect(0, 0, 200, 200);
+    ctxs[k].drawImage(glCanvas, 0, 0, 200, 200);
+  };
+  const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  let playing = !reduce, last = null;
+  const playBtn = document.getElementById('play');
+  const setPlaying = v => {
+    playing = v; last = null;
+    playBtn.textContent = v ? 'Pause' : 'Play';
+    playBtn.setAttribute('aria-pressed', String(v));
+  };
+  const tick = now => {
+    if (playing && last !== null) {
+      designs.forEach((d, k) => {
+        const s = state[k];
+        s.acc += now - last;
+        const wait = d.holds[s.frame] || FRAME_MS;
+        if (s.acc >= wait) { s.acc -= wait; s.frame = (s.frame + 1) % d.N; show(k); }
+      });
+    }
+    last = playing ? now : null;
+    requestAnimationFrame(tick);
+  };
+  playBtn.addEventListener('click', () => setPlaying(!playing));
+  document.querySelectorAll('button[data-bg]').forEach(b => b.addEventListener('click', () => {
+    cardsEl.dataset.bg = b.dataset.bg;
+    document.querySelectorAll('button[data-bg]').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
+    designs.forEach((_, k) => show(k));
+  }));
+  setPlaying(playing);
+  designs.forEach((_, k) => show(k));
+  requestAnimationFrame(tick);
+})();
+</script>

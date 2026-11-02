@@ -151,6 +151,7 @@ flow again at `/grill-with-docs`.
 | Design | [`domain-modeling`](home/.claude/skills/domain-modeling/SKILL.md) | Keeps the glossary and ADRs |
 | Design | [`codebase-design`](home/.claude/skills/codebase-design/SKILL.md) | Vocabulary for small interfaces over deep modules |
 | Design | [`improve-codebase-architecture`](home/.claude/skills/improve-codebase-architecture/SKILL.md) | Finds modules worth simplifying, as a visual report |
+| Design | [`making-clipart-gifs`](home/.claude/skills/making-clipart-gifs/SKILL.md) | Original 90s 3D clip-art GIFs: render, shrink to 200 px, check against measured specs |
 | Plan | [`to-spec`](home/.claude/skills/to-spec/SKILL.md) | Writes the spec, paste-ready |
 | Plan | [`to-tickets`](home/.claude/skills/to-tickets/SKILL.md) | Splits it into thin tickets with their order, paste-ready |
 | Build | [`implement`](home/.claude/skills/implement/SKILL.md) | Builds one ticket or a small change |

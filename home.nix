@@ -178,6 +178,8 @@ in
     config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.claude/skills/implement-spec";
   home.file.".claude/skills/improve-codebase-architecture".source =
     config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.claude/skills/improve-codebase-architecture";
+  home.file.".claude/skills/making-clipart-gifs".source =
+    config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.claude/skills/making-clipart-gifs";
   home.file.".claude/skills/pr".source =
     config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.claude/skills/pr";
   home.file.".claude/skills/primereact-v10".source =

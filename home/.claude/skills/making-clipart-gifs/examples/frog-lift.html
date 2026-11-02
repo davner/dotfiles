@@ -1,0 +1,329 @@
+<title>Frog Lift</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chewy&family=Lexend:wght@400;600&display=swap">
+<style>
+/* One stage, controls beneath: a clip-art sheet with the animation as the only star */
+:root {
+  --bg: #f3f6ee;
+  --fg: #1d1a17;
+  --muted: #5d6656;
+  --panel: #ffffff;
+  --line: #d6dccd;
+  --accent: #3f8f27;
+  --accent-ink: #ffffff;
+  --display: "Chewy", "Comic Sans MS", system-ui, sans-serif;
+  --body: "Lexend", system-ui, -apple-system, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #161a14; --fg: #eef2e8; --muted: #a3ad98; --panel: #20261d;
+    --line: #343d2e; --accent: #7fd35c; --accent-ink: #10140e; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #161a14; --fg: #eef2e8; --muted: #a3ad98; --panel: #20261d;
+  --line: #343d2e; --accent: #7fd35c; --accent-ink: #10140e; color-scheme: dark;
+}
+body {
+  background: var(--bg); color: var(--fg); font-family: var(--body);
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 32px 48px;
+}
+main { max-width: 560px; margin: 0 auto; display: grid; gap: 20px; }
+h1 { font-family: var(--display); font-weight: 400; font-size: 2.6rem; line-height: 1; margin: 0; text-wrap: balance; }
+.lede { margin: 0; color: var(--muted); line-height: 1.55; max-width: 60ch; }
+.stage {
+  border: 1px solid var(--line); border-radius: 14px; overflow: hidden;
+  display: grid; place-items: center; aspect-ratio: 1 / 1; max-width: 100%;
+}
+.stage canvas { width: 100%; height: auto; aspect-ratio: 1 / 1; display: block; image-rendering: pixelated; }
+.stage[data-bg="white"] { background: #ffffff; }
+.stage[data-bg="black"] { background: #000000; }
+.stage[data-bg="clear"] {
+  background-color: #ffffff;
+  background-image: conic-gradient(#e3e3e3 25%, transparent 0 50%, #e3e3e3 0 75%, transparent 0);
+  background-size: 20px 20px;
+}
+.caption { margin: -10px 0 0; font-size: 0.82rem; color: var(--muted); }
+.controls { display: flex; flex-wrap: wrap; gap: 12px 20px; align-items: center; }
+.group { display: flex; gap: 6px; align-items: center; }
+.label { font-size: 0.72rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); margin-right: 4px; }
+button {
+  font: 600 0.88rem var(--body); color: var(--fg); background: var(--panel);
+  border: 1px solid var(--line); border-radius: 8px; padding: 7px 12px; cursor: pointer;
+}
+button[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.frame { font-variant-numeric: tabular-nums; font-size: 0.88rem; color: var(--muted); min-width: 5.5em; }
+.error { color: var(--fg); font-size: 0.9rem; text-align: center; max-width: 30ch; }
+</style>
+
+<main>
+  <h1>Frog Lift</h1>
+  <p class="lede">An original frog in late-90s 3D clip art, doing the heavy lifting: squat, clean the bar to its chest, press it overhead, hold, and set it down.</p>
+
+  <div class="stage" id="stage" data-bg="white" role="img" aria-label="Green 3D frog pressing a barbell over its head">
+    <canvas id="c" width="200" height="200"></canvas>
+  </div>
+  <p class="caption">200 × 200 pixels, rendered at 800 and shrunk down. 12 frames at 150 ms, holds at rest and at lockout, 256 colors.</p>
+
+  <div class="controls">
+    <div class="group">
+      <button id="play" aria-pressed="true">Pause</button>
+      <button id="prev" aria-label="Previous frame">&#8249;</button>
+      <button id="next" aria-label="Next frame">&#8250;</button>
+      <span class="frame" id="frame">frame 1/12</span>
+    </div>
+    <div class="group" role="group" aria-label="Background">
+      <span class="label">Background</span>
+      <button data-bg="white" aria-pressed="true">White</button>
+      <button data-bg="black" aria-pressed="false">Black</button>
+      <button data-bg="clear" aria-pressed="false">Clear</button>
+    </div>
+  </div>
+</main>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(() => {
+  const N = 12, FRAME_MS = 150, HOLD = { 0: 900, 6: 1200 };
+  const stage = document.getElementById('stage');
+  const canvas = document.getElementById('c');
+  const query = new URLSearchParams(location.search);
+  const exporting = query.has('frame');
+
+  if (!window.THREE) {
+    stage.innerHTML = '<p class="error">The 3D library did not load. Check your connection and reload the page.</p>';
+    return;
+  }
+
+  const V = (x, y, z) => new THREE.Vector3(x, y, z);
+  // Render 4x large and shrink: the shrink is what gives old clip art its soft edges.
+  const PX = exporting ? Number(query.get('px')) || 800 : 800;
+  const glCanvas = document.createElement('canvas');
+  const renderer = new THREE.WebGLRenderer({ canvas: glCanvas, antialias: false, alpha: true, preserveDrawingBuffer: true });
+  renderer.setPixelRatio(1);
+  renderer.setSize(PX, PX, false);
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.BasicShadowMap;
+  const view = canvas.getContext('2d');
+  view.imageSmoothingQuality = 'high';
+
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(34, 1, 0.1, 50);
+  camera.position.set(1.35, 1.45, 4.75);
+  camera.lookAt(0.06, 1.1, 0);
+
+  scene.add(new THREE.AmbientLight(0xffffff, 0.45));
+  const key = new THREE.DirectionalLight(0xffffff, 0.8);
+  key.position.set(-1.6, 6, 3);
+  key.castShadow = true;
+  key.shadow.mapSize.set(1024, 1024);
+  key.shadow.bias = -0.002;
+  Object.assign(key.shadow.camera, { left: -2, right: 2, top: 3, bottom: -1, near: 1, far: 15 });
+  scene.add(key);
+  const fill = new THREE.DirectionalLight(0xdfeeff, 0.25);
+  fill.position.set(3, 2, -2);
+  scene.add(fill);
+
+  // A fully opaque shadow color matches how old clip art baked a solid gray shadow into the GIF.
+  const ground = new THREE.Mesh(new THREE.PlaneGeometry(8, 8), new THREE.ShadowMaterial({ color: 0xb0b0b0, opacity: 1 }));
+  ground.rotation.x = -Math.PI / 2;
+  ground.receiveShadow = true;
+  scene.add(ground);
+
+  let seed = 5;
+  const rand = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+  const mottle = (base, spots) => {
+    const c = document.createElement('canvas');
+    c.width = 128; c.height = 64;
+    const g = c.getContext('2d');
+    g.fillStyle = base;
+    g.fillRect(0, 0, 128, 64);
+    g.fillStyle = spots;
+    for (let i = 0; i < 14; i++) { g.beginPath(); g.ellipse(rand() * 128, rand() * 40, 3 + rand() * 5, 2 + rand() * 4, 0, 0, Math.PI * 2); g.fill(); }
+    for (let i = 0; i < 900; i++) {
+      g.fillStyle = rand() < 0.5 ? 'rgba(0,0,0,0.18)' : 'rgba(255,255,255,0.2)';
+      g.fillRect(rand() * 128, rand() * 64, 1, 1);
+    }
+    const t = new THREE.CanvasTexture(c);
+    t.wrapS = t.wrapT = THREE.RepeatWrapping;
+    return t;
+  };
+
+  const phong = (color, shininess, specular, extra) => new THREE.MeshPhongMaterial(Object.assign({ color, shininess, specular }, extra));
+  const M = {
+    skin: phong(0xffffff, 14, 0x1a221a, { map: mottle('#46b83a', '#2f8a2a') }),
+    belly: phong(0xe6f0b0, 10, 0x111111), eye: phong(0xcfc8ae, 20, 0x222222), pupil: phong(0x050505, 60, 0x888888),
+    mouth: phong(0x2a4a20, 10, 0x111111), cheek: phong(0xf28a9a, 10, 0x111111),
+    bar: phong(0x8e9299, 30, 0x2a2a2a), plate: phong(0x26282e, 20, 0x444444), collar: phong(0xd9a520, 50, 0x998844),
+  };
+
+  const add = (geom, mat, parent = scene) => { const o = new THREE.Mesh(geom, mat); o.castShadow = true; parent.add(o); return o; };
+  const sphere = (r, mat, parent = scene, seg = 18) => add(new THREE.SphereGeometry(r, seg, Math.round(seg * 0.7)), mat, parent);
+  const UNIT_CYL = new THREE.CylinderGeometry(1, 1, 1, 12);
+  const rod = (r, mat, parent = scene) => { const o = add(UNIT_CYL, mat, parent); o.userData.r = r; return o; };
+  const place = (o, a, b) => {
+    const d = b.clone().sub(a), len = d.length();
+    o.position.copy(a).addScaledVector(d, 0.5);
+    o.quaternion.setFromUnitVectors(V(0, 1, 0), d.normalize());
+    o.scale.set(o.userData.r, len, o.userData.r);
+  };
+  // Two-bone IK: the joint sits off the hip-to-foot line on the side the hint points to.
+  const joint = (A, B, L, hint) => {
+    const d = Math.min(A.distanceTo(B), 2 * L - 0.001);
+    const dir = B.clone().sub(A).normalize();
+    const side = hint.clone().addScaledVector(dir, -hint.dot(dir)).normalize();
+    return A.clone().addScaledVector(dir, d / 2).addScaledVector(side, Math.sqrt(L * L - (d / 2) ** 2));
+  };
+
+  const upper = new THREE.Group();
+  scene.add(upper);
+  const body = sphere(1, M.skin, upper, 24);
+  body.scale.set(0.36, 0.4, 0.3);
+  body.position.set(0, 0.86, 0);
+  const belly = sphere(1, M.belly, upper, 20);
+  belly.scale.set(0.27, 0.31, 0.2);
+  belly.position.set(0, 0.82, 0.12);
+
+  const head = new THREE.Group();
+  head.position.set(0, 1.3, 0.04);
+  upper.add(head);
+  const skull = sphere(1, M.skin, head, 24);
+  skull.scale.set(0.42, 0.24, 0.33);
+  const eyes = [1, -1].map(s => {
+    sphere(0.12, M.skin, head).position.set(0.19 * s, 0.17, 0.04);
+    const ball = sphere(0.085, M.eye, head, 14);
+    ball.position.set(0.19 * s, 0.19, 0.11);
+    const pupil = sphere(0.04, M.pupil, head, 10);
+    pupil.position.set(0.19 * s, 0.19, 0.19);
+    sphere(0.055, M.cheek, head, 10).position.set(0.27 * s, -0.04, 0.2);
+    return { ball, pupil };
+  });
+  const smileCurve = open => new THREE.CatmullRomCurve3([-1, -0.5, 0, 0.5, 1].map(u => {
+    const phi = u * 1.0;
+    return V(0.4 * Math.sin(phi), -0.07 - (0.03 + open) * Math.cos(phi * 1.4), 0.31 * Math.cos(phi) + 0.01);
+  }));
+  const mouth = add(new THREE.TubeGeometry(smileCurve(0), 16, 0.014, 6), M.mouth, head);
+
+  const arms = [1, -1].map(s => ({
+    s, upperArm: rod(0.055, M.skin, upper), forearm: rod(0.05, M.skin, upper),
+    elbow: sphere(0.055, M.skin, upper, 10), hand: sphere(0.065, M.skin, upper, 10),
+  }));
+  const legs = [1, -1].map(s => {
+    const foot = new THREE.Group();
+    foot.position.set(0.32 * s, 0, 0.12);
+    scene.add(foot);
+    const sole = sphere(1, M.skin, foot);
+    sole.scale.set(0.11, 0.03, 0.16);
+    sole.position.set(0, 0.03, 0.06);
+    for (const a of [-0.5, 0, 0.5]) sphere(0.035, M.skin, foot, 8).position.set(0.12 * Math.sin(a), 0.03, 0.06 + 0.17 * Math.cos(a));
+    return { s, thigh: rod(0.08, M.skin), shin: rod(0.06, M.skin), knee: sphere(0.07, M.skin, scene, 10), hip: sphere(0.09, M.skin, scene, 10) };
+  });
+
+  const bar = new THREE.Group();
+  scene.add(bar);
+  place(rod(0.022, M.bar, bar), V(-0.95, 0, 0), V(0.95, 0, 0));
+  for (const s of [1, -1]) {
+    const plate = add(new THREE.CylinderGeometry(0.24, 0.24, 0.07, 24), M.plate, bar);
+    plate.rotation.z = Math.PI / 2;
+    plate.position.x = 0.74 * s;
+    const collar = add(new THREE.CylinderGeometry(0.045, 0.045, 0.05, 12), M.collar, bar);
+    collar.rotation.z = Math.PI / 2;
+    collar.position.x = 0.67 * s;
+  }
+
+  // Bar height, squat depth, mouth, strain squint, bar tilt per frame.
+  const POSE = [
+    [0.62, 0.0, 0.0, false, 0], [0.72, 0.14, 0.0, false, 0], [0.9, 0.08, 0.02, false, 0], [0.92, 0.12, 0.02, true, 0],
+    [1.55, 0.04, 0.05, true, 0.04], [1.98, 0.0, 0.06, false, -0.03], [2.02, 0.0, 0.08, false, 0], [1.98, 0.0, 0.06, false, 0.03],
+    [1.5, 0.03, 0.03, false, 0], [0.92, 0.1, 0.02, false, 0], [0.8, 0.12, 0.0, false, 0], [0.66, 0.04, 0.0, false, 0],
+  ];
+  const ARM = 0.52, LEG = 0.44;
+  let mouthOpen = -1;
+
+  const setFrame = (i, bg) => {
+    const [barY, squat, open, squint, tilt] = POSE[i];
+    upper.position.y = -squat;
+    head.rotation.x = barY > 1.5 ? -0.12 : 0.04;
+    bar.position.set(0, barY - (barY < 0.9 ? squat * 0.5 : 0), 0.3);
+    bar.rotation.z = tilt;
+
+    if (open !== mouthOpen) {
+      mouth.geometry.dispose();
+      mouth.geometry = new THREE.TubeGeometry(smileCurve(open), 16, 0.014, 6);
+      mouthOpen = open;
+    }
+    for (const e of eyes) e.ball.scale.y = e.pupil.scale.y = squint ? 0.25 : 1;
+
+    scene.updateMatrixWorld(true);
+    for (const g of arms) {
+      const S = V(0.3 * g.s, 1.05 - squat, 0.08);
+      const W = bar.localToWorld(V(0.32 * g.s, 0, 0));
+      const E = joint(S, W, ARM, V(g.s, -0.6, -0.3));
+      place(g.upperArm, S, E);
+      place(g.forearm, E, W);
+      g.elbow.position.copy(E);
+      g.hand.position.copy(W);
+    }
+    for (const g of legs) {
+      const H = V(0.2 * g.s, 0.62 - squat, 0.02), F = V(0.32 * g.s, 0.07, 0.12);
+      const K = joint(H, F, LEG, V(g.s, 0, 1));
+      place(g.thigh, H, K);
+      place(g.shin, K, F);
+      g.knee.position.copy(K);
+      g.hip.position.copy(H);
+    }
+    renderer.setClearColor(bg === 'black' ? 0x000000 : 0xffffff, bg === 'clear' ? 0 : 1);
+    renderer.render(scene, camera);
+    if (!exporting) {
+      view.clearRect(0, 0, 200, 200);
+      view.drawImage(glCanvas, 0, 0, 200, 200);
+    }
+  };
+
+  if (exporting) {
+    document.body.replaceChildren(glCanvas);
+    document.body.style.cssText = 'margin:0;padding:0;background:transparent';
+    glCanvas.style.cssText = `width:${PX}px;height:${PX}px;display:block`;
+    setFrame(Number(query.get('frame')) % N, query.get('bg') || 'white');
+    return;
+  }
+
+  const playBtn = document.getElementById('play');
+  const frameEl = document.getElementById('frame');
+  const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  let playing = !reduce, frame = 0, acc = 0, last = null;
+
+  const show = () => { setFrame(frame, stage.dataset.bg); frameEl.textContent = `frame ${frame + 1}/${N}`; };
+  const setPlaying = v => {
+    playing = v; last = null; acc = 0;
+    playBtn.textContent = v ? 'Pause' : 'Play';
+    playBtn.setAttribute('aria-pressed', String(v));
+  };
+  const tick = now => {
+    if (playing) {
+      if (last !== null) acc += now - last;
+      last = now;
+      const wait = HOLD[frame] || FRAME_MS;
+      if (acc >= wait) { acc -= wait; frame = (frame + 1) % N; show(); }
+    }
+    requestAnimationFrame(tick);
+  };
+  const step = d => { setPlaying(false); frame = (frame + d + N) % N; show(); };
+
+  playBtn.addEventListener('click', () => setPlaying(!playing));
+  document.getElementById('prev').addEventListener('click', () => step(-1));
+  document.getElementById('next').addEventListener('click', () => step(1));
+  document.querySelectorAll('button[data-bg]').forEach(b => b.addEventListener('click', () => {
+    stage.dataset.bg = b.dataset.bg;
+    document.querySelectorAll('button[data-bg]').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
+    show();
+  }));
+
+  setPlaying(playing);
+  show();
+  requestAnimationFrame(tick);
+})();
+</script>

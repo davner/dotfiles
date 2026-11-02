@@ -1,0 +1,23 @@
+{
+  "skill_name": "making-clipart-gifs",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Make a 90s clip-art GIF of a hog cranking a distortion pedal knob all the way up, for a Bilmuri fan page.",
+      "expected_output": "An original hog (no band logo or existing mascot art) stomps a pedal and turns its big knob to max; the amp pumps and the hog headbangs on a held frame. White and dark GIFs at 200 x 200 that pass measure-gif.py, plus a published page.",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "I want an owl that waves at visitors for my bookshop site, in that old Animation Factory style.",
+      "expected_output": "An original owl perched on a book stack waves one wing, blinks, and rests on a hold. Built from the template with outline or sphere bodies as fits an owl; GIFs pass measure-gif.py; frames on the contact sheet show no clipping.",
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "Can you make our robot mascot do a little dance as one of those retro 3D gifs? Our site background is #101418.",
+      "expected_output": "A one-gag dance loop with holds, rendered for white and for #101418 by adding that background to the page, both passing measure-gif.py including the glare check on the dark render.",
+      "files": []
+    }
+  ]
+}
