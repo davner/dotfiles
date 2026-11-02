@@ -9,4 +9,15 @@ config.window_background_opacity = 0.8
 config.macos_window_background_blur = 50
 config.hide_tab_bar_if_only_one_tab = true
 
+-- The Mac mini home server. `wezterm connect casa` opens tabs on it, and the
+-- multiplexer there keeps them alive when this laptop disconnects.
+config.ssh_domains = {
+  {
+    name = "casa",
+    remote_address = "casa.local",
+    username = "dna",
+    multiplexing = "WezTerm",
+  },
+}
+
 return config

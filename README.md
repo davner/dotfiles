@@ -33,6 +33,7 @@ missing one.
 | --- | --- |
 | `danavner` | `#danavner` |
 | `dan.avner` | `#dan-avner` |
+| `dna` | `#dna` (the Mac mini home server) |
 
 Dots become dashes because `darwin-rebuild` splits `--flake …#attr` on `.`.
 

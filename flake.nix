@@ -44,6 +44,10 @@
           email = "dan.avner@noirlab.edu";
           system = "aarch64-darwin";
         };
+        "dna" = {
+          email = "ldpavner@gmail.com";
+          system = "aarch64-darwin";
+        };
       }; # end users - bootstrap.sh appends new usernames above this line
 
       # darwin-rebuild splits its flake attribute on ".", so a username
