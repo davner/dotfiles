@@ -16,10 +16,21 @@
 # --- full-length audio: yt-dlp --aud URL ---
 --alias aud "-x --audio-format m4a --audio-quality 0 --embed-thumbnail --embed-metadata -P home:$HOME/Documents/YouTube/Audio"
 
-# --- trimmed tone: yt-dlp --tone 0:12-0:38 URL ---
-# The --exec argument carries its own quotes because an alias body is split a
-# second time, and unquoted it sheds %(filepath)q as a stray URL to download.
+# --- tone: yt-dlp -T -o "Navi hey" URL ---
+# No range argument, because the whole clip is the common case and an alias
+# takes a fixed number of arguments: one that accepted an optional range cannot
+# exist. --cut below adds one.
+# The name arrives through -o rather than as an alias argument, because an
+# alias body is split again after its arguments are substituted and a name with
+# a space in it would become two arguments. The --exec argument carries its own
+# quotes for that same reason; unquoted it sheds %(filepath)q as a stray URL.
+--alias tone,-T "-x --audio-format m4a -P home:$HOME/Documents/YouTube/Tones --exec 'after_move:$HOME/.config/yt-dlp/tone-finish.sh %(filepath)q'"
+
+# --- trim, for any of the above: yt-dlp -T --cut 0:05-0:06 -o "Navi hey" URL ---
+# Adds only the range, so it composes with --tone, --vid or --aud rather than
+# containing one of them. An alias that expanded to --tone meant passing both
+# applied --exec twice, and the second run had nothing left to rename.
 # --force-keyframes-at-cuts re-encodes, which is the only way the cut lands on
 # the second asked for. Without it a 28s request can arrive as 31s, and iOS
 # refuses anything past 30s as a text tone.
---alias tone,-T "--download-sections *{0} --force-keyframes-at-cuts -x --audio-format m4a -P home:$HOME/Documents/YouTube/Tones --exec 'after_move:$HOME/.config/yt-dlp/tone-finish.sh %(filepath)q'"
+--alias cut "--download-sections *{0} --force-keyframes-at-cuts"

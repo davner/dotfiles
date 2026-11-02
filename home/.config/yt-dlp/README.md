@@ -1,19 +1,40 @@
 # yt-dlp
 
-Three aliases defined in `config`, for getting audio and video off YouTube and
+Four aliases defined in `config`, for getting audio and video off YouTube and
 onto the phone. Everything lands under `~/Documents`, which is the
 iCloud-synced folder, so the files appear in Files on iOS with no copy step.
+The folders are created on first use.
 
 | Command | Lands in | For |
 | --- | --- | --- |
 | `yt-dlp --vid URL` | `~/Documents/YouTube/Video` | CapCut. h264+aac mp4, capped at 1080p |
 | `yt-dlp --aud URL` | `~/Documents/YouTube/Audio` | Full-length m4a, artwork embedded |
-| `yt-dlp --tone RANGE URL` | `~/Documents/YouTube/Tones` | A trimmed clip, written as `.m4r` |
+| `yt-dlp -T -o NAME URL` | `~/Documents/YouTube/Tones` | An iOS tone, written as `.m4r` |
+| `yt-dlp --cut RANGE ...` | wherever the rest of the line says | Trims whatever else is asked for |
 
-`--tone` takes the range first: `yt-dlp --tone 0:12-0:38 URL`. `-T` is the short
-form. The folders are created on first use.
+`-T` is the short form of `--tone`. `--cut` adds a range to any of the others:
 
-The cut is exact to the second, because the alias passes
+```sh
+yt-dlp -T -o "Navi hey" https://www.youtube.com/watch?v=wOFVrjL-XBM
+yt-dlp -T --cut 0:05-0:06 -o "Navi hey" https://www.youtube.com/watch?v=wOFVrjL-XBM
+```
+
+Name it with `-o`, because iOS shows the filename as the tone's name and the
+default is the video title followed by its id. The name has to arrive that way
+rather than as an argument to the alias: yt-dlp re-splits an alias body after
+substituting its arguments, so a name with a space would become two.
+
+`--cut` adds only the range, and deliberately does not imply `-T`. An earlier
+version did, which made `-T --cut` apply `--exec` twice - `--exec` accumulates
+rather than replaces, so the second run found the file already renamed and
+failed. Composing beats nesting here.
+
+A range cannot instead be an optional argument to `-T`, because a yt-dlp alias
+takes a fixed number of arguments. Worth knowing for the failure that produces:
+a range handed straight to `-T` is read as a second URL, and the error says
+`more than one file to download`.
+
+The cut is exact to the second, because `--cut` passes
 `--force-keyframes-at-cuts`. Without it the range snaps to the nearest keyframe
 and a 28s request can arrive as 31s, which iOS then refuses.
 
