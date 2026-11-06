@@ -81,10 +81,12 @@ exit without checking.
 
 A machine set up before the flake inputs still has the old `npx skills`
 copies, and the first rebuild would back each clash up as `<name>.backup`.
-Clear them first, then rebuild:
+Clear them first, with `find-skills` and `skill-creator`, which nothing
+manages any more, then rebuild:
 
 ```sh
-for s in gh-axi chrome-devtools-axi lavish humanizer shadcn migrate-radix-to-base typescript-style-guide; do
+for s in gh-axi chrome-devtools-axi lavish humanizer shadcn migrate-radix-to-base typescript-style-guide \
+  find-skills skill-creator; do
   npx skills remove "$s" -g -y
 done
 rm -rf ~/.agents/skills/impeccable   # a stray copy; the real one is under ~/.claude/skills
