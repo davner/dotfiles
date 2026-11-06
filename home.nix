@@ -1,5 +1,6 @@
 {
   config,
+  lib,
   pkgs,
   user,
   cfg,
@@ -156,54 +157,16 @@ in
   # Skills are linked one at a time, never as the whole `skills/` directory:
   # ~/.claude/skills also holds the hand-installed ones, and a directory-level
   # link would displace every one of them.
-  home.file.".claude/skills/code-review".source =
-    config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.claude/skills/code-review";
-  home.file.".claude/skills/codebase-design".source =
-    config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.claude/skills/codebase-design";
-  home.file.".claude/skills/diagnosing-bugs".source =
-    config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.claude/skills/diagnosing-bugs";
-  home.file.".claude/skills/domain-modeling".source =
-    config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.claude/skills/domain-modeling";
-  home.file.".claude/skills/grill-me".source =
-    config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.claude/skills/grill-me";
-  home.file.".claude/skills/grill-with-docs".source =
-    config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.claude/skills/grill-with-docs";
-  home.file.".claude/skills/grilling".source =
-    config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.claude/skills/grilling";
-  home.file.".claude/skills/handoff".source =
-    config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.claude/skills/handoff";
-  home.file.".claude/skills/implement".source =
-    config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.claude/skills/implement";
-  home.file.".claude/skills/implement-spec".source =
-    config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.claude/skills/implement-spec";
-  home.file.".claude/skills/improve-codebase-architecture".source =
-    config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.claude/skills/improve-codebase-architecture";
-  home.file.".claude/skills/making-clipart-gifs".source =
-    config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.claude/skills/making-clipart-gifs";
-  home.file.".claude/skills/pr".source =
-    config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.claude/skills/pr";
-  home.file.".claude/skills/primereact-v10".source =
-    config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.claude/skills/primereact-v10";
-  home.file.".claude/skills/prototype".source =
-    config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.claude/skills/prototype";
-  home.file.".claude/skills/research".source =
-    config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.claude/skills/research";
-  home.file.".claude/skills/retro".source =
-    config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.claude/skills/retro";
-  home.file.".claude/skills/setup-dan-skills".source =
-    config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.claude/skills/setup-dan-skills";
-  home.file.".claude/skills/tailwind-v4".source =
-    config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.claude/skills/tailwind-v4";
-  home.file.".claude/skills/tdd".source =
-    config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.claude/skills/tdd";
-  home.file.".claude/skills/teach".source =
-    config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.claude/skills/teach";
-  home.file.".claude/skills/to-spec".source =
-    config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.claude/skills/to-spec";
-  home.file.".claude/skills/to-tickets".source =
-    config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.claude/skills/to-tickets";
-  home.file.".claude/skills/writing-for-agents".source =
-    config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.claude/skills/writing-for-agents";
+  imports = [
+    {
+      home.file = lib.mapAttrs' (
+        name: _:
+        lib.nameValuePair ".claude/skills/${name}" {
+          source = config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.claude/skills/${name}";
+        }
+      ) (lib.filterAttrs (_: type: type == "directory") (builtins.readDir ./home/.claude/skills));
+    }
+  ];
 
   home.file.".claude/CLAUDE.md".source =
     config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/AGENTS.md";

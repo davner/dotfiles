@@ -37,10 +37,11 @@ the thing it names; revert one only with the user's explicit word.
 Every skill under `home/.claude/skills/<name>/` is linked into
 `~/.claude/skills/` **one entry per skill**, never as the whole directory:
 that directory also holds the hand-installed third-party skills, and a
-directory-level link would displace them. Adding a skill is a new
-`home.file.".claude/skills/<name>"` line in `home.nix`; `test.sh` derives its
-link checks from those lines by sed, so a typo fails a test instead of leaving
-a dangling link.
+directory-level link would displace them. `home.nix` discovers the folders, so
+adding a skill is adding its folder - then `git add` it before a rebuild, since
+the flake sees only tracked files and skips an untracked folder silently.
+Full-mode `test.sh` fails on any skill folder the evaluated config does not
+link.
 
 `to-spec`, `to-tickets` and
 `implement-spec` point at `setup-dan-skills`, and `code-review` runs without it;

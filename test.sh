@@ -1032,7 +1032,8 @@ eq "bootstrap.sh unknown flag never reaches sudo" "" "$SUDO_ARGS"
 section "out-of-store symlink targets"
 # mkOutOfStoreSymlink does not check its target, so a typo here is a dangling
 # symlink in $HOME that no build or activation ever complains about.
-targets="$(sed -nE 's|.*mkOutOfStoreSymlink "\$\{dotfiles\}/([^"]+)".*|\1|p' "$DIR/home.nix" | sort -u)"
+# Templated targets are left to the evaluated skills check below.
+targets="$(sed -nE 's|.*mkOutOfStoreSymlink "\$\{dotfiles\}/([^"$]+)".*|\1|p' "$DIR/home.nix" | sort -u)"
 if [ -z "$targets" ]; then
   bad "found mkOutOfStoreSymlink targets in home.nix" "the sed found nothing - did home.nix change shape?"
 else
@@ -1043,16 +1044,46 @@ fi
 
 # --------------------------------------------------------------------------
 section "skills"
-# The symlink check above only reads home.nix, so a skill folder home.nix never
-# names is a skill that never loads, and nothing else notices.
 SKILLS_DIR="$DIR/home/.claude/skills"
 on_disk="$(find "$SKILLS_DIR" -mindepth 1 -maxdepth 1 -type d -exec basename {} \; | sort)"
-linked="$(sed -nE 's|.*home\.file\."\.claude/skills/([^"]+)"\.source.*|\1|p' "$DIR/home.nix" | sort -u)"
-unlinked="$(comm -23 <(echo "$on_disk") <(echo "$linked") | tr '\n' ' ')"
-if [ -z "${unlinked// /}" ]; then
-  ok "home.nix links every skill in the repo"
+# A flake sees only tracked files, so an un-added skill folder silently never loads.
+if [ -n "$FAST" ]; then
+  skip "every skill folder is linked (--fast)"
+elif ! command -v nix >/dev/null 2>&1; then
+  skip "every skill folder is linked (nix not found)"
 else
-  bad "home.nix links every skill in the repo" "no home.file line: $unlinked"
+  u="$(printf '%s\n' "$listed" | head -n1)"
+  # shellcheck disable=SC2016  # the ${} are Nix interpolation, not shell
+  links="$(nix eval --raw "$DIR#darwinConfigurations.${u//./-}.config.home-manager.users.\"$u\".home.file" \
+    --apply 'f: builtins.concatStringsSep "\n" (map (n: "${n}\t${f.${n}.source.buildCommand}")
+      (builtins.filter (n: builtins.substring 0 15 n == ".claude/skills/") (builtins.attrNames f)))' \
+    2>"$WORK/stderr")"
+  if [ -z "$links" ]; then
+    bad "home.nix links skills" "$(grep -v '^warning:' "$WORK/stderr" | head -5)"
+  else
+    linked="$(printf '%s\n' "$links" | sed -E 's|^\.claude/skills/([^[:space:]]+).*|\1|' | sort)"
+    unlinked="$(comm -23 <(echo "$on_disk") <(echo "$linked") | tr '\n' ' ')"
+    if [ -z "${unlinked// /}" ]; then
+      ok "every skill folder is linked"
+    else
+      bad "every skill folder is linked" "not linked: $unlinked" "a flake sees only tracked files - git add the folder"
+    fi
+    # The link is a string the build never checks, so a wrong target is a
+    # dangling link in $HOME that nothing reports.
+    wrong=""
+    while IFS=$'\t' read -r name cmd; do
+      want="/Users/$u/.dotfiles/home/$name"
+      case "$cmd" in
+        "ln -s $want "*) [ -d "$DIR/home/$name" ] || wrong="$wrong $name(no folder)" ;;
+        *) wrong="$wrong $name($cmd)" ;;
+      esac
+    done <<<"$links"
+    if [ -z "$wrong" ]; then
+      ok "every skill link points at its folder in the working tree"
+    else
+      bad "every skill link points at its folder in the working tree" "$wrong"
+    fi
+  fi
 fi
 # Claude Code invokes a skill by the `name` in its frontmatter, not its folder.
 mismatched=""
@@ -1542,13 +1573,9 @@ $u
   # defaults hostPlatform - pkgs is instantiated long before home.nix runs, so
   # indexing cfg.system directly would bury the useful message under a
   # module-system stack trace and this is the test that notices.
-  #
-  # Evaluated from a copy holding nothing but the four files a darwin
-  # configuration needs. home.nix names paths under home/ only inside
-  # mkOutOfStoreSymlink strings, which are strings at eval time, so they do not
-  # have to be there.
   FLAKECOPY="$WORK/flakecopy"
-  mkdir -p "$FLAKECOPY"
+  # home.nix reads the skills folder at eval time; every other home/ path is a string.
+  mkdir -p "$FLAKECOPY/home/.claude/skills"
   cp "$COPY" "$FLAKECOPY/flake.nix"
   cp "$DIR/flake.lock" "$DIR/configuration.nix" "$DIR/home.nix" "$FLAKECOPY/"
 
