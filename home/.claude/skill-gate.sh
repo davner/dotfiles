@@ -15,54 +15,99 @@ required_skill() { # path -> the skill it needs, or nothing
   done <<<"$RULES"
 }
 
-# One shell word, quoted or bare, so a quoted path with a space stays whole.
-WORD="(\"[^\"]*\"|'[^']*'|[^[:space:]\"'<>|;&]+)"
-
-unquote() {
-  local s=$1
-  case $s in
-    \"*\") s=${s#\"} s=${s%\"} ;;
-    \'*\') s=${s#\'} s=${s%\'} ;;
-  esac
-  printf '%s' "$s"
+# Heredoc bodies are skipped as data. awk, since a per-character bash loop
+# over a long heredoc would outrun the hook's 5 s timeout.
+# shellcheck disable=SC2016
+TOKENIZE='
+function flush(   name) {
+  if (!inword) return
+  if (!redir && !nwords && cur ~ /^[A-Za-z_][A-Za-z0-9_]*=/) {
+    name = cur; sub(/=.*/, "", name)
+    sub(/^[^=]*=/, "", cur); vars[name] = cur
+  } else if (redir != 2) {
+    # `f=src/a.ts && echo x > "$f"` is the one indirection a hook can see through.
+    if (cur ~ /^\$\{?[A-Za-z_][A-Za-z0-9_]*\}?$/) { name = cur; gsub(/[${}]/, "", name); cur = vars[name] }
+    print (redir ? "r " : "w ") cur
+    if (!redir) nwords++
+  }
+  cur = ""; inword = 0; redir = 0
 }
-
-words() { # text -> one shell word per line, unquoted
-  local rest=$1
-  while [[ $rest =~ ^[[:space:]]*$WORD(.*)$ ]]; do
-    unquote "${BASH_REMATCH[1]}"
-    echo
-    rest=${BASH_REMATCH[2]}
-  done
+function end() { flush(); redir = 0; nwords = 0; print "e" }
+function fd_number() { if (inword && cur ~ /^[0-9]+$/) { cur = ""; inword = 0 } }
+function heredoc(   d, s, c) {
+  s = 0
+  if (substr(line, i, 1) == "-") { s = 1; i++ }
+  while (substr(line, i, 1) ~ /[ \t]/) i++
+  d = ""
+  while (i <= n) {
+    c = substr(line, i, 1)
+    if (c ~ /[ \t;|&<>()]/) break
+    if (c == "\047" || c == "\"") {
+      i++
+      while (i <= n && substr(line, i, 1) != c) { d = d substr(line, i, 1); i++ }
+    } else if (c == "\\") {
+      i++; d = d substr(line, i, 1)
+    } else d = d c
+    i++
+  }
+  delim[++nd] = d; strip[nd] = s
 }
-
-# Only the forms that write: a redirect target, a `tee` argument, any argument
-# of an in-place sed or perl, or a copy's destination. Reading never matches.
-bash_targets() { # command -> the paths it writes, one per line
-  local cmd=$1
-  bash_words "$cmd" | while IFS= read -r w; do
-    [[ $w =~ ^\$\{?([A-Za-z_][A-Za-z0-9_]*)\}?$ ]] && w=$(assigned "$cmd" "${BASH_REMATCH[1]}")
-    printf '%s\n' "$w"
-  done
+BEGIN { hd = 1 }
+body {
+  l = $0
+  if (strip[hd]) sub(/^\t+/, "", l)
+  if (l == delim[hd] && ++hd > nd) { body = 0; nd = 0; hd = 1 }
+  next
 }
-
-# `f=src/a.ts && echo x > "$f"` names its target through a variable set in the
-# same command, which is the one indirection a hook can see through.
-assigned() { # command, name -> the last value the command assigns to name
-  local rest=$1 value=""
-  while [[ $rest =~ (^|[[:space:]\;\&\|\(])$2=$WORD(.*)$ ]]; do
-    value=$(unquote "${BASH_REMATCH[2]}")
-    rest=${BASH_REMATCH[3]}
-  done
-  printf '%s' "$value"
+{
+  line = $0; n = length(line); i = 1; cont = 0
+  while (i <= n) {
+    c = substr(line, i, 1)
+    if (q == "\047") { if (c == q) q = ""; else cur = cur c; i++; continue }
+    if (q == "\"") {
+      if (c == "\\" && index("$`\"\\", substr(line, i + 1, 1))) { cur = cur substr(line, i + 1, 1); i += 2; continue }
+      if (c == q) q = ""; else cur = cur c
+      i++; continue
+    }
+    if (c == "\\") {
+      if (i == n) cont = 1; else { cur = cur substr(line, i + 1, 1); inword = 1 }
+      i += 2; continue
+    }
+    if (c == "\047" || c == "\"") { q = c; inword = 1; i++; continue }
+    if (c == " " || c == "\t") { flush(); i++; continue }
+    if (c == "#" && !inword) break
+    if (c == "&" && substr(line, i + 1, 1) == ">") { flush(); i++; continue }
+    if (c ~ /[;|&()]/) { end(); i++; continue }
+    if (c == ">") {
+      fd_number(); flush(); i++
+      if (substr(line, i, 1) ~ /[>|]/) i++
+      if (substr(line, i, 1) == "&") {
+        i++
+        if (substr(line, i, 1) ~ /[0-9-]/) { while (substr(line, i, 1) ~ /[0-9-]/) i++; continue }
+      }
+      redir = 1; continue
+    }
+    if (c == "<") {
+      fd_number(); flush(); i++
+      if (substr(line, i, 2) == "<<") { i += 2; redir = 2; continue }
+      if (substr(line, i, 1) == "<") { i++; heredoc(); continue }
+      redir = 2; continue
+    }
+    cur = cur c; inword = 1; i++
+  }
+  if (q) { cur = cur " "; next }
+  if (cont) next
+  end()
+  if (nd >= hd) body = 1
 }
+END { end() }'
 
 # The destination is the last operand, or a folder that each source lands in
 # under its own name; the sources are only read.
-copy_destinations() { # cp/mv/install segment -> the paths it writes, one per line
-  local w cmd="" dir="" take="" dirs_only="" opts=1 args=() i last
-  while IFS= read -r w; do
-    if [[ -z $cmd ]]; then cmd=$w; continue; fi
+copy_destinations() { # cp/mv/install words -> the paths they write, one per line
+  local w cmd=$1 dir="" take="" dirs_only="" opts=1 args=() i last
+  shift
+  for w; do
     if [[ -n $take ]]; then [[ $take == t ]] && dir=$w; take=""; continue; fi
     if [[ -n $opts ]]; then
       case $w in
@@ -75,7 +120,7 @@ copy_destinations() { # cp/mv/install segment -> the paths it writes, one per li
       esac
     fi
     args+=("$w")
-  done < <(words "$1")
+  done
   [[ -z $dirs_only && ${#args[@]} -gt 0 ]] || return 0
   if [[ -z $dir ]]; then
     ((${#args[@]} > 1)) || return 0
@@ -90,28 +135,38 @@ copy_destinations() { # cp/mv/install segment -> the paths it writes, one per li
   for i in "${args[@]}"; do printf '%s\n' "${dir%/}/${i##*/}"; done
 }
 
-bash_words() { # command -> every word in a write position, one per line
-  local cmd=$1 rest seg w inplace
-  rest=$cmd
-  while [[ $rest =~ \>\>?\|?[[:space:]]*$WORD(.*)$ ]]; do
-    unquote "${BASH_REMATCH[1]}"
-    echo
-    rest=${BASH_REMATCH[2]}
-  done
-  while IFS= read -r seg; do
-    [[ $seg =~ ^[[:space:]]*([^[:space:]]+) ]] || continue
-    case ${BASH_REMATCH[1]} in
-      tee) words "$seg" | tail -n +2 ;;
-      sed | gsed | perl)
-        inplace=""
-        while IFS= read -r w; do
-          [[ $w == --in-place* || $w =~ ^-[a-zA-Z]*i ]] && inplace=1
-        done < <(words "$seg")
-        [[ -n $inplace ]] && words "$seg" | tail -n +2
+# Only the forms that write: a `tee` argument, any argument of an in-place sed
+# or perl, or a copy's destination. Reading never matches.
+command_writes() { # one simple command's words -> the paths it writes
+  local w
+  case $1 in
+    tee) shift; printf '%s\n' "$@" ;;
+    sed | gsed | perl)
+      for w; do
+        if [[ $w == --in-place* || $w =~ ^-[a-zA-Z]*i ]]; then
+          shift
+          printf '%s\n' "$@"
+          return
+        fi
+      done
+      ;;
+    cp | gcp | mv | gmv | install | ginstall) copy_destinations "$@" ;;
+  esac
+}
+
+write_words() { # command -> every word in a write position, one per line
+  local kind w words=()
+  while IFS= read -r w; do
+    kind=${w%% *} w=${w#* }
+    case $kind in
+      r) printf '%s\n' "$w" ;;
+      w) words+=("$w") ;;
+      e)
+        ((${#words[@]} == 0)) || command_writes "${words[@]}"
+        words=()
         ;;
-      cp | gcp | mv | gmv | install | ginstall) copy_destinations "$seg" ;;
     esac
-  done < <(printf '%s\n' "$cmd" | sed -E 's/(\&\&|\|\||;|\|)/\n/g')
+  done < <(awk "$TOKENIZE" <<<"$1") # w <word>, r <redirect target>, e at a command's end
 }
 
 payload=$(cat)
@@ -130,7 +185,7 @@ case $tool in
     mkdir -p "$marker_dir" 2>/dev/null && : >"$marker_dir/$skill"
     exit 0
     ;;
-  Bash) targets=$(bash_targets "$(jq -r '.tool_input.command // empty' <<<"$payload")") ;;
+  Bash) targets=$(write_words "$(jq -r '.tool_input.command // empty' <<<"$payload")") ;;
   *) targets=$path ;;
 esac
 

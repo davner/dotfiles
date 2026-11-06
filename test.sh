@@ -1287,6 +1287,9 @@ cp -t /tmp src/a.ts
 echo x>src/a.ts
 printf x>>"src/b.tsx"
 cmd 2>src/c.ts
+sed -i 's/a;b/c/' src/a.ts
+perl -i -pe 's/a|b/c/' src/a.ts
+sed -i "s/a&&b/c/" src/a.tsx
 CASES
   if [ -z "$let_through" ]; then
     ok "a Bash write to a TypeScript file is blocked"
@@ -1315,11 +1318,30 @@ mv src/old.ts.bak /tmp/
 install -d src/types
 grep '>' src/a.ts
 echo x>/dev/null
+echo 'x >src/a.ts'
+git commit -m "a=>b in src/a.ts"
 CASES
   if [ -z "$stopped" ]; then
     ok "reading TypeScript through Bash passes"
   else
     bad "reading TypeScript through Bash passes" "$stopped"
+  fi
+  # A heredoc body is data, so an apostrophe in it must not open a quote that
+  # hides the command after it, and its text must not read as a command.
+  eq "a write after a heredoc with an apostrophe is blocked" "2" \
+    "$(bash_gate $'cat <<\'EOF\' > notes.txt\ndon\'t\nEOF\nsed -i \'s/a/b/\' src/a.ts')"
+  eq "a heredoc body that mentions a write passes" "0" \
+    "$(bash_gate $'cat <<-EOF > notes.txt\n\techo x > src/a.ts\n\tEOF\necho done')"
+  # The hook has a 5 s timeout, and a hook that times out lets the call through.
+  big=$'cat <<\'EOF\' > notes.txt\n'
+  for i in $(seq 400); do big="$big line $i: don't; a | b && c > d \"q\" sed -i s/a/b/ src/a.ts"$'\n'; done
+  big="${big}EOF"
+  start=$SECONDS
+  eq "a 400-line heredoc passes" "0" "$(bash_gate "$big")"
+  if ((SECONDS - start <= 2)); then
+    ok "a 400-line heredoc is judged within 2 s"
+  else
+    bad "a 400-line heredoc is judged within 2 s" "took $((SECONDS - start)) s"
   fi
 
   # The gate only sees a load it is invoked for, so dropping Skill from the
