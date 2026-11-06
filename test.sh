@@ -779,6 +779,14 @@ else
     bad "settings.base.json claims none of model, effortLevel, theme" \
       "these would be reverted on every rebuild: $volatile"
   fi
+  # Nothing in home.nix installs the obsidian skills; Claude Code does, from these keys.
+  if jq -e '.extraKnownMarketplaces["obsidian-skills"].autoUpdate == true
+      and .enabledPlugins["obsidian@obsidian-skills"] == true' "$BASE" >/dev/null 2>&1; then
+    ok "settings.base.json declares and enables the obsidian plugin"
+  else
+    bad "settings.base.json declares and enables the obsidian plugin" \
+      "want extraKnownMarketplaces.obsidian-skills.autoUpdate and enabledPlugins.obsidian@obsidian-skills both true"
+  fi
 fi
 if grep -q 'mkOutOfStoreSymlink.*\.claude/settings\.json' "$DIR/home.nix"; then
   bad "home.nix does not link settings.json" \
