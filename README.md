@@ -168,8 +168,20 @@ flow again at `/grill-with-docs`.
 | Stack | [`primereact-v10`](home/.claude/skills/primereact-v10/SKILL.md) | PrimeReact v10 reference |
 | Stack | [`tailwind-v4`](home/.claude/skills/tailwind-v4/SKILL.md) | Tailwind CSS v4 reference |
 
-`impeccable`, `shadcn`, `migrate-radix-to-base`, `chrome-devtools-axi`,
-`gh-axi`, `humanizer` and `lavish` are installed by hand; see
+Third-party skills are pinned in `flake.lock`, linked into both
+`~/.claude/skills/` and `~/.agents/skills/`, and bumped by the weekly update PR:
+
+| Skill | From | What it does |
+| --- | --- | --- |
+| `gh-axi` | [kunchenguid/gh-axi](https://github.com/kunchenguid/gh-axi) | GitHub through the `gh-axi` CLI |
+| `chrome-devtools-axi` | [kunchenguid/chrome-devtools-axi](https://github.com/kunchenguid/chrome-devtools-axi) | Drives a real Chrome |
+| `lavish` | [kunchenguid/lavish-axi](https://github.com/kunchenguid/lavish-axi) | Turns a response into an HTML page you can annotate |
+| `humanizer` | [blader/humanizer](https://github.com/blader/humanizer) | Rewrites AI-sounding prose |
+| `shadcn`, `migrate-radix-to-base` | [shadcn-ui/ui](https://github.com/shadcn-ui/ui) | shadcn/ui components; Radix to Base UI migration |
+| `typescript-style-guide` | [mkosir/typescript-style-guide](https://github.com/mkosir/typescript-style-guide) | TypeScript conventions |
+
+The obsidian plugin is declared in `settings.base.json` and updates itself.
+`impeccable` is installed by hand; see
 [AGENTS.md](AGENTS.md#installing-the-skills). Third-party license notices are in
 [`THIRD-PARTY-NOTICES.md`](home/.claude/skills/THIRD-PARTY-NOTICES.md).
 
