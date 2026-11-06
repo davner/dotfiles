@@ -1284,6 +1284,9 @@ cp -f a b.mts
 cd web && install -m 644 gen.out src/c.cts
 cp -R tpl/a.ts src/
 cp -t /tmp src/a.ts
+echo x>src/a.ts
+printf x>>"src/b.tsx"
+cmd 2>src/c.ts
 CASES
   if [ -z "$let_through" ]; then
     ok "a Bash write to a TypeScript file is blocked"
@@ -1310,6 +1313,8 @@ echo x > "$TARGET"
 cp src/a.ts /tmp/x
 mv src/old.ts.bak /tmp/
 install -d src/types
+grep '>' src/a.ts
+echo x>/dev/null
 CASES
   if [ -z "$stopped" ]; then
     ok "reading TypeScript through Bash passes"

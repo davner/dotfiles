@@ -93,10 +93,10 @@ copy_destinations() { # cp/mv/install segment -> the paths it writes, one per li
 bash_words() { # command -> every word in a write position, one per line
   local cmd=$1 rest seg w inplace
   rest=$cmd
-  while [[ $rest =~ (^|[[:space:][:digit:]&])\>\>?\|?[[:space:]]*$WORD(.*)$ ]]; do
-    unquote "${BASH_REMATCH[2]}"
+  while [[ $rest =~ \>\>?\|?[[:space:]]*$WORD(.*)$ ]]; do
+    unquote "${BASH_REMATCH[1]}"
     echo
-    rest=${BASH_REMATCH[3]}
+    rest=${BASH_REMATCH[2]}
   done
   while IFS= read -r seg; do
     [[ $seg =~ ^[[:space:]]*([^[:space:]]+) ]] || continue
