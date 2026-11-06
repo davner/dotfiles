@@ -181,6 +181,8 @@ marker_dir="$STATE/${session//\//_}/${agent//\//_}"
 
 case $tool in
   Skill)
+    # A plugin or directory-scoped copy is named `<prefix>:<skill>`.
+    skill=${skill##*:}
     [[ -n $skill && $skill != */* ]] || exit 0
     mkdir -p "$marker_dir" 2>/dev/null && : >"$marker_dir/$skill"
     exit 0

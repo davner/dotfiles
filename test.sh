@@ -1241,6 +1241,11 @@ else
     "$(gate agent-a Write '{"file_path":"/p/a.ts","content":"x"}')"
   eq "another subagent's load does not count" "2" \
     "$(gate agent-b MultiEdit '{"file_path":"/p/a.ts","edits":[]}')"
+  for prefixed in home:typescript-style-guide some-plugin:typescript-style-guide; do
+    gate "agent-$prefixed" Skill "{\"skill\":\"$prefixed\"}" >/dev/null
+    eq "a load named $prefixed counts" "0" \
+      "$(gate "agent-$prefixed" Write '{"file_path":"/p/a.ts","content":"x"}')"
+  done
   for ext in tsx mts cts d.ts; do
     eq "a .$ext write is gated" "2" "$(gate agent-b Write "{\"file_path\":\"/p/a.$ext\",\"content\":\"x\"}")"
   done
