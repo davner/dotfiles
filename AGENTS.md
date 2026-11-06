@@ -44,6 +44,10 @@ the flake sees only tracked files and skips an untracked folder silently.
 Full-mode `test.sh` fails on any skill folder the evaluated config does not
 link.
 
+Rules under `home/.claude/rules/` are linked one file at a time for the same
+reason, but not discovered: adding one is a new
+`home.file.".claude/rules/<name>.md"` line in `home.nix`.
+
 `to-spec`, `to-tickets` and
 `implement-spec` point at `setup-dan-skills`, and `code-review` runs without it;
 every skill that reads the glossary honors the paths in `docs/agents/domain.md`; `pr` returns only a paste-ready title and body, after proving no AI is credited in the commits or body; `prototype`,

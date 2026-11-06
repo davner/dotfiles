@@ -48,7 +48,8 @@ with no rebuild. Adding or removing a linked file does need `./rebuild.sh`.
 | `AGENTS.md` (`CLAUDE.md` links to it) | Notes for agents working on this repo |
 | `docs/adr/` | Why the Nix setup is the way it is, one decision per file |
 | `home/AGENTS.md` | Global agent rules, linked to `~/.claude/CLAUDE.md`, Codex and opencode |
-| `home/.claude/skills/` | The skills below, linked one by one into `~/.claude/skills/` |
+| `home/.claude/skills/` | The skills below, each folder linked into `~/.claude/skills/` |
+| `home/.claude/rules/` | Path-scoped rules, each file linked into `~/.claude/rules/` |
 | `home/.claude/*.sh`, `settings.base.json` | Hooks and status line; the settings merged into `~/.claude/settings.json` |
 | `home/.config/zsh/functions.zsh` | Shell functions: `cc` (named Claude session), `cc-push` (push switch), `cc-flow` (the workflow below as a table) |
 
@@ -190,6 +191,7 @@ The obsidian plugin is declared in `settings.base.json` and updates itself.
 | When | Script | Does |
 | --- | --- | --- |
 | Before every shell command | `guard-bash.sh` | Blocks risky git (`add .`, `reset --hard`, `clean -f`, `branch -D`, `checkout .`, force push, plain push unless the repo opted in with `cc-push on`), opening or merging a PR with `gh` or `gh-axi` in any repo, and commit messages that credit an AI or break the one-line shape |
+| Before Skill, Write, Edit, MultiEdit and Bash | `skill-gate.sh` | Blocks a write to a TypeScript file until that agent has loaded `typescript-style-guide`; the rule `~/.claude/rules/typescript.md` asks for the skill as soon as a TypeScript file is read |
 | After every file write | `comment-audit.sh` | Flags code comments that tell history or refer to the session |
 | Session start | `session-name.sh` | Names the session after its repo |
 | Always | `statusline.sh` | Shows model, context used, and rate limits |
