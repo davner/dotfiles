@@ -1314,6 +1314,22 @@ if grep -q 'home.file.".claude/skill-gate.sh"' "$DIR/home.nix"; then
 else
   bad "home.nix links skill-gate.sh into ~/.claude" "settings.base.json would call a path that does not exist"
 fi
+# The rule loads the skill before the gate has to fire; it only loads for a
+# path its frontmatter names, so each extension the gate covers must be there.
+TS_RULE="$DIR/home/.claude/rules/typescript.md"
+if grep -q 'home.file.".claude/rules/typescript.md"' "$DIR/home.nix"; then
+  ok "home.nix links the TypeScript rule into ~/.claude/rules"
+else
+  bad "home.nix links the TypeScript rule into ~/.claude/rules" "no home.file line for it"
+fi
+rule_paths="$(sed -n '/^---$/,/^---$/p' "$TS_RULE" 2>/dev/null | grep -E '^[[:space:]]*-')"
+for ext in ts tsx mts cts; do
+  case "$rule_paths" in
+    *"{ts,tsx,mts,cts}"* | *"*.$ext\""*) ok "the TypeScript rule's paths cover .$ext" ;;
+    *) bad "the TypeScript rule's paths cover .$ext" "paths: ${rule_paths:-none}" ;;
+  esac
+done
+contains "the TypeScript rule names the skill" "$(cat "$TS_RULE" 2>/dev/null)" "typescript-style-guide"
 
 # --------------------------------------------------------------------------
 section "comment audit hook"
