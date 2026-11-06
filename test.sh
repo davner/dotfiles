@@ -1276,6 +1276,12 @@ gsed --in-place 's/a/b/' src/a.tsx
 perl -pi -e 's/a/b/' src/a.ts
 f=src/a.ts && printf x >> "$f"
 out="src/b c.tsx"; echo x | tee "${out}"
+cp tmp.txt src/a.ts
+mv x src/b.tsx
+cp -f a b.mts
+cd web && install -m 644 gen.out src/c.cts
+cp -R tpl/a.ts src/
+cp -t /tmp src/a.ts
 CASES
   if [ -z "$let_through" ]; then
     ok "a Bash write to a TypeScript file is blocked"
@@ -1299,6 +1305,9 @@ echo x > notes.md
 ls src/*.ts
 out=/tmp/x.txt; echo x > "$out"
 echo x > "$TARGET"
+cp src/a.ts /tmp/x
+mv src/old.ts.bak /tmp/
+install -d src/types
 CASES
   if [ -z "$stopped" ]; then
     ok "reading TypeScript through Bash passes"

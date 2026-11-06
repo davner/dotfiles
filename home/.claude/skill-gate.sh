@@ -36,8 +36,8 @@ words() { # text -> one shell word per line, unquoted
   done
 }
 
-# Only the forms that write: a redirect target, a `tee` argument, or any
-# argument of an in-place sed or perl. Reading a file never matches.
+# Only the forms that write: a redirect target, a `tee` argument, any argument
+# of an in-place sed or perl, or a copy's destination. Reading never matches.
 bash_targets() { # command -> the paths it writes, one per line
   local cmd=$1
   bash_words "$cmd" | while IFS= read -r w; do
@@ -55,6 +55,39 @@ assigned() { # command, name -> the last value the command assigns to name
     rest=${BASH_REMATCH[3]}
   done
   printf '%s' "$value"
+}
+
+# The destination is the last operand, or a folder that each source lands in
+# under its own name; the sources are only read.
+copy_destinations() { # cp/mv/install segment -> the paths it writes, one per line
+  local w cmd="" dir="" take="" dirs_only="" opts=1 args=() i last
+  while IFS= read -r w; do
+    if [[ -z $cmd ]]; then cmd=$w; continue; fi
+    if [[ -n $take ]]; then [[ $take == t ]] && dir=$w; take=""; continue; fi
+    if [[ -n $opts ]]; then
+      case $w in
+        --) opts=""; continue ;;
+        -t) take=t; continue ;;
+        --target-directory=*) dir=${w#*=}; continue ;;
+        -m | -o | -g) [[ $cmd == *install ]] && take=x; continue ;;
+        -d) [[ $cmd == *install ]] && dirs_only=1; continue ;;
+        -*) continue ;;
+      esac
+    fi
+    args+=("$w")
+  done < <(words "$1")
+  [[ -z $dirs_only && ${#args[@]} -gt 0 ]] || return 0
+  if [[ -z $dir ]]; then
+    ((${#args[@]} > 1)) || return 0
+    last=$((${#args[@]} - 1))
+    if [[ ${args[last]} != */ ]]; then
+      printf '%s\n' "${args[last]}"
+      return 0
+    fi
+    dir=${args[last]}
+    unset 'args[last]'
+  fi
+  for i in "${args[@]}"; do printf '%s\n' "${dir%/}/${i##*/}"; done
 }
 
 bash_words() { # command -> every word in a write position, one per line
@@ -76,6 +109,7 @@ bash_words() { # command -> every word in a write position, one per line
         done < <(words "$seg")
         [[ -n $inplace ]] && words "$seg" | tail -n +2
         ;;
+      cp | gcp | mv | gmv | install | ginstall) copy_destinations "$seg" ;;
     esac
   done < <(printf '%s\n' "$cmd" | sed -E 's/(\&\&|\|\||;|\|)/\n/g')
 }
