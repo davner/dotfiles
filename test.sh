@@ -98,7 +98,7 @@ run() { # run a repo script with the stubs in place; never touches real $HOME
 
 SCRIPTS=(bootstrap.sh rebuild.sh users.sh test.sh
   home/.claude/statusline.sh home/.claude/session-name.sh
-  home/.claude/comment-audit.sh home/.claude/guard-bash.sh)
+  home/.claude/comment-audit.sh home/.claude/guard-bash.sh home/.claude/skill-gate.sh)
 
 # --------------------------------------------------------------------------
 section "syntax and lint"
@@ -1206,6 +1206,113 @@ if [ -n "$(sed -n "s/^AI_KEY='\(.*\)'\$/\1/p" "$DIR/home/.claude/guard-bash.sh")
   ok "provenance.sh can still read guard-bash.sh's patterns"
 else
   bad "provenance.sh can still read guard-bash.sh's patterns" "AI_KEY='...' is no longer one line"
+fi
+
+# --------------------------------------------------------------------------
+section "skill gate hook"
+# The pass cases matter as much as the blocks: a gate that stops reading
+# TypeScript, or locks out a machine without the skill, gets switched off.
+GATE="$DIR/home/.claude/skill-gate.sh"
+if ! command -v jq >/dev/null 2>&1; then
+  skip "skill-gate.sh (jq not found)"
+else
+  GATE_HOME="$WORK/gate-home"
+  mkdir -p "$GATE_HOME/.claude/skills/typescript-style-guide"
+  touch "$GATE_HOME/.claude/skills/typescript-style-guide/SKILL.md"
+  export CLAUDE_SKILL_GATE_STATE="$WORK/gate-state"
+  # agent (empty for the main agent), tool name, tool_input JSON -> exit code
+  gate() {
+    jq -nc --arg a "$1" --arg t "$2" --argjson i "$3" \
+      '{session_id:"s1",tool_name:$t,tool_input:$i} + (if $a == "" then {} else {agent_id:$a,agent_type:"general-purpose"} end)' |
+      HOME="$GATE_HOME" "$GATE" >/dev/null 2>&1
+    echo $?
+  }
+  eq "a .ts Edit before the skill loads is blocked" "2" \
+    "$(gate "" Edit '{"file_path":"/p/a.ts","old_string":"a","new_string":"b"}')"
+  eq "the Skill call itself passes" "0" "$(gate "" Skill '{"skill":"typescript-style-guide"}')"
+  eq "a .ts Edit after the skill loads passes" "0" \
+    "$(gate "" Edit '{"file_path":"/p/a.ts","old_string":"a","new_string":"b"}')"
+  eq "the main agent's load does not count for a subagent" "2" \
+    "$(gate agent-a Write '{"file_path":"/p/a.ts","content":"x"}')"
+  gate agent-a Skill '{"skill":"typescript-style-guide"}' >/dev/null
+  eq "a subagent's own load lets its write through" "0" \
+    "$(gate agent-a Write '{"file_path":"/p/a.ts","content":"x"}')"
+  eq "another subagent's load does not count" "2" \
+    "$(gate agent-b MultiEdit '{"file_path":"/p/a.ts","edits":[]}')"
+  for ext in tsx mts cts d.ts; do
+    eq "a .$ext write is gated" "2" "$(gate agent-b Write "{\"file_path\":\"/p/a.$ext\",\"content\":\"x\"}")"
+  done
+  for f in a.js a.tsx.md notes.txt a.ts.orig; do
+    eq "a write to $f passes" "0" "$(gate agent-b Write "{\"file_path\":\"/p/$f\",\"content\":\"x\"}")"
+  done
+  bare_home="$WORK/gate-bare-home"
+  mkdir -p "$bare_home"
+  eq "a machine without the skill installed is not locked out" "0" \
+    "$(printf '%s' '{"session_id":"s2","tool_name":"Write","tool_input":{"file_path":"/p/a.ts","content":"x"}}' |
+      HOME="$bare_home" "$GATE" >/dev/null 2>&1; echo $?)"
+  eq "a payload that is not JSON passes" "0" "$(printf 'not json' | HOME="$GATE_HOME" "$GATE" >/dev/null 2>&1; echo $?)"
+  eq "an empty payload passes" "0" "$(HOME="$GATE_HOME" "$GATE" </dev/null >/dev/null 2>&1; echo $?)"
+  msg="$(printf '%s' '{"session_id":"s9","tool_name":"Edit","tool_input":{"file_path":"/p/a.ts"}}' |
+    HOME="$GATE_HOME" "$GATE" 2>&1 >/dev/null)"
+  contains "the block names the exact Skill call" "$msg" 'Skill tool with skill: "typescript-style-guide"'
+
+  # agent-c never loads the skill, so every case below is judged cold.
+  bash_gate() { gate agent-c Bash "$(jq -nc --arg c "$1" '{command:$c}')"; }
+  let_through=""
+  while IFS= read -r c; do
+    [ -n "$c" ] || continue
+    [ "$(bash_gate "$c")" = "2" ] || let_through="$let_through
+    let through: $c"
+  done <<'CASES'
+echo 'export {}' > src/a.ts
+printf x >>src/a.tsx
+cat <<'EOF' > "src/b c.ts"
+cd web && echo x > a.mts
+echo x | tee src/a.ts
+echo x | tee -a /p/a.cts >/dev/null
+sed -i '' 's/a/b/' src/a.ts
+sed -i.bak -e 's/a/b/' src/a.ts
+gsed --in-place 's/a/b/' src/a.tsx
+perl -pi -e 's/a/b/' src/a.ts
+CASES
+  if [ -z "$let_through" ]; then
+    ok "a Bash write to a TypeScript file is blocked"
+  else
+    bad "a Bash write to a TypeScript file is blocked" "$let_through"
+  fi
+
+  stopped=""
+  while IFS= read -r c; do
+    [ -n "$c" ] || continue
+    [ "$(bash_gate "$c")" = "0" ] || stopped="$stopped
+    blocked: $c"
+  done <<'CASES'
+cat src/a.ts
+grep -rn useState src/a.tsx
+sed -n '1,20p' src/a.ts
+head src/a.ts > /tmp/out.txt
+npx tsc --noEmit src/a.ts 2>&1 | tail
+perl -ne 'print if /x/' src/a.ts
+echo x > notes.md
+ls src/*.ts
+CASES
+  if [ -z "$stopped" ]; then
+    ok "reading TypeScript through Bash passes"
+  else
+    bad "reading TypeScript through Bash passes" "$stopped"
+  fi
+
+  # The gate only sees a load it is invoked for, so dropping Skill from the
+  # matcher would block every TypeScript write forever.
+  gate_matcher="$(jq -r '.hooks.PreToolUse[] | select(any(.hooks[]; .command | contains("skill-gate.sh"))) | .matcher' \
+    "$DIR/home/.claude/settings.base.json")"
+  eq "settings.base.json runs the gate before Skill, Write, Edit, MultiEdit and Bash" \
+    "Skill|Write|Edit|MultiEdit|Bash" "$gate_matcher"
+fi
+if grep -q 'home.file.".claude/skill-gate.sh"' "$DIR/home.nix"; then
+  ok "home.nix links skill-gate.sh into ~/.claude"
+else
+  bad "home.nix links skill-gate.sh into ~/.claude" "settings.base.json would call a path that does not exist"
 fi
 
 # --------------------------------------------------------------------------

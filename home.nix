@@ -167,6 +167,10 @@ in
   # than nudges, so it has to exist before the tool call it judges.
   home.file.".claude/guard-bash.sh".source =
     config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.claude/guard-bash.sh";
+  # a PreToolUse hook on Skill and the write tools, reached by path the same way.
+  # it must see the Skill call too, since that is the only evidence of a load.
+  home.file.".claude/skill-gate.sh".source =
+    config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.claude/skill-gate.sh";
   # One link per skill, never the folder: impeccable's installer also writes there.
   imports = [
     {

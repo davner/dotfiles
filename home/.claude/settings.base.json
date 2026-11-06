@@ -34,6 +34,17 @@
             "statusMessage": "Checking command"
           }
         ]
+      },
+      {
+        "matcher": "Skill|Write|Edit|MultiEdit|Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "[ ! -x \"$HOME/.claude/skill-gate.sh\" ] || \"$HOME/.claude/skill-gate.sh\"",
+            "timeout": 5,
+            "statusMessage": "Checking required skills"
+          }
+        ]
       }
     ]
   },
