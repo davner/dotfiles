@@ -1056,7 +1056,8 @@ else
   # shellcheck disable=SC2016  # the ${} are Nix interpolation, not shell
   links="$(nix eval --raw "$DIR#darwinConfigurations.${u//./-}.config.home-manager.users.\"$u\".home.file" \
     --apply 'f: builtins.concatStringsSep "\n" (map (n: "${n}\t${f.${n}.source.buildCommand}")
-      (builtins.filter (n: builtins.substring 0 15 n == ".claude/skills/") (builtins.attrNames f)))' \
+      (builtins.filter (n: builtins.substring 0 15 n == ".claude/skills/" && builtins.isAttrs f.${n}.source)
+        (builtins.attrNames f)))' \
     2>"$WORK/stderr")"
   if [ -z "$links" ]; then
     bad "home.nix links skills" "$(grep -v '^warning:' "$WORK/stderr" | head -5)"
@@ -1084,6 +1085,47 @@ else
       bad "every skill link points at its folder in the working tree" "$wrong"
     fi
   fi
+fi
+# Third-party skills come from flake inputs, so an upstream move or rename is
+# a link to nothing, or to a skill Claude knows by another name.
+if [ -n "$FAST" ]; then
+  skip "third-party skill links resolve in both skill folders (--fast)"
+elif ! command -v nix >/dev/null 2>&1; then
+  skip "third-party skill links resolve in both skill folders (nix not found)"
+else
+  while read -r u; do
+    [ -n "$u" ] || continue
+    # shellcheck disable=SC2016  # the ${} are Nix interpolation, not shell
+    tp="$(nix eval --raw "$DIR#darwinConfigurations.${u//./-}.config.home-manager.users.\"$u\".home.file" \
+      --apply 'f: builtins.concatStringsSep "\n" (map (n: "${n}\t${toString f.${n}.source}")
+        (builtins.filter (n: builtins.match "\\.(claude|agents)/skills/[^/]+" n != null) (builtins.attrNames f)))' \
+      2>"$WORK/stderr")"
+    if [ -z "$tp" ]; then
+      bad "$u: third-party skills evaluate" "$(grep -v '^warning:' "$WORK/stderr" | head -5)"
+      continue
+    fi
+    claude_tp="" agents_tp="" broken=""
+    while IFS=$'\t' read -r link src; do
+      name="${link##*/}"
+      case "$link" in
+        .claude/*) grep -qxF "$name" <<<"$on_disk" && continue; claude_tp="$claude_tp $name" ;;
+        .agents/*) agents_tp="$agents_tp $name" ;;
+      esac
+      n="$(sed -nE 's/^name: *(.+)$/\1/p' "$src/SKILL.md" 2>/dev/null | head -1)"
+      [ "$n" = "$name" ] || broken="$broken $link(name:${n:-no SKILL.md})"
+    done <<<"$tp"
+    if [ -n "$claude_tp" ] && [ "$claude_tp" = "$agents_tp" ]; then
+      ok "$u: third-party skills are linked into both skill folders"
+    else
+      bad "$u: third-party skills are linked into both skill folders" \
+        ".claude/skills:${claude_tp:- none}" ".agents/skills:${agents_tp:- none}"
+    fi
+    if [ -z "$broken" ]; then
+      ok "$u: every third-party link holds a SKILL.md named for it"
+    else
+      bad "$u: every third-party link holds a SKILL.md named for it" "$broken"
+    fi
+  done <<<"$listed"
 fi
 # Claude Code invokes a skill by the `name` in its frontmatter, not its folder.
 mismatched=""

@@ -17,6 +17,38 @@
         "type": "github"
       }
     },
+    "chrome-devtools-axi": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1793730722,
+        "narHash": "sha256-sZv4IdeDCCnnLVIlKrqbUmeYpMgZMTlQSJ2xKdthqII=",
+        "owner": "kunchenguid",
+        "repo": "chrome-devtools-axi",
+        "rev": "1dbdac1ca1122e1d2b76d889bbc8a2dd2eb2dcd7",
+        "type": "github"
+      },
+      "original": {
+        "owner": "kunchenguid",
+        "repo": "chrome-devtools-axi",
+        "type": "github"
+      }
+    },
+    "gh-axi": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1793986574,
+        "narHash": "sha256-TPgPHnHDpZoQUTvNum9hy7/3kDxLvMeqENHO4n/pzj0=",
+        "owner": "kunchenguid",
+        "repo": "gh-axi",
+        "rev": "b25ddf24322883a5c429d276895bbc8dc340ac61",
+        "type": "github"
+      },
+      "original": {
+        "owner": "kunchenguid",
+        "repo": "gh-axi",
+        "type": "github"
+      }
+    },
     "home-manager": {
       "inputs": {
         "nixpkgs": [
@@ -35,6 +67,38 @@
         "owner": "nix-community",
         "ref": "release-26.05",
         "repo": "home-manager",
+        "type": "github"
+      }
+    },
+    "humanizer": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1793171853,
+        "narHash": "sha256-KaAcA2rxlkae3DID4w3GFQbyXrnararlHVrL32C5jeE=",
+        "owner": "blader",
+        "repo": "humanizer",
+        "rev": "0ef9fe5bc3572734fd3ae6c448fe00a30cd5dcf0",
+        "type": "github"
+      },
+      "original": {
+        "owner": "blader",
+        "repo": "humanizer",
+        "type": "github"
+      }
+    },
+    "lavish-axi": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1793284571,
+        "narHash": "sha256-93UR9m7YzSZ9N/x6rHtWpdhQgyHkvWBrPWM38TkTngI=",
+        "owner": "kunchenguid",
+        "repo": "lavish-axi",
+        "rev": "69bf3090b24a04773ffd05d2e0b23d91ca41923b",
+        "type": "github"
+      },
+      "original": {
+        "owner": "kunchenguid",
+        "repo": "lavish-axi",
         "type": "github"
       }
     },
@@ -95,10 +159,48 @@
     },
     "root": {
       "inputs": {
+        "chrome-devtools-axi": "chrome-devtools-axi",
+        "gh-axi": "gh-axi",
         "home-manager": "home-manager",
+        "humanizer": "humanizer",
+        "lavish-axi": "lavish-axi",
         "nix-darwin": "nix-darwin",
         "nix-homebrew": "nix-homebrew",
-        "nixpkgs": "nixpkgs"
+        "nixpkgs": "nixpkgs",
+        "shadcn-ui": "shadcn-ui",
+        "typescript-style-guide": "typescript-style-guide"
+      }
+    },
+    "shadcn-ui": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1793982032,
+        "narHash": "sha256-I2j1A3U0/iNzi6XCmOpfpQBLpAaH7w9/d5Y2lHmHJwQ=",
+        "owner": "shadcn-ui",
+        "repo": "ui",
+        "rev": "42f3bb63b46a69e52a24bd005cdc9ec15ba7a7b9",
+        "type": "github"
+      },
+      "original": {
+        "owner": "shadcn-ui",
+        "repo": "ui",
+        "type": "github"
+      }
+    },
+    "typescript-style-guide": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1788422289,
+        "narHash": "sha256-TQ5TenwDnRd3epxePxeiZoEeQGmqoYff2KvlVpVDnNQ=",
+        "owner": "mkosir",
+        "repo": "typescript-style-guide",
+        "rev": "170074a0df9b07f4a4a78e3596ec1edf06a14da7",
+        "type": "github"
+      },
+      "original": {
+        "owner": "mkosir",
+        "repo": "typescript-style-guide",
+        "type": "github"
       }
     }
   },

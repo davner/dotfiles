@@ -12,6 +12,21 @@
     home-manager.inputs.nixpkgs.follows = "nixpkgs";
 
     nix-homebrew.url = "github:zhaofengli/nix-homebrew";
+
+    # Third-party skills. Not flakes, just source trees: home.nix links one
+    # folder out of each, and update.yml bumps them with everything else.
+    gh-axi.url = "github:kunchenguid/gh-axi";
+    gh-axi.flake = false;
+    chrome-devtools-axi.url = "github:kunchenguid/chrome-devtools-axi";
+    chrome-devtools-axi.flake = false;
+    lavish-axi.url = "github:kunchenguid/lavish-axi";
+    lavish-axi.flake = false;
+    humanizer.url = "github:blader/humanizer";
+    humanizer.flake = false;
+    shadcn-ui.url = "github:shadcn-ui/ui";
+    shadcn-ui.flake = false;
+    typescript-style-guide.url = "github:mkosir/typescript-style-guide";
+    typescript-style-guide.flake = false;
   };
 
   outputs =
@@ -21,6 +36,7 @@
       nix-homebrew,
       home-manager,
       nixpkgs,
+      ...
     }:
     let
       # Every macOS username this repo can build for. This is an attrset, not a
@@ -95,7 +111,8 @@
             A record holds only ${builtins.concatStringsSep " and " knownFields}. Check the spelling.'';
 
       # Both scopes get the username and its record: configuration.nix needs
-      # the platform, home.nix needs the git address.
+      # the platform, home.nix needs the git address. home.nix also gets the
+      # inputs, for the skill folders inside them.
       mkDarwin =
         user:
         let
@@ -110,7 +127,7 @@
             {
               home-manager.useGlobalPkgs = true;
               home-manager.useUserPackages = true;
-              home-manager.extraSpecialArgs = { inherit user cfg; };
+              home-manager.extraSpecialArgs = { inherit user cfg inputs; };
               home-manager.users.${user} = import ./home.nix;
               # A dotfile that already exists and that this config also manages
               # gets moved to <name>.backup rather than failing the activation.

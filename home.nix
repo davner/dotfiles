@@ -4,6 +4,7 @@
   pkgs,
   user,
   cfg,
+  inputs,
   ...
 }:
 
@@ -39,6 +40,18 @@ let
   # prevent, and a silent default would do exactly that.
   gitEmail =
     cfg.email or (throw "home.nix: no git email for \"${user}\". Add one to flake.nix's users.");
+
+  # Skill name -> its folder inside a pinned flake input. The name must match
+  # the SKILL.md frontmatter, since Claude Code invokes a skill by that name.
+  thirdPartySkills = {
+    gh-axi = "${inputs.gh-axi}/skills/gh-axi";
+    chrome-devtools-axi = "${inputs.chrome-devtools-axi}/skills/chrome-devtools-axi";
+    lavish = "${inputs.lavish-axi}/skills/lavish";
+    humanizer = "${inputs.humanizer}";
+    shadcn = "${inputs.shadcn-ui}/skills/shadcn";
+    migrate-radix-to-base = "${inputs.shadcn-ui}/skills/migrate-radix-to-base";
+    typescript-style-guide = "${inputs.typescript-style-guide}/skills/typescript-style-guide";
+  };
 in
 
 {
@@ -154,9 +167,7 @@ in
   # than nudges, so it has to exist before the tool call it judges.
   home.file.".claude/guard-bash.sh".source =
     config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.claude/guard-bash.sh";
-  # Skills are linked one at a time, never as the whole `skills/` directory:
-  # ~/.claude/skills also holds the hand-installed ones, and a directory-level
-  # link would displace every one of them.
+  # One link per skill, never the folder: impeccable's installer also writes there.
   imports = [
     {
       home.file = lib.mapAttrs' (
@@ -165,6 +176,13 @@ in
           source = config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.claude/skills/${name}";
         }
       ) (lib.filterAttrs (_: type: type == "directory") (builtins.readDir ./home/.claude/skills));
+    }
+    # Also into ~/.agents/skills, the shared folder other agents read.
+    {
+      home.file = lib.concatMapAttrs (name: src: {
+        ".claude/skills/${name}".source = src;
+        ".agents/skills/${name}".source = src;
+      }) thirdPartySkills;
     }
   ];
 
