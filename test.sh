@@ -1217,8 +1217,10 @@ if ! command -v jq >/dev/null 2>&1; then
   skip "skill-gate.sh (jq not found)"
 else
   GATE_HOME="$WORK/gate-home"
-  mkdir -p "$GATE_HOME/.claude/skills/typescript-style-guide"
-  touch "$GATE_HOME/.claude/skills/typescript-style-guide/SKILL.md"
+  # Linked the way home.nix links a pinned skill: a symlink into the store.
+  mkdir -p "$WORK/gate-store/typescript-style-guide" "$GATE_HOME/.claude/skills"
+  touch "$WORK/gate-store/typescript-style-guide/SKILL.md"
+  ln -s "$WORK/gate-store/typescript-style-guide" "$GATE_HOME/.claude/skills/typescript-style-guide"
   export CLAUDE_SKILL_GATE_STATE="$WORK/gate-state"
   # agent (empty for the main agent), tool name, tool_input JSON -> exit code
   gate() {
