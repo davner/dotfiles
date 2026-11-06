@@ -39,6 +39,25 @@ words() { # text -> one shell word per line, unquoted
 # Only the forms that write: a redirect target, a `tee` argument, or any
 # argument of an in-place sed or perl. Reading a file never matches.
 bash_targets() { # command -> the paths it writes, one per line
+  local cmd=$1
+  bash_words "$cmd" | while IFS= read -r w; do
+    [[ $w =~ ^\$\{?([A-Za-z_][A-Za-z0-9_]*)\}?$ ]] && w=$(assigned "$cmd" "${BASH_REMATCH[1]}")
+    printf '%s\n' "$w"
+  done
+}
+
+# `f=src/a.ts && echo x > "$f"` names its target through a variable set in the
+# same command, which is the one indirection a hook can see through.
+assigned() { # command, name -> the last value the command assigns to name
+  local rest=$1 value=""
+  while [[ $rest =~ (^|[[:space:]\;\&\|\(])$2=$WORD(.*)$ ]]; do
+    value=$(unquote "${BASH_REMATCH[2]}")
+    rest=${BASH_REMATCH[3]}
+  done
+  printf '%s' "$value"
+}
+
+bash_words() { # command -> every word in a write position, one per line
   local cmd=$1 rest seg w inplace
   rest=$cmd
   while [[ $rest =~ (^|[[:space:][:digit:]&])\>\>?\|?[[:space:]]*$WORD(.*)$ ]]; do

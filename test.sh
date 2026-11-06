@@ -1274,6 +1274,8 @@ sed -i '' 's/a/b/' src/a.ts
 sed -i.bak -e 's/a/b/' src/a.ts
 gsed --in-place 's/a/b/' src/a.tsx
 perl -pi -e 's/a/b/' src/a.ts
+f=src/a.ts && printf x >> "$f"
+out="src/b c.tsx"; echo x | tee "${out}"
 CASES
   if [ -z "$let_through" ]; then
     ok "a Bash write to a TypeScript file is blocked"
@@ -1295,6 +1297,8 @@ npx tsc --noEmit src/a.ts 2>&1 | tail
 perl -ne 'print if /x/' src/a.ts
 echo x > notes.md
 ls src/*.ts
+out=/tmp/x.txt; echo x > "$out"
+echo x > "$TARGET"
 CASES
   if [ -z "$stopped" ]; then
     ok "reading TypeScript through Bash passes"
