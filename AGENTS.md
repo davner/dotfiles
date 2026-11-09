@@ -70,13 +70,15 @@ weekly `update.yml` PR bumps them with everything else.
 The obsidian plugin is declared in `settings.base.json` and Claude Code
 installs and updates it itself.
 
-`impeccable` is the one manual install: it writes hooks and files into its own
-folder, which a read-only store path cannot hold. It lands as a real directory
-under `~/.claude/skills/`. On a fresh machine, from `~`:
+Two kinds no flake input can carry come from `home/.claude/local-skills.sh`,
+which every rebuild runs after linking:
 
-```sh
-npx impeccable install   # when prompted for location, choose "global"
-```
+- Each folder under `~/Vault/.skills` with a `SKILL.md` is linked into
+  `~/.claude/skills/`; a machine without `~/Vault` skips this.
+- `impeccable`, when missing, is installed by its own installer: it downloads
+  an engine and writes agents, which a read-only store path cannot hold. It
+  installs `--no-hooks`, because the settings merge drops hooks it does not
+  own; its three hooks live in `settings.base.json` instead.
 
 `npx impeccable update` upgrades it and `npx impeccable check` says whether you
 are behind. Both resolve against the working directory, so run them from `~`;

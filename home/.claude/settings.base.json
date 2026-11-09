@@ -8,6 +8,16 @@
             "command": "~/.claude/session-name.sh --hook"
           }
         ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "[ ! -f \"$HOME/.claude/skills/impeccable/scripts/impeccable\" ] || \"$HOME/.claude/skills/impeccable/scripts/impeccable\" hook",
+            "timeout": 5,
+            "statusMessage": "Preparing build session"
+          }
+        ]
       }
     ],
     "PostToolUse": [
@@ -19,6 +29,17 @@
             "command": "[ ! -x \"$HOME/.claude/comment-audit.sh\" ] || \"$HOME/.claude/comment-audit.sh\"",
             "timeout": 5,
             "statusMessage": "Auditing comments"
+          }
+        ]
+      },
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "[ ! -f \"$HOME/.claude/skills/impeccable/scripts/impeccable\" ] || \"$HOME/.claude/skills/impeccable/scripts/impeccable\" hook",
+            "timeout": 5,
+            "statusMessage": "Checking UI changes"
           }
         ]
       }
@@ -43,6 +64,18 @@
             "command": "[ ! -x \"$HOME/.claude/skill-gate.sh\" ] || \"$HOME/.claude/skill-gate.sh\"",
             "timeout": 5,
             "statusMessage": "Checking required skills"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "[ ! -f \"$HOME/.claude/skills/impeccable/scripts/impeccable\" ] || \"$HOME/.claude/skills/impeccable/scripts/impeccable\" hook",
+            "timeout": 30,
+            "statusMessage": "Design deep pass"
           }
         ]
       }

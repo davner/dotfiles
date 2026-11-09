@@ -39,4 +39,4 @@
 - UI work goes through `impeccable`; a look that is still open goes through the `prototype` skill, which calls impeccable and stops for the user before `PRODUCT.md` or `DESIGN.md` changes. A new screen or visual direction is prototyped in a fresh session: `/handoff` out, prototype, `/handoff` the verdict back. Test mobile in Chrome device emulation, not a narrowed window.
 - In a shared repo, impeccable settings are personal: skip `/impeccable hooks on` (the hook is on by default), pass `--local` to its ignore commands, and never commit `.impeccable/config.json`.
 - Any TypeScript change loads `typescript-style-guide` first, in every agent including subagents. Claude Code enforces this with a hook; this line carries it to other harnesses. The repo's own conventions win over the guide.
-- Third-party skills come from the dotfiles flake; only `impeccable` is installed by hand. When one is missing, follow "Installing the skills" in `~/.dotfiles/CLAUDE.md`.
+- Third-party skills, `impeccable` and the vault skills all arrive with a dotfiles rebuild. When one is missing, follow "Installing the skills" in `~/.dotfiles/CLAUDE.md`.

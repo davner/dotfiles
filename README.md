@@ -50,7 +50,7 @@ with no rebuild. Adding or removing a linked file does need `./rebuild.sh`.
 | `home/AGENTS.md` | Global agent rules, linked to `~/.claude/CLAUDE.md`, Codex and opencode |
 | `home/.claude/skills/` | The skills below, each folder linked into `~/.claude/skills/` |
 | `home/.claude/rules/` | Path-scoped rules, each file linked into `~/.claude/rules/` |
-| `home/.claude/*.sh`, `settings.base.json` | Hooks and status line; the settings merged into `~/.claude/settings.json` |
+| `home/.claude/*.sh`, `settings.base.json` | Hooks, status line and `local-skills.sh`; the settings merged into `~/.claude/settings.json` |
 | `home/.config/zsh/functions.zsh` | Shell functions: `cc` (named Claude session), `cc-push` (push switch), `cc-flow` (the workflow below as a table) |
 
 ## Claude Code
@@ -182,8 +182,8 @@ Third-party skills are pinned in `flake.lock`, linked into both
 | `typescript-style-guide` | [mkosir/typescript-style-guide](https://github.com/mkosir/typescript-style-guide) | TypeScript conventions |
 
 The obsidian plugin is declared in `settings.base.json` and updates itself.
-`impeccable` is installed by hand; see
-[AGENTS.md](AGENTS.md#installing-the-skills). Third-party license notices are in
+`impeccable` and the skills in `~/Vault/.skills` are put back by every rebuild;
+see [AGENTS.md](AGENTS.md#installing-the-skills). Third-party license notices are in
 [`THIRD-PARTY-NOTICES.md`](home/.claude/skills/THIRD-PARTY-NOTICES.md).
 
 ### Hooks
@@ -194,6 +194,7 @@ The obsidian plugin is declared in `settings.base.json` and updates itself.
 | Before Skill, Write, Edit, MultiEdit and Bash | `skill-gate.sh` | Blocks a write to a TypeScript file until that agent has loaded `typescript-style-guide`; the rule `~/.claude/rules/typescript.md` asks for the skill as soon as a TypeScript file is read. It misses `touch`, `dd of=`, writes from inside python or node, and `cp a.ts dir` without a trailing slash |
 | After every file write | `comment-audit.sh` | Flags code comments that tell history or refer to the session |
 | Session start | `session-name.sh` | Names the session after its repo |
+| Session start, after Edit or Write, and on stop | impeccable's own `scripts/impeccable hook` | Checks UI files for design anti-patterns; does nothing until impeccable is installed |
 | Always | `statusline.sh` | Shows model, context used, and rate limits |
 
 ## Tests and CI

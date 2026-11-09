@@ -174,6 +174,11 @@ in
   # Linked per file, so a rule added by hand to ~/.claude/rules stays out of this repo.
   home.file.".claude/rules/typescript.md".source =
     config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.claude/rules/typescript.md";
+  # The vault skills and impeccable live outside this repo, so no home.file can
+  # carry them. After linkGeneration, so a clash with a link above warns instead.
+  home.activation.localSkills = config.lib.dag.entryAfter [
+    "linkGeneration"
+  ] "run env PATH=${pkgs.nodejs}/bin:$PATH ${pkgs.bash}/bin/bash ${./home/.claude/local-skills.sh}";
   # One link per skill, never the folder: impeccable's installer also writes there.
   # A module each, because a computed home.file cannot share this attrset with home.file."x".
   imports = [
