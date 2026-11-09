@@ -75,10 +75,11 @@ which every rebuild runs after linking:
 
 - Each folder under `~/Vault/.skills` with a `SKILL.md` is linked into
   `~/.claude/skills/`; a machine without `~/Vault` skips this.
-- `impeccable`, when missing, is installed by its own installer: it downloads
-  an engine and writes agents, which a read-only store path cannot hold. It
-  installs `--no-hooks`, because the settings merge drops hooks it does not
-  own; its three hooks live in `settings.base.json` instead.
+- `impeccable`, when missing, is installed by its own installer into both
+  skill folders: it downloads an engine and writes agents, which a read-only
+  store path cannot hold. It installs `--no-hooks`, because the settings merge
+  drops hooks it does not own; its three hooks live in `settings.base.json`
+  instead.
 
 `npx impeccable update` upgrades it and `npx impeccable check` says whether you
 are behind. Both resolve against the working directory, so run them from `~`;
@@ -86,8 +87,9 @@ anywhere else they report `Impeccable is not installed in this project` and
 exit without checking.
 
 A machine set up before the flake inputs still has the old `npx skills`
-copies, and the first rebuild would back each clash up as `<name>.backup`.
-Clear them first, with `find-skills` and `skill-creator`, which nothing
+copies, and the first rebuild stops on them with `Existing file ... would be
+clobbered` instead of backing them up. Clear them first, with `find-skills`
+and `skill-creator`, which nothing
 manages any more, then rebuild:
 
 ```sh
@@ -95,7 +97,6 @@ for s in gh-axi chrome-devtools-axi lavish humanizer shadcn migrate-radix-to-bas
   find-skills skill-creator; do
   npx skills remove "$s" -g -y
 done
-rm -rf ~/.agents/skills/impeccable   # a stray copy; the real one is under ~/.claude/skills
 ./rebuild.sh
 ```
 
