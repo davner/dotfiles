@@ -180,6 +180,7 @@ Third-party skills are pinned in `flake.lock`, linked into both
 | `humanizer` | [blader/humanizer](https://github.com/blader/humanizer) | Rewrites AI-sounding prose |
 | `shadcn`, `migrate-radix-to-base` | [shadcn-ui/ui](https://github.com/shadcn-ui/ui) | shadcn/ui components; Radix to Base UI migration |
 | `typescript-style-guide` | [mkosir/typescript-style-guide](https://github.com/mkosir/typescript-style-guide) | TypeScript conventions |
+| `modern-python` | [trailofbits/skills](https://github.com/trailofbits/skills) | Python project tooling: uv, ruff, ty, PEP 723 scripts |
 
 The obsidian plugin is declared in `settings.base.json` and updates itself.
 `impeccable` and the skills in `~/Vault/.skills` are put back by every rebuild;

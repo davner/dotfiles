@@ -51,6 +51,7 @@ let
     shadcn = "${inputs.shadcn-ui}/skills/shadcn";
     migrate-radix-to-base = "${inputs.shadcn-ui}/skills/migrate-radix-to-base";
     typescript-style-guide = "${inputs.typescript-style-guide}/skills/typescript-style-guide";
+    modern-python = "${inputs.trailofbits-skills}/plugins/modern-python/skills/modern-python";
   };
 in
 

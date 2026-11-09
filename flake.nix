@@ -27,6 +27,8 @@
     shadcn-ui.flake = false;
     typescript-style-guide.url = "github:mkosir/typescript-style-guide";
     typescript-style-guide.flake = false;
+    trailofbits-skills.url = "github:trailofbits/skills";
+    trailofbits-skills.flake = false;
   };
 
   outputs =

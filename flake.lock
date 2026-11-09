@@ -168,6 +168,7 @@
         "nix-homebrew": "nix-homebrew",
         "nixpkgs": "nixpkgs",
         "shadcn-ui": "shadcn-ui",
+        "trailofbits-skills": "trailofbits-skills",
         "typescript-style-guide": "typescript-style-guide"
       }
     },
@@ -184,6 +185,22 @@
       "original": {
         "owner": "shadcn-ui",
         "repo": "ui",
+        "type": "github"
+      }
+    },
+    "trailofbits-skills": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1793978375,
+        "narHash": "sha256-Ayq9NufLWIjNTFf/13BwlkcwrYzMpzI7XVuq3Tsgeyk=",
+        "owner": "trailofbits",
+        "repo": "skills",
+        "rev": "e4dd0bb5b15535f7c5a0834187dffba6ac37e4ff",
+        "type": "github"
+      },
+      "original": {
+        "owner": "trailofbits",
+        "repo": "skills",
         "type": "github"
       }
     },
