@@ -29,6 +29,8 @@
     typescript-style-guide.flake = false;
     trailofbits-skills.url = "github:trailofbits/skills";
     trailofbits-skills.flake = false;
+    wshobson-agents.url = "github:wshobson/agents";
+    wshobson-agents.flake = false;
   };
 
   outputs =

@@ -52,6 +52,7 @@ let
     migrate-radix-to-base = "${inputs.shadcn-ui}/skills/migrate-radix-to-base";
     typescript-style-guide = "${inputs.typescript-style-guide}/skills/typescript-style-guide";
     modern-python = "${inputs.trailofbits-skills}/plugins/modern-python/skills/modern-python";
+    python-anti-patterns = "${inputs.wshobson-agents}/plugins/python-development/skills/python-anti-patterns";
   };
 in
 
@@ -175,6 +176,8 @@ in
   # Linked per file, so a rule added by hand to ~/.claude/rules stays out of this repo.
   home.file.".claude/rules/typescript.md".source =
     config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.claude/rules/typescript.md";
+  home.file.".claude/rules/python.md".source =
+    config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.claude/rules/python.md";
   # The vault skills and impeccable live outside this repo, so no home.file can
   # carry them. After linkGeneration, so a clash with a link above warns instead.
   home.activation.localSkills = config.lib.dag.entryAfter [

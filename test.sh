@@ -1465,6 +1465,18 @@ for ext in ts tsx mts cts; do
   esac
 done
 contains "the TypeScript rule names the skill" "$(cat "$TS_RULE" 2>/dev/null)" "typescript-style-guide"
+# No gate backs this one, so a rule that stops loading is the whole failure.
+PY_RULE="$DIR/home/.claude/rules/python.md"
+if grep -q 'home.file.".claude/rules/python.md"' "$DIR/home.nix"; then
+  ok "home.nix links the Python rule into ~/.claude/rules"
+else
+  bad "home.nix links the Python rule into ~/.claude/rules" "no home.file line for it"
+fi
+contains "the Python rule's paths cover .py and .pyi" "$(sed -n '/^---$/,/^---$/p' "$PY_RULE" 2>/dev/null)" '**/*.{py,pyi}'
+for s in python-anti-patterns modern-python; do
+  contains "the Python rule names $s" "$(cat "$PY_RULE" 2>/dev/null)" "$s"
+done
+contains "the Python rule type checks with ty" "$(cat "$PY_RULE" 2>/dev/null)" "ty check"
 
 # --------------------------------------------------------------------------
 section "comment audit hook"

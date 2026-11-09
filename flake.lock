@@ -169,7 +169,8 @@
         "nixpkgs": "nixpkgs",
         "shadcn-ui": "shadcn-ui",
         "trailofbits-skills": "trailofbits-skills",
-        "typescript-style-guide": "typescript-style-guide"
+        "typescript-style-guide": "typescript-style-guide",
+        "wshobson-agents": "wshobson-agents"
       }
     },
     "shadcn-ui": {
@@ -217,6 +218,22 @@
       "original": {
         "owner": "mkosir",
         "repo": "typescript-style-guide",
+        "type": "github"
+      }
+    },
+    "wshobson-agents": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1794143653,
+        "narHash": "sha256-jGy5K8FP9MnA5qsGgltCmfFy1jJX1mtc1j5+67m1N7Y=",
+        "owner": "wshobson",
+        "repo": "agents",
+        "rev": "9c61ab243def98f72da12abd41cfcf5bcd91af9d",
+        "type": "github"
+      },
+      "original": {
+        "owner": "wshobson",
+        "repo": "agents",
         "type": "github"
       }
     }

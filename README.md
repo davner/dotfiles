@@ -49,7 +49,7 @@ with no rebuild. Adding or removing a linked file does need `./rebuild.sh`.
 | `docs/adr/` | Why the Nix setup is the way it is, one decision per file |
 | `home/AGENTS.md` | Global agent rules, linked to `~/.claude/CLAUDE.md`, Codex and opencode |
 | `home/.claude/skills/` | The skills below, each folder linked into `~/.claude/skills/` |
-| `home/.claude/rules/` | Path-scoped rules, each file linked into `~/.claude/rules/` |
+| `home/.claude/rules/` | Path-scoped rules, each file linked into `~/.claude/rules/`: reading a TypeScript or Python file asks for that language's skills |
 | `home/.claude/*.sh`, `settings.base.json` | Hooks, status line and `local-skills.sh`; the settings merged into `~/.claude/settings.json` |
 | `home/.config/zsh/functions.zsh` | Shell functions: `cc` (named Claude session), `cc-push` (push switch), `cc-flow` (the workflow below as a table) |
 
@@ -181,6 +181,7 @@ Third-party skills are pinned in `flake.lock`, linked into both
 | `shadcn`, `migrate-radix-to-base` | [shadcn-ui/ui](https://github.com/shadcn-ui/ui) | shadcn/ui components; Radix to Base UI migration |
 | `typescript-style-guide` | [mkosir/typescript-style-guide](https://github.com/mkosir/typescript-style-guide) | TypeScript conventions |
 | `modern-python` | [trailofbits/skills](https://github.com/trailofbits/skills) | Python project tooling: uv, ruff, ty, PEP 723 scripts |
+| `python-anti-patterns` | [wshobson/agents](https://github.com/wshobson/agents) | A checklist of Python mistakes to catch before finishing a change |
 
 The obsidian plugin is declared in `settings.base.json` and updates itself.
 `impeccable` and the skills in `~/Vault/.skills` are put back by every rebuild;
