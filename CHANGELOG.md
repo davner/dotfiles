@@ -9,6 +9,7 @@ machine's configuration, not a package anyone installs a version of.
 
 ## 2026-11-09
 
+- **Added** home: Load python skills when python files are read ([`65fabfc`](https://github.com/davner/dotfiles/commit/65fabfca5428e568bfa068043f16bb491a09226a))
 - **Added** home: Add the modern-python skill from trailofbits ([`d87425b`](https://github.com/davner/dotfiles/commit/d87425b6a7234867df6243bff411b4cb609a5f90))
 - **Docs** Keep impeccable's agents-folder copy in the cleanup steps ([`4e6c18d`](https://github.com/davner/dotfiles/commit/4e6c18ddb513f2b3dbfdba50880379e29cae85e6))
 - **Added** home: Restore vault skills and impeccable on rebuild ([`dfc4fb5`](https://github.com/davner/dotfiles/commit/dfc4fb5d8ac27f0ab9f63828f1e21da47a516450))
