@@ -209,6 +209,11 @@ or `{ }` still counts, and `guard-bash.sh` also judges git behind `VAR=x`,
 parser has no link of its own: each hook follows its `~/.claude` link back to
 the repo and runs the parser that sits beside it.
 
+`ai-credit.sh` is the one place that decides what credits an AI tool and which
+phrases narrate the session. `guard-bash.sh`, `comment-audit.sh` and the `pr`
+skill's `provenance.sh` all source it; the hooks find it beside their real file
+the same way, and `provenance.sh` falls back to its `~/.claude` link.
+
 ## Tests and CI
 
 `./test.sh` runs everything with no sudo and no writes outside a temp folder;

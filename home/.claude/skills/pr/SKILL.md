@@ -189,7 +189,7 @@ When the change is visual and the app runs, capture before and after screenshots
 
 ## Authorship
 
-Before publishing, prove no AI is credited. Save the body to a temp file and, from the repo, run this skill's `scripts/provenance.sh <base> --body <file>`, where `<base>` is `git merge-base origin/main HEAD` after a `git fetch`. Run it; its rules live in `guard-bash.sh`, so there is nothing to read. It checks the author, committer, and message of every commit in the PR, and the body, for any agent, model, or bot.
+Before publishing, prove no AI is credited. Save the body to a temp file and, from the repo, run this skill's `scripts/provenance.sh <base> --body <file>`, where `<base>` is `git merge-base origin/main HEAD` after a `git fetch`. Run it; its rules live in `ai-credit.sh`, shared with `guard-bash.sh`, so there is nothing to read. It checks the author, committer, and message of every commit in the PR, and the body, for any agent, model, or bot.
 
 Run it on the final body, and again after any edit to the body. On the page, show `<base>` as the literal commit ID.
 

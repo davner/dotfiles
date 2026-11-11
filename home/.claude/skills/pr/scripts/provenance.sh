@@ -10,18 +10,17 @@ while (($#)); do
   esac
 done
 
-# Read guard-bash.sh's patterns rather than copying them, so the two never drift.
+# Through the skill's link to the repo first, so an edit there is live without a rebuild.
 here=$(cd "$(dirname "$0")" && pwd -P)
-guard=""
-for g in "$here/../../../guard-bash.sh" "$HOME/.claude/guard-bash.sh"; do
-  [[ -r $g ]] && { guard=$g; break; }
+credit=""
+for c in "$here/../../../ai-credit.sh" "$HOME/.claude/ai-credit.sh"; do
+  [[ -r $c ]] && { credit=$c; break; }
 done
-[[ -n $guard ]] || { echo "UNVERIFIED: guard-bash.sh not found, no patterns to check against" >&2; exit 2; }
-pattern() { sed -n "s/^$1='\(.*\)'\$/\1/p" "$guard" | head -1; }
-AI_NAME=$(pattern AI_NAME) AI_DOMAIN=$(pattern AI_DOMAIN) AI_BOT=$(pattern AI_BOT) AI_KEY=$(pattern AI_KEY)
-for v in AI_NAME AI_DOMAIN AI_BOT AI_KEY; do
-  [[ -n ${!v} ]] || { echo "UNVERIFIED: $v is missing from $guard" >&2; exit 2; }
-done
+[[ -n $credit ]] || { echo "UNVERIFIED: ai-credit.sh not found, no patterns to check against" >&2; exit 2; }
+# shellcheck source=/dev/null
+source "$credit"
+declare -F credits_tool is_tool >/dev/null ||
+  { echo "UNVERIFIED: $credit defines no credits_tool or is_tool" >&2; exit 2; }
 
 if [[ -z $base ]]; then
   base=$(git merge-base origin/main HEAD 2>/dev/null) ||
@@ -29,23 +28,6 @@ if [[ -z $base ]]; then
 fi
 git rev-parse --verify --quiet "$base^{commit}" >/dev/null ||
   { echo "UNVERIFIED: $base is not a commit" >&2; exit 2; }
-
-nl=$'\n'
-credits_tool() { # text -> 0 when it credits a tool; same rule as guard-bash.sh
-  local head="(^|${nl})[[:blank:]]*" gap="[^${nl}]*(${nl}[[:space:]]*)?[^${nl}]*" hit=1
-  shopt -s nocasematch
-  if [[ $1 =~ ${head}${AI_KEY}${gap}(${AI_NAME}|${AI_DOMAIN}|${AI_BOT}) ]] ||
-    [[ $1 =~ (claude-session|🤖) ]]; then hit=0; fi
-  shopt -u nocasematch
-  return $hit
-}
-is_tool() { # "name <email>" -> 0 when it is an agent, model, or bot
-  local hit=1
-  shopt -s nocasematch
-  if [[ $1 =~ (^|[^a-z])${AI_NAME}([^a-z]|$) || $1 =~ $AI_DOMAIN || $1 =~ $AI_BOT ]]; then hit=0; fi
-  shopt -u nocasematch
-  return $hit
-}
 
 shas=$(git rev-list --reverse "$base..HEAD")
 [[ -n $shas ]] || { echo "UNVERIFIED: no commits in $base..HEAD" >&2; exit 2; }

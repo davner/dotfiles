@@ -38,8 +38,21 @@ esac
 # Deliberately narrow, because a net that fires on domain prose gets ignored:
 # bare "previous" and "old" describe runtime state, their adverb forms never do.
 history_re='used to|no longer|formerly|superseded|(was|were) (removed|replaced|renamed)|this replaced|earlier (revision|version)|first (version|pass)|stopped being|went stale|previously|originally|refactored|renamed from|moved here from|instead of the old|until [0-9]{4}-[0-9]{2}-[0-9]{2}'
-# "per the spec" stays unmatched - an RFC is a legitimate present-tense referent.
-session_re='as requested|as discussed|as instructed|per (the )?(plan|ticket|review|feedback)|review feedback|addresses the (review|finding)'
+# Followed to the real file, so the phrase list beside it is live without a rebuild.
+self=${BASH_SOURCE[0]}
+while [[ -L $self ]]; do
+  link=$(readlink "$self")
+  [[ $link == /* ]] || link=$(dirname "$self")/$link
+  self=$link
+done
+CREDIT=$(dirname "$self")/ai-credit.sh
+if [[ ! -r $CREDIT ]]; then
+  echo "comment-audit.sh: $CREDIT is missing, so no comment is being checked" >&2
+  exit 1
+fi
+# shellcheck source=/dev/null
+source "$CREDIT"
+session_re=$SESSION_META
 # Doubled backslash: `awk -v` resolves escapes before the regex is compiled.
 stamp_re='\\([A-Z][a-z]+, [0-9]{4}-[0-9]{2}-[0-9]{2}'
 # Month names require the year beside them, so "Mar" the abbreviation and "May"

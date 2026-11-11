@@ -173,6 +173,10 @@ in
   # than nudges, so it has to exist before the tool call it judges.
   home.file.".claude/guard-bash.sh".source =
     config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.claude/guard-bash.sh";
+  # The hooks find it beside their own real file; this link is the pr skill's
+  # fallback for a copy of the skill that is not reached through the repo.
+  home.file.".claude/ai-credit.sh".source =
+    config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.claude/ai-credit.sh";
   # A PreToolUse hook on Skill and the write tools, reached by path the same way.
   # It must see the Skill call too, since that is the only evidence of a load.
   home.file.".claude/skill-gate.sh".source =

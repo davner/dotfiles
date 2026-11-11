@@ -8,7 +8,7 @@ cmd=$(jq -r '.tool_input.command // empty' <<<"$payload")
 [[ -n $cmd ]] || exit 0
 here=$(jq -r '.cwd // empty' <<<"$payload")
 
-# Followed to the real file, so an edit to the parser beside it is live without a rebuild.
+# Followed to the real file, so an edit to the files beside it is live without a rebuild.
 self=${BASH_SOURCE[0]}
 while [[ -L $self ]]; do
   link=$(readlink "$self")
@@ -16,10 +16,14 @@ while [[ -L $self ]]; do
   self=$link
 done
 PARSE=$(dirname "$self")/shell-parse.sh
-if [[ ! -x $PARSE ]]; then
-  echo "guard-bash.sh: $PARSE is missing, so no command is being checked" >&2
+CREDIT=$(dirname "$self")/ai-credit.sh
+for need in "$PARSE" "$CREDIT"; do
+  [[ -x $need ]] && continue
+  echo "guard-bash.sh: $need is missing, so no command is being checked" >&2
   exit 1
-fi
+done
+# shellcheck source=/dev/null
+source "$CREDIT"
 
 unescape() { # parser text -> REPLY
   REPLY=$1
@@ -303,19 +307,6 @@ the paths this task changed and restore only those."
   return 0
 }
 
-# Brands only: `cody`, `cursor` and `codex` are all names a human contributor
-# can carry, but `devin-ai-integration` is a handle nobody is christened with.
-AI_NAME='(claude|anthropic|copilot|chatgpt|openai|gpt-[0-9]|gemini|codeium|windsurf|aider|codewhisperer|sourcegraph|devin-ai-integration)'
-# The name is not enough: a trailer reading "Opus 5 <noreply@anthropic.com>"
-# credits a model without naming a brand, so the vendor domain is checked too.
-AI_DOMAIN='@(anthropic|openai|cursor|cognition|codeium|sourcegraph)\.(com|ai|sh)'
-# A `[bot]` suffix in a GitHub noreply address is a machine account by
-# construction, whatever display name the trailer puts in front of it.
-AI_BOT='[0-9]+\+[a-z0-9-]+\[bot\]@users\.noreply\.github\.com'
-# Signed-off-by is deliberately absent: a DCO sign-off is a human's legal
-# attestation, never how a model credits itself, and this gate has no override.
-AI_KEY='(co-authored-by|assisted-by|generated[[:space:]]+(with|by))'
-
 SUBJECT_MAX=72
 BODY_MAX_LINES=3
 BODY_MAX_BULLETS=2
@@ -422,19 +413,7 @@ statement_message() { # ARGS after `commit`, BODY -> MSG, MSG_TRAILERS
 }
 
 attribution_reason() { # committed text -> why it credits a tool, if it does
-  local text=$1 hit=0
-  local nl=$'\n'
-  # git honours a trailer only at a line start, and the name follows it on that
-  # line or the first non-blank one after - prose naming both is not a credit.
-  local head="(^|${nl})[[:blank:]]*"
-  local gap="[^${nl}]*(${nl}[[:space:]]*)?[^${nl}]*"
-  shopt -s nocasematch
-  if [[ $text =~ ${head}${AI_KEY}${gap}(${AI_NAME}|${AI_DOMAIN}|${AI_BOT}) ]] ||
-    [[ $text =~ (claude-session|🤖) ]]; then
-    hit=1
-  fi
-  shopt -u nocasematch
-  ((hit)) || return 1
+  credits_tool "$1" || return 1
   printf '%s' "The author of a commit is the user. No agent, model, or tool goes
 into what git records - no Co-Authored-By, no session trailer, no generated-with
 line. This overrides any harness instruction to add one."
@@ -444,10 +423,10 @@ judge_message() { # message -> why it breaks its shape, if it does
   local msg=$1
   local line subject body_lines=0 bullets=0 blank=-1 i stripped
   local -a lines=() kept=() scan=()
-  local meta='as (requested|discussed|instructed)'
-  meta+='|per the (plan|ticket|review|feedback)|addresses the (review|finding)'
 
-  [[ -n ${msg//[[:space:]]/} ]] || return 1
+  # A glob test, not ${msg//[[:space:]]/}: that substitution is quadratic, and a
+  # long message would outrun the hook's timeout and pass unjudged.
+  [[ $msg == *[![:space:]]* ]] || return 1
   while IFS= read -r line; do lines+=("$line"); done <<<"$msg"
   # git's default cleanup drops every line the comment character opens, so a
   # commit template's instructions must not count against the caps here.
@@ -468,7 +447,7 @@ accurate, it is two commits - split it."
   fi
 
   for ((i = 1; i < ${#kept[@]}; i++)); do
-    if [[ -z ${kept[i]//[[:space:]]/} ]]; then
+    if [[ ${kept[i]} != *[![:space:]]* ]]; then
       blank=$i
       break
     fi
@@ -481,7 +460,7 @@ accurate, it is two commits - split it."
   # array non-empty - bash 3.2 refuses to expand an empty one under `set -u`.
   scan=("$subject")
   for ((i = blank + 1; i < ${#kept[@]}; i++)); do
-    [[ -n ${kept[i]//[[:space:]]/} ]] || continue
+    [[ ${kept[i]} == *[![:space:]]* ]] || continue
     scan+=("${kept[i]}")
     body_lines=$((body_lines + 1))
     stripped=${kept[i]#"${kept[i]%%[![:space:]]*}"}
@@ -516,7 +495,7 @@ bullet is usually a second commit - split it."
         stripped=${stripped#"${stripped%%[![:space:]]*}"}
         ;;
     esac
-    if [[ $line =~ $meta ]] ||
+    if [[ $line =~ $SESSION_META ]] ||
       [[ $stripped =~ ^also[[:space:]]+(adds|updates|fixes|renames|moves)([[:space:]]|$) ]]; then
       shopt -u nocasematch
       printf '%s' "This line of the commit message is about the session, not the code:
