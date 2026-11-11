@@ -12,6 +12,7 @@
 - A change is done when no doc in the repo still describes the old behavior.
 - Before anything that spawns many subagents, explain the cost and get approval.
 - The shell is zsh: an unquoted variable stays one word. Keep a command with arguments in a function or an array, never in a string variable.
+- YouTube links and YouTube research go through `yt-dlp`. Read a video's captions with `yt-dlp --skip-download --write-auto-subs --sub-langs en-orig --sub-format vtt -P <scratchpad> -o '%(id)s' <url>`, and when that writes no file, run it again with `--sub-langs en`; find videos with `yt-dlp --flat-playlist --print '%(title)s | %(url)s' 'ytsearch10:<query>'`. Ask for one language at a time: on a video that lists `en-orig`, `en` is a machine translation, and YouTube answers translations with HTTP 429.
 
 ## Writing
 
