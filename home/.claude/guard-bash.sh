@@ -261,7 +261,7 @@ work over with \`git merge --ff-only\` when the branch sits on the tip, or
 \`git cherry-pick\` its commits when it does not."
   fi
 
-  if [[ $sub == pull ]] && ! has_arg '(--rebase|-r|--ff-only)(=.*)?'; then
+  if [[ $sub == pull ]] && ! has_arg '--rebase(=(true|merges|interactive|i))?|-r|--ff-only'; then
     reason="A plain git pull can create a merge commit, and the user keeps history
 linear. Use \`git pull --rebase\` or \`git pull --ff-only\`."
   fi

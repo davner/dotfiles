@@ -244,6 +244,8 @@ git -C ../integration merge topic
 git pull
 git pull origin main
 git pull --no-rebase
+git pull --rebase=false
+git pull --rebase=no
 CASES
   if [ -z "$blocked" ]; then
     ok "the absolute rules are blocked"
@@ -732,6 +734,7 @@ git merge-base --is-ancestor main HEAD
 git pull --rebase
 git pull -r origin main
 git pull --ff-only
+git pull --rebase=merges
 git cherry-pick 1a2b3c4
 nix develop --command ./test.sh
 CASES
