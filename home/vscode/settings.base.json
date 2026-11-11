@@ -1,0 +1,107 @@
+{
+  "editor.acceptSuggestionOnEnter": "off",
+  "editor.indentSize": "tabSize",
+  "files.trimTrailingWhitespace": true,
+  "files.insertFinalNewline": true,
+  "workbench.colorTheme": "Dark+",
+  "workbench.startupEditor": "none",
+  "workbench.externalBrowser": "chrome",
+  "workbench.browser.openLocalhostLinks": false,
+  "workbench.panel.defaultLocation": "right",
+  "explorer.confirmDelete": false,
+  "explorer.confirmDragAndDrop": false,
+  "security.workspace.trust.untrustedFiles": "prompt",
+  "window.confirmSaveUntitledWorkspace": false,
+  "window.nativeTabs": true,
+  "window.newWindowProfile": "Default",
+  "chat.disableAIFeatures": true,
+  "claudeCode.preferredLocation": "panel",
+  "claudeCode.useTerminal": true,
+  "git.detectWorktrees": true,
+  "search.useGlobalIgnoreFiles": true,
+  "terminal.integrated.defaultProfile.osx": "zsh",
+  "terminal.integrated.inheritEnv": false,
+  "terminal.integrated.enableMultiLinePasteWarning": "never",
+  "terminal.integrated.initialHint": false,
+  "files.exclude": {
+    "**/__pycache__": true
+  },
+  "files.watcherExclude": {
+    "**/__pycache__": true,
+    "**/.ammonite": true,
+    "**/.bloop/**": true,
+    "**/.metals/**/*.{java,scala}": true
+  },
+  "js/ts.updateImportsOnFileMove.enabled": "never",
+  "tailwindCSS.classFunctions": [
+    "cn",
+    "twMerge",
+    "clsx"
+  ],
+  "autoDocstring.docstringFormat": "numpy",
+  "python.terminal.activateEnvironment": false,
+  "[markdown]": {
+    "editor.wordWrap": "on"
+  },
+  "[restructuredtext]": {
+    "editor.wordWrap": "on"
+  },
+  "[python]": {
+    "editor.rulers": [
+      88
+    ],
+    "editor.defaultFormatter": "charliermarsh.ruff",
+    "editor.formatOnSave": true,
+    "editor.codeActionsOnSave": {
+      "source.organizeImports": "explicit",
+      "source.fixAll": "explicit"
+    }
+  },
+  "[scala]": {
+    "editor.rulers": [
+      100
+    ],
+    "editor.formatOnSave": true
+  },
+  "[javascript]": {
+    "editor.tabSize": 2,
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.formatOnSave": true
+  },
+  "[javascriptreact]": {
+    "editor.tabSize": 2,
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.formatOnSave": true
+  },
+  "[typescript]": {
+    "editor.rulers": [
+      120
+    ],
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.formatOnSave": true,
+    "editor.codeActionsOnSave": {
+      "source.fixAll.eslint": "explicit"
+    }
+  },
+  "[typescriptreact]": {
+    "editor.rulers": [
+      120
+    ],
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.formatOnSave": true,
+    "editor.codeActionsOnSave": {
+      "source.fixAll.eslint": "explicit"
+    }
+  },
+  "[html]": {
+    "editor.tabSize": 2
+  },
+  "[css]": {
+    "editor.tabSize": 2,
+    "editor.formatOnSave": true,
+    "editor.codeActionsOnSave": {
+      "source.fixAll.stylelint": "explicit"
+    },
+    "editor.defaultFormatter": "stylelint.vscode-stylelint"
+  }
+}

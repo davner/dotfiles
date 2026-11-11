@@ -34,6 +34,28 @@ let
     printf '%s\n' "$merged" >"$target"
   '';
 
+  # Same merge as Claude's, so a toggle made in the VS Code UI survives a rebuild.
+  vscodeSettingsMerge = pkgs.writeShellScript "vscode-settings-merge" ''
+    set -eu
+    user="$HOME/Library/Application Support/Code/User"
+    src="${dotfiles}/home/vscode"
+    mkdir -p "$user"
+    for f in settings keybindings; do
+      [ -f "$user/$f.json" ] || printf '%s\n' "$([ $f = settings ] && echo '{}' || echo '[]')" >"$user/$f.json"
+    done
+    # VS Code allows comments in these files and jq does not, so a hand-commented file is left alone.
+    if merged="$(${pkgs.jq}/bin/jq -s '.[0] * .[1]' "$user/settings.json" "$src/settings.base.json" 2>/dev/null)"; then
+      printf '%s\n' "$merged" >"$user/settings.json"
+    else
+      echo "vscode-settings-merge: settings.json is not plain JSON, skipped" >&2
+    fi
+    if merged="$(${pkgs.jq}/bin/jq -s '.[0] + [.[1][] as $b | select(.[0] | all(.key != $b.key or .command != $b.command or .when != $b.when)) | $b]' "$user/keybindings.json" "$src/keybindings.base.json" 2>/dev/null)"; then
+      printf '%s\n' "$merged" >"$user/keybindings.json"
+    else
+      echo "vscode-settings-merge: keybindings.json is not plain JSON, skipped" >&2
+    fi
+  '';
+
   # Which address git commits as, per machine. Same name either way; only the
   # address changes. A user record without one fails the build on purpose:
   # committing work from the wrong address is the whole thing this exists to
@@ -81,6 +103,8 @@ in
   ];
   fonts.fontconfig.enable = true;
   home.sessionVariables.EDITOR = "code";
+  # Where `uv tool install` puts its executables.
+  home.sessionPath = [ "$HOME/.local/bin" ];
 
   programs.zsh = {
     enable = true;
@@ -115,6 +139,12 @@ in
       };
       cmd_duration.format = "[$duration]($style) ";
     };
+  };
+
+  # lucuma-odb and lucuma-core get Java and sbt only from their flakes.
+  programs.direnv = {
+    enable = true;
+    nix-direnv.enable = true;
   };
 
   programs.git = {
@@ -154,6 +184,18 @@ in
   home.activation.claudeSettings = config.lib.dag.entryAfter [
     "writeBoundary"
   ] "run ${claudeSettingsMerge}";
+  home.activation.vscodeSettings = config.lib.dag.entryAfter [
+    "writeBoundary"
+  ] "run ${vscodeSettingsMerge}";
+  home.activation.vscodeExtensions =
+    config.lib.dag.entryAfter
+      [
+        "vscodeSettings"
+      ]
+      "run env PATH=${pkgs.jq}/bin:$PATH ${pkgs.bash}/bin/bash ${./home/vscode/extensions.sh} ${./home/vscode/extensions.json}";
+  # Run by hand after opening a multi-root Scala workspace or bumping a flake's JDK.
+  home.file.".local/bin/metals-java-home".source =
+    config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/vscode/metals-java-home.sh";
   # settings.base.json points at this by path, so it has to land in ~/.claude too.
   home.file.".claude/statusline.sh".source =
     config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.claude/statusline.sh";
