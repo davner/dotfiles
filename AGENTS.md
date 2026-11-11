@@ -1,10 +1,13 @@
 # Project notes for agents
 
 Run `./test.sh` before proposing a commit. It needs no sudo and touches nothing
-outside a temp directory, so there is no reason to skip it. `--fast` drops the
-flake evaluations when only the shell scripts changed, and `nix develop
---command ./test.sh` adds shellcheck and actionlint - run it that way when you
-touched a shell script or a workflow, since bare it silently skips both.
+outside a temp directory, so there is no reason to skip it. It runs each
+`tests/*.sh`, one file per module, in its own bash process, with the shared
+helpers and fixtures in `tests/lib.sh`; `./test.sh NAME...` runs only
+`tests/NAME.sh`. `--fast` drops the flake evaluations when only the shell
+scripts changed, and `nix develop --command ./test.sh` adds shellcheck and
+actionlint - run it that way when you touched a shell script or a workflow,
+since bare it silently skips both.
 
 `.github/workflows/test.yml` runs the fast half on every push; `weekly.yml`
 runs the full suite plus a real `nix build` of every configuration on Mondays.

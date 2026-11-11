@@ -6,7 +6,7 @@ Plugins that a marketplace ships are declared in `settings.base.json` instead (`
 
 ## Consequences
 
-- A skill's link name must equal the `name` in its `SKILL.md`. `test.sh` (full mode) checks every third-party link in both folders, for every configuration, so an upstream move or rename fails CI instead of leaving a dangling link.
+- A skill's link name must equal the `name` in its `SKILL.md`. `tests/skills.sh` (full mode) checks every third-party link in both folders, for every configuration, so an upstream move or rename fails CI instead of leaving a dangling link.
 - A new skill from an already-pinned repo is one line in `home.nix`; a new repo is also one input in `flake.nix` and `nix flake lock`.
 - The skills are read-only store paths. A skill that writes into its own folder or installs hooks does not fit: impeccable stays on its own installer.
 - Base wins on `enabledPlugins` entries it names, so a plugin disabled through `/plugin` comes back on the next rebuild. Disable it by removing it from the base file.

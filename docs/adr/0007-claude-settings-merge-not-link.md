@@ -4,7 +4,7 @@
 
 ## Consequences
 
-- `model`, `effortLevel` and `theme` stay out of the base file: base wins, so a rebuild would revert the `/config` change. `test.sh` asserts both that those keys are absent and that `home.nix` does not link `settings.json`.
+- `model`, `effortLevel` and `theme` stay out of the base file: base wins, so a rebuild would revert the `/config` change. `tests/claude-settings.sh` asserts both that those keys are absent and that `home.nix` does not link `settings.json`.
 - Those three are therefore not version-controlled, and a fresh Mac uses Claude Code's defaults until one `/config`.
 - A user-level `settings.local.json` is not a fix: Claude Code documents no `~/.claude/settings.local.json`. `/status` names the files actually read.
 - Base owns every hook event it names. `jq` replaces arrays rather than merging them, so a hook another tool appends to one of those events in `settings.json` is dropped on the next rebuild. A hook meant to last goes in the base file.

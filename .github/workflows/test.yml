@@ -21,12 +21,12 @@ jobs:
     steps:
       - uses: actions/checkout@v7
         with:
-          # test.sh renders the changelog template, which needs the history.
+          # tests/changelog.sh renders the changelog template, which needs the history.
           fetch-depth: 0
 
       - uses: DeterminateSystems/nix-installer-action@main
 
       # nix develop supplies shellcheck, actionlint and git-cliff at the
-      # versions flake.lock pins, so nothing in test.sh has to skip.
+      # versions flake.lock pins, so nothing in tests/ has to skip.
       - name: ./test.sh --fast
         run: nix develop --command ./test.sh --fast

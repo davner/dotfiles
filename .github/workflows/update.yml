@@ -22,7 +22,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
         with:
-          # test.sh renders the changelog template, which needs the history.
+          # tests/changelog.sh renders the changelog template, which needs the history.
           fetch-depth: 0
 
       - uses: DeterminateSystems/nix-installer-action@main

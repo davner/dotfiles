@@ -1,6 +1,6 @@
 # users.sh owns the shape of the users attrset
 
-`users.sh` is the only parser of the `users` attrset, and it holds `flake.nix` to a shape: one quoted username per line, each opening an attrset record, closed by the `# end users` marker. It uses nothing but bash, sed and awk because `bootstrap.sh` calls it seconds after nix is installed, when nix may not work yet. `test.sh` asserts the shape, since reformatting the attrset or dropping the marker breaks both scripts.
+`users.sh` is the only parser of the `users` attrset, and it holds `flake.nix` to a shape: one quoted username per line, each opening an attrset record, closed by the `# end users` marker. It uses nothing but bash, sed and awk because `bootstrap.sh` calls it seconds after nix is installed, when nix may not work yet. `tests/users.sh` asserts the shape, since reformatting the attrset or dropping the marker breaks both scripts.
 
 ## Consequences
 

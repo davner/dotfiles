@@ -217,7 +217,8 @@ the same way, and `provenance.sh` falls back to its `~/.claude/hooks` link.
 
 ## Tests and CI
 
-`./test.sh` runs everything with no sudo and no writes outside a temp folder;
+`./test.sh` runs every file in `tests/`, one per module, with no sudo and no
+writes outside a temp folder; `./test.sh NAME` runs only `tests/NAME.sh`;
 `--fast` skips the Nix evaluations; `nix develop --command ./test.sh` adds the
 linters. CI runs the fast suite on every push, the full suite plus a real build
 every Monday, regenerates `CHANGELOG.md` on `main`, and opens a PR when flake
