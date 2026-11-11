@@ -9,6 +9,7 @@ machine's configuration, not a package anyone installs a version of.
 
 ## 2026-11-11
 
+- **Changed** claude: Share the AI-credit rule through ai-credit.sh ([`6d027db`](https://github.com/davner/dotfiles/commit/6d027db87600af6a217b21eb4a0f44f687379050))
 - **Fixed** claude: Read hook commands through one shared shell parser ([`4e0fbdf`](https://github.com/davner/dotfiles/commit/4e0fbdf01782ad6fee000ff629df7ece10d41a32))
 - **Fixed** claude: Block git pull --rebase=false as a plain pull ([`250cbd6`](https://github.com/davner/dotfiles/commit/250cbd6a6a738aacd9c93455b5a17bf98baee5ba))
 - **Fixed** home: Keep linked content, dedupe and write json merges safely ([`1cee126`](https://github.com/davner/dotfiles/commit/1cee1261068f3615907258746ea50016b3699f62))
