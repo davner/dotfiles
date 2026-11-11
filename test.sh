@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # Checks the things in this repo that fail silently, fail only on the other
 # machine, or fail an hour into an activation: the username -> flake attribute
-# mapping, the users attrset parsing, the two scripts' guard rails, and the
-# out-of-store symlink targets.
+# mapping, the users attrset parsing, the rebuild and bootstrap scripts, the
+# Claude hooks, the settings merges, and the out-of-store symlink targets.
 #
 # Nothing here needs sudo and nothing here touches the real machine. The
 # scripts run against a stub `sudo` on PATH and a throwaway $HOME, so the
@@ -876,11 +876,18 @@ else
   ln -s "$JW/linked-to.json" "$JW/l1.json"
   ln -s "$JW/linked-to.json" "$JW/l2.json"
   jm --drop-link deep "$JW/obj.base.json" "$JW/l1.json"
-  if [ ! -L "$JW/l1.json" ] && jq -e 'has("real") | not' "$JW/l1.json" >/dev/null 2>&1 &&
+  if [ ! -L "$JW/l1.json" ] && jq -e '.real and .a == 1' "$JW/l1.json" >/dev/null 2>&1 &&
     [ "$(cat "$JW/linked-to.json")" = '{"real": true}' ]; then
-    ok "--drop-link: a leftover link becomes a fresh file and its old target is untouched"
+    ok "--drop-link: a leftover link becomes a real file that keeps what it pointed at"
   else
-    bad "--drop-link: a leftover link becomes a fresh file and its old target is untouched"
+    bad "--drop-link: a leftover link becomes a real file that keeps what it pointed at" "$(cat "$JW/l1.json")"
+  fi
+  ln -s "$JW/gone.json" "$JW/l3.json"
+  jm --drop-link deep "$JW/obj.base.json" "$JW/l3.json"
+  if [ "$JM_RC" = 0 ] && [ ! -L "$JW/l3.json" ] && jq -e '.a == 1' "$JW/l3.json" >/dev/null 2>&1; then
+    ok "--drop-link: a dangling link becomes a file built from the base"
+  else
+    bad "--drop-link: a dangling link becomes a file built from the base" "rc=$JM_RC" "$JM_ERR"
   fi
   jm deep "$JW/obj.base.json" "$JW/l2.json"
   if [ -L "$JW/l2.json" ] && jq -e '.real and .a == 1' "$JW/linked-to.json" >/dev/null 2>&1; then
@@ -922,6 +929,30 @@ else
   before="$(cat "$JW/kb.json")"
   jm append-unique key,command,when "$JW/arr.base.json" "$JW/kb.json"
   eq "append-unique: a second run changes nothing" "$before" "$(cat "$JW/kb.json")"
+
+  # A write that fails partway, as on a full disk, must leave the old file whole.
+  jq -n '[range(400)] | map({key: "k\(.)", value: "padding padding padding"}) | from_entries' >"$JW/big.base.json"
+  printf '%s\n' '{"mine": true}' >"$JW/full.json"
+  (
+    trap '' XFSZ
+    ulimit -f 4
+    "$JM" deep "$JW/big.base.json" "$JW/full.json"
+  ) >/dev/null 2>&1
+  full_rc=$?
+  if [ "$full_rc" != 0 ] && [ "$(cat "$JW/full.json")" = '{"mine": true}' ]; then
+    ok "a failed write fails and leaves the target as it was"
+  else
+    bad "a failed write fails and leaves the target as it was" "rc=$full_rc" "$(head -c 80 "$JW/full.json")"
+  fi
+  leftovers="$(find "$JW" -name '.json-merge.*')"
+  eq "and leaves no temp file behind" "" "$leftovers"
+  jm deep "$JW/obj.base.json" "$JW/l2.json"
+  eq "a linked target is still a link after a rename-based write" "link" "$([ -L "$JW/l2.json" ] && echo link)"
+
+  printf '%s\n' '[{"key": "d", "command": "c"}, {"key": "d", "command": "c"}]' >"$JW/dup.base.json"
+  printf '%s\n' '[]' >"$JW/dup.json"
+  jm append-unique key,command,when "$JW/dup.base.json" "$JW/dup.json"
+  eq "append-unique: an entry repeated in the base is added once" "1" "$(jq length "$JW/dup.json")"
 
   for args in "" "deep" "deep $JW/obj.base.json" "append-unique $JW/arr.base.json $JW/x.json" "--bogus deep a b" "shallow a b"; do
     # shellcheck disable=SC2086 # each case is deliberately split into words

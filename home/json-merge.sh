@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Writes in place, not by rename, so a linked target is written through unless --drop-link.
+# The merged file lands by rename, so a failed write leaves the old one whole. A linked
+# target is resolved first, so the rename replaces the file it points at, not the link.
 set -uo pipefail
 
 usage() {
@@ -41,8 +42,9 @@ append-unique)
   shift
   empty='[]'
   # shellcheck disable=SC2016  # jq variables, not shell ones
-  filter='($keys | split(",")) as $k | .[0] as $t
-    | $t + [.[1][] as $b | select(all($t[]; . as $a | any($k[]; $a[.] != $b[.]))) | $b]'
+  # Checked against what has been added so far, so a base that repeats an entry adds it once.
+  filter='($keys | split(",")) as $k
+    | reduce .[1][] as $b (.[0]; if any(.[]; . as $a | all($k[]; $a[.] == $b[.])) then . else . + [$b] end)'
   ;;
 *) usage ;;
 esac
@@ -61,9 +63,33 @@ give_up() { # message [detail]
 
 [ -f "$base" ] || give_up "$base is missing"
 mkdir -p "$(dirname "$target")" || exit 1
-if [ -n "$drop_link" ] && [ -L "$target" ]; then rm -f "$target" || exit 1; fi
-if [ ! -f "$target" ]; then printf '%s\n' "$empty" >"$target" || exit 1; fi
-if ! merged="$(jq -s --arg keys "$keys" "$filter" "$target" "$base" 2>/dev/null)"; then
-  give_up "$target or $base is not plain JSON" "$(jq -s --arg keys "$keys" "$filter" "$target" "$base" 2>&1 >/dev/null)"
+tmp=""
+trap '[ -z "$tmp" ] || rm -f "$tmp"' EXIT
+if [ -n "$drop_link" ] && [ -L "$target" ]; then
+  # What the link pointed at is the user's settings, so it becomes the starting point.
+  if [ -f "$target" ]; then
+    tmp="$(mktemp "$(dirname "$target")/.json-merge.XXXXXX")" &&
+      cp "$target" "$tmp" && mv -f "$tmp" "$target" || exit 1
+    tmp=""
+  else
+    rm -f "$target" || exit 1
+  fi
 fi
-printf '%s\n' "$merged" >"$target" || exit 1
+real="$target"
+while [ -L "$real" ]; do
+  next="$(readlink "$real")" || exit 1
+  case "$next" in
+  /*) real="$next" ;;
+  *) real="$(dirname "$real")/$next" ;;
+  esac
+done
+if [ ! -f "$real" ]; then printf '%s\n' "$empty" >"$real" || exit 1; fi
+if ! merged="$(jq -s --arg keys "$keys" "$filter" "$real" "$base" 2>/dev/null)"; then
+  give_up "$target or $base is not plain JSON" "$(jq -s --arg keys "$keys" "$filter" "$real" "$base" 2>&1 >/dev/null)"
+fi
+# cp -p first so the new file keeps the old one's mode.
+tmp="$(mktemp "$(dirname "$real")/.json-merge.XXXXXX")" &&
+  cp -p "$real" "$tmp" &&
+  printf '%s\n' "$merged" >"$tmp" &&
+  mv -f "$tmp" "$real" || exit 1
+tmp=""
