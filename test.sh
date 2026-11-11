@@ -99,7 +99,8 @@ run() { # run a repo script with the stubs in place; never touches real $HOME
 SCRIPTS=(bootstrap.sh rebuild.sh users.sh test.sh
   home/.claude/statusline.sh home/.claude/session-name.sh
   home/.claude/comment-audit.sh home/.claude/guard-bash.sh home/.claude/skill-gate.sh
-  home/.claude/local-skills.sh)
+  home/.claude/local-skills.sh home/json-merge.sh
+  home/vscode/extensions.sh home/vscode/metals-java-home.sh)
 
 # --------------------------------------------------------------------------
 section "syntax and lint"
@@ -795,10 +796,13 @@ if grep -q 'mkOutOfStoreSymlink.*\.claude/settings\.json' "$DIR/home.nix"; then
 else
   ok "home.nix does not link settings.json"
 fi
-if grep -q 'settings\.base\.json' "$DIR/home.nix"; then
-  ok "home.nix installs settings.base.json"
+# The merge itself is tested under "json merge"; this is the one call site.
+# shellcheck disable=SC2016  # the ${} are Nix interpolation, not shell
+if grep -q 'jsonMerge} --drop-link deep "${dotfiles}/home/\.claude/settings\.base\.json"' "$DIR/home.nix"; then
+  ok "home.nix merges settings.base.json, failing on invalid JSON"
 else
-  bad "home.nix installs settings.base.json" "nothing would put the durable keys on a new machine"
+  bad "home.nix merges settings.base.json, failing on invalid JSON" \
+    "want --drop-link deep and no --skip-invalid: a broken settings.json must stop the rebuild"
 fi
 
 # --------------------------------------------------------------------------
@@ -815,7 +819,7 @@ else
     jq -e 'type == "array"' "$VS/keybindings.base.json" >/dev/null 2>&1; then
     ok "settings base is an object and keybindings base an array"
   else
-    bad "settings base is an object and keybindings base an array" "the merge in home.nix assumes both"
+    bad "settings base is an object and keybindings base an array" "home.nix merges them as deep and append-unique"
   fi
   if jq -e 'has("Default") and all(.[]; type == "array" and all(.[]; test("^[a-z0-9-]+\\.[a-z0-9-]+$"; "i")))' "$VS/extensions.json" >/dev/null 2>&1; then
     ok "extensions.json maps profiles to publisher.name ids"
@@ -827,6 +831,103 @@ if grep -q 'mkOutOfStoreSymlink.*Code/User' "$DIR/home.nix"; then
   bad "home.nix does not link VS Code's settings" "a link sends every settings-UI toggle back into this repo"
 else
   ok "home.nix does not link VS Code's settings"
+fi
+# shellcheck disable=SC2016  # the ${} are Nix interpolation, not shell
+if grep -q 'jsonMerge} --skip-invalid deep "${dotfiles}/home/vscode/settings\.base\.json"' "$DIR/home.nix" &&
+  grep -q 'jsonMerge} --skip-invalid append-unique key,command,when "${dotfiles}/home/vscode/keybindings\.base\.json"' "$DIR/home.nix"; then
+  ok "home.nix merges VS Code's settings and keybindings, skipping commented files"
+else
+  bad "home.nix merges VS Code's settings and keybindings, skipping commented files" \
+    "want --skip-invalid deep for settings and --skip-invalid append-unique key,command,when for keybindings"
+fi
+
+# --------------------------------------------------------------------------
+section "json merge"
+JM="$DIR/home/json-merge.sh"
+if ! command -v jq >/dev/null 2>&1; then
+  skip "json-merge.sh (jq not found)"
+else
+  JW="$WORK/jm"
+  mkdir -p "$JW"
+  jm() { # args -> sets JM_RC and JM_ERR
+    JM_ERR="$("$JM" "$@" 2>&1 >/dev/null)"
+    JM_RC=$?
+  }
+  printf '%s\n' '{"a": 1, "n": {"x": 1, "y": 1}, "hooks": [1, 2]}' >"$JW/obj.base.json"
+  printf '%s\n' '[{"key": "k", "command": "c", "when": "w"}, {"key": "k2", "command": "c2"}]' >"$JW/arr.base.json"
+
+  jm deep "$JW/obj.base.json" "$JW/new/settings.json"
+  if [ "$JM_RC" = 0 ] && jq -e '. == {"a": 1, "n": {"x": 1, "y": 1}, "hooks": [1, 2]}' "$JW/new/settings.json" >/dev/null 2>&1; then
+    ok "deep: a missing target and its folder are created from the base"
+  else
+    bad "deep: a missing target and its folder are created from the base" "rc=$JM_RC" "$JM_ERR"
+  fi
+  jm append-unique key,command,when "$JW/arr.base.json" "$JW/new/keybindings.json"
+  eq "append-unique: a missing target starts as an empty array" "2" "$(jq length "$JW/new/keybindings.json" 2>&1)"
+
+  printf '%s\n' '{"a": 0, "mine": true, "n": {"x": 0, "z": 1}, "hooks": [9, 9, 9]}' >"$JW/s.json"
+  jm deep "$JW/obj.base.json" "$JW/s.json"
+  eq "deep: base wins a conflicting key and the target's other keys survive" \
+    '1 true' "$(jq -r '"\(.a) \(.mine)"' "$JW/s.json")"
+  eq "deep: nested objects merge key by key" '{"x":1,"y":1,"z":1}' "$(jq -cS .n "$JW/s.json")"
+  eq "deep: base replaces an array outright" '[1,2]' "$(jq -c .hooks "$JW/s.json")"
+
+  printf '%s\n' '{"real": true}' >"$JW/linked-to.json"
+  ln -s "$JW/linked-to.json" "$JW/l1.json"
+  ln -s "$JW/linked-to.json" "$JW/l2.json"
+  jm --drop-link deep "$JW/obj.base.json" "$JW/l1.json"
+  if [ ! -L "$JW/l1.json" ] && jq -e 'has("real") | not' "$JW/l1.json" >/dev/null 2>&1 &&
+    [ "$(cat "$JW/linked-to.json")" = '{"real": true}' ]; then
+    ok "--drop-link: a leftover link becomes a fresh file and its old target is untouched"
+  else
+    bad "--drop-link: a leftover link becomes a fresh file and its old target is untouched"
+  fi
+  jm deep "$JW/obj.base.json" "$JW/l2.json"
+  if [ -L "$JW/l2.json" ] && jq -e '.real and .a == 1' "$JW/linked-to.json" >/dev/null 2>&1; then
+    ok "without --drop-link a linked target is merged through the link"
+  else
+    bad "without --drop-link a linked target is merged through the link"
+  fi
+
+  printf '{} // mine\n' >"$JW/bad.json"
+  jm deep "$JW/obj.base.json" "$JW/bad.json"
+  if [ "$JM_RC" = 1 ] && [ "$(cat "$JW/bad.json")" = "{} // mine" ]; then
+    ok "invalid JSON fails by default and leaves the file alone"
+  else
+    bad "invalid JSON fails by default and leaves the file alone" "rc=$JM_RC"
+  fi
+  contains "and the failure names the file" "$JM_ERR" "$JW/bad.json"
+  jm --skip-invalid deep "$JW/obj.base.json" "$JW/bad.json"
+  if [ "$JM_RC" = 0 ] && [ "$(cat "$JW/bad.json")" = "{} // mine" ]; then
+    ok "--skip-invalid exits 0 and leaves the file alone"
+  else
+    bad "--skip-invalid exits 0 and leaves the file alone" "rc=$JM_RC"
+  fi
+  contains "and says it skipped" "$JM_ERR" "skipped"
+  jm deep "$JW/no-such-base.json" "$JW/s2.json"
+  if [ "$JM_RC" = 1 ] && [ ! -e "$JW/s2.json" ]; then
+    ok "a missing base fails before touching the target"
+  else
+    bad "a missing base fails before touching the target" "rc=$JM_RC"
+  fi
+
+  printf '%s\n' '[{"key": "k", "command": "c", "when": "w", "args": "mine"}, {"key": "k", "command": "c", "when": "other"}]' >"$JW/kb.json"
+  jm append-unique key,command,when "$JW/arr.base.json" "$JW/kb.json"
+  eq "append-unique: an entry matching on every key is not added again" \
+    "1" "$(jq '[.[] | select(.key == "k" and .when == "w")] | length' "$JW/kb.json")"
+  eq "append-unique: the target's own version of it is kept" "mine" "$(jq -r '.[0].args' "$JW/kb.json")"
+  eq "append-unique: an entry that differs only in when is kept" \
+    "1" "$(jq '[.[] | select(.when == "other")] | length' "$JW/kb.json")"
+  eq "append-unique: a base entry with no when is appended" "k2" "$(jq -r '.[-1].key' "$JW/kb.json")"
+  before="$(cat "$JW/kb.json")"
+  jm append-unique key,command,when "$JW/arr.base.json" "$JW/kb.json"
+  eq "append-unique: a second run changes nothing" "$before" "$(cat "$JW/kb.json")"
+
+  for args in "" "deep" "deep $JW/obj.base.json" "append-unique $JW/arr.base.json $JW/x.json" "--bogus deep a b" "shallow a b"; do
+    # shellcheck disable=SC2086 # each case is deliberately split into words
+    jm $args
+    eq "usage error exits 2: json-merge.sh ${args//$JW\//}" "2" "$JM_RC"
+  done
 fi
 
 # --------------------------------------------------------------------------

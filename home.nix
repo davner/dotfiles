@@ -11,50 +11,8 @@
 let
   dotfiles = "${config.home.homeDirectory}/.dotfiles";
 
-  # Merges the durable half of Claude Code's user settings into whatever is
-  # already at ~/.claude/settings.json. Base wins on the keys it names, so a
-  # hook or statusline change reaches every machine on the next rebuild; every
-  # other key survives untouched, which is what lets /config keep ownership of
-  # model, effortLevel and theme without a write reaching this repo. Adding one
-  # of those three to settings.base.json would revert it on every rebuild.
-  claudeSettingsMerge = pkgs.writeShellScript "claude-settings-merge" ''
-    set -eu
-    target="$HOME/.claude/settings.json"
-    base="${dotfiles}/home/.claude/settings.base.json"
-    if [ ! -f "$base" ]; then
-      echo "claude-settings-merge: $base is missing" >&2
-      exit 1
-    fi
-    mkdir -p "$(dirname "$target")"
-    # A leftover link from when this file was linked into the repo. Writes
-    # through it land in the working tree, which is what this replaces.
-    if [ -L "$target" ]; then rm -f "$target"; fi
-    if [ ! -f "$target" ]; then printf '%s\n' '{}' >"$target"; fi
-    merged="$(${pkgs.jq}/bin/jq -s '.[0] * .[1]' "$target" "$base")"
-    printf '%s\n' "$merged" >"$target"
-  '';
-
-  # Same merge as Claude's, so a toggle made in the VS Code UI survives a rebuild.
-  vscodeSettingsMerge = pkgs.writeShellScript "vscode-settings-merge" ''
-    set -eu
-    user="$HOME/Library/Application Support/Code/User"
-    src="${dotfiles}/home/vscode"
-    mkdir -p "$user"
-    for f in settings keybindings; do
-      [ -f "$user/$f.json" ] || printf '%s\n' "$([ $f = settings ] && echo '{}' || echo '[]')" >"$user/$f.json"
-    done
-    # VS Code allows comments in these files and jq does not, so a hand-commented file is left alone.
-    if merged="$(${pkgs.jq}/bin/jq -s '.[0] * .[1]' "$user/settings.json" "$src/settings.base.json" 2>/dev/null)"; then
-      printf '%s\n' "$merged" >"$user/settings.json"
-    else
-      echo "vscode-settings-merge: settings.json is not plain JSON, skipped" >&2
-    fi
-    if merged="$(${pkgs.jq}/bin/jq -s '.[0] + [.[1][] as $b | select(.[0] | all(.key != $b.key or .command != $b.command or .when != $b.when)) | $b]' "$user/keybindings.json" "$src/keybindings.base.json" 2>/dev/null)"; then
-      printf '%s\n' "$merged" >"$user/keybindings.json"
-    else
-      echo "vscode-settings-merge: keybindings.json is not plain JSON, skipped" >&2
-    fi
-  '';
+  jsonMerge = "env PATH=${pkgs.jq}/bin:$PATH ${pkgs.bash}/bin/bash ${./home/json-merge.sh}";
+  vscodeUser = "$HOME/Library/Application Support/Code/User";
 
   # Which address git commits as, per machine. Same name either way; only the
   # address changes. A user record without one fails the build on purpose:
@@ -180,13 +138,17 @@ in
   # user-scope file Claude Code reads, and /config, /model and /effort all
   # persist into it, so a link would route every mid-session preference change
   # into this repo. settings.base.json carries the durable half instead, merged
-  # in by an activation step rather than linked.
-  home.activation.claudeSettings = config.lib.dag.entryAfter [
-    "writeBoundary"
-  ] "run ${claudeSettingsMerge}";
-  home.activation.vscodeSettings = config.lib.dag.entryAfter [
-    "writeBoundary"
-  ] "run ${vscodeSettingsMerge}";
+  # in by an activation step rather than linked. Base wins on the keys it
+  # names, so adding model, effortLevel or theme to it would revert /config on
+  # every rebuild. A link there dates from when this file was linked, so it goes.
+  home.activation.claudeSettings = config.lib.dag.entryAfter [ "writeBoundary" ] ''
+    run ${jsonMerge} --drop-link deep "${dotfiles}/home/.claude/settings.base.json" "$HOME/.claude/settings.json"
+  '';
+  # VS Code allows comments in these files and jq does not, so a hand-commented file is skipped.
+  home.activation.vscodeSettings = config.lib.dag.entryAfter [ "writeBoundary" ] ''
+    run ${jsonMerge} --skip-invalid deep "${dotfiles}/home/vscode/settings.base.json" "${vscodeUser}/settings.json"
+    run ${jsonMerge} --skip-invalid append-unique key,command,when "${dotfiles}/home/vscode/keybindings.base.json" "${vscodeUser}/keybindings.json"
+  '';
   home.activation.vscodeExtensions =
     config.lib.dag.entryAfter
       [
