@@ -9,6 +9,7 @@ machine's configuration, not a package anyone installs a version of.
 
 ## 2026-11-11
 
+- **Docs** home: Route youtube research through yt-dlp ([`1f70318`](https://github.com/davner/dotfiles/commit/1f703183aade4dd42fdf3d8bc13b5a239c1f0fc4))
 - **Changed** claude: Discover hooks and rules into their own folders ([`63574a0`](https://github.com/davner/dotfiles/commit/63574a0457d5590f51f7cc2ec4d3963030f14329))
 - **Changed** claude: Share the AI-credit rule through ai-credit.sh ([`6d027db`](https://github.com/davner/dotfiles/commit/6d027db87600af6a217b21eb4a0f44f687379050))
 - **Fixed** claude: Read hook commands through one shared shell parser ([`4e0fbdf`](https://github.com/davner/dotfiles/commit/4e0fbdf01782ad6fee000ff629df7ece10d41a32))
