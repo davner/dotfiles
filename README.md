@@ -51,6 +51,7 @@ with no rebuild. Adding or removing a linked file does need `./rebuild.sh`.
 | `home/.claude/skills/` | The skills below, each folder linked into `~/.claude/skills/` |
 | `home/.claude/rules/` | Path-scoped rules, each file linked into `~/.claude/rules/`: reading a TypeScript or Python file asks for that language's skills |
 | `home/.claude/*.sh`, `settings.base.json` | Hooks, status line and `local-skills.sh`; the settings merged into `~/.claude/settings.json` |
+| `home/vscode/` | VS Code: settings and keybindings merged into the user folder, each profile's extensions installed when missing, and `metals-java-home` linked into `~/.local/bin` |
 | `home/json-merge.sh` | Run by every rebuild, not linked: merges a base JSON file into a live one an app also writes, for Claude's and VS Code's settings |
 | `home/.config/zsh/functions.zsh` | Shell functions: `cc` (named Claude session), `cc-push` (push switch), `cc-flow` (the workflow below as a table) |
 
