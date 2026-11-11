@@ -99,7 +99,7 @@ run() { # run a repo script with the stubs in place; never touches real $HOME
 SCRIPTS=(bootstrap.sh rebuild.sh users.sh test.sh
   home/.claude/statusline.sh home/.claude/session-name.sh
   home/.claude/comment-audit.sh home/.claude/guard-bash.sh home/.claude/skill-gate.sh
-  home/.claude/local-skills.sh home/json-merge.sh
+  home/.claude/shell-parse.sh home/.claude/local-skills.sh home/json-merge.sh
   home/vscode/extensions.sh home/vscode/metals-java-home.sh)
 
 # --------------------------------------------------------------------------
@@ -134,6 +134,51 @@ if command -v nixfmt >/dev/null 2>&1; then
 else
   skip "nixfmt (nix develop --command ./test.sh installs it)"
 fi
+
+# --------------------------------------------------------------------------
+section "shell parser"
+# Both Bash hooks read a command through this, so a case it gets wrong is a
+# rule in each of them that fires on plain text or misses a real command.
+PARSER="$DIR/home/.claude/shell-parse.sh"
+parses() { # name, command, expected records
+  eq "parses $1" "$3" "$(printf '%s' "$2" | "$PARSER" 2>&1)"
+}
+# shellcheck disable=SC2016  # unexpanded text is what is under test
+{
+  parses "quotes and an escaped space" 'echo "a b" '\''c;d'\'' e\ f' $'w echo\nw a b\nw c;d\nw e f\ne'
+  parses "escaped separators as words" 'echo a\;b \&\& c' $'w echo\nw a;b\nw &&\nw c\ne'
+  parses "escapes inside double quotes" 'echo "a\"b\$c\d"' $'w echo\nw a"b$c\\\\d\ne'
+  parses "pipes, &&, ||, ; and newlines" $'a | b && c || d; e\nf' $'w a\ne\nw b\ne\nw c\ne\nw d\ne\nw e\ne\nw f\ne'
+  parses "assignments before the first word only" 'A=1 B="x y" cmd C=2' $'a A=1\na B=x y\nw cmd\nw C=2\ne'
+  parses "a quoted assignment as a word" '"A=1" cmd' $'w A=1\nw cmd\ne'
+  parses "redirects" 'cmd >out 2>>err <in 2>&1 &>all >|clob' $'w cmd\n> out\n> err\n< in\n> all\n> clob\ne'
+  parses "a redirect glued to the word before it" 'echo x>a.ts' $'w echo\nw x\n> a.ts\ne'
+  parses "a quoted heredoc as data" $'cat <<\'EOF\' >f\nline $x; git add .\nEOF\nnext' \
+    $'w cat\n> f\nh line $x; git add .\\n\ne\nw next\ne'
+  parses "a double-quoted heredoc delimiter" $'cat <<"EOF"\na\nEOF' $'w cat\nh a\\n\ne'
+  parses "a bare heredoc delimiter" $'cat <<EOF\na\nEOF' $'w cat\nh a\\n\ne'
+  parses "<<- stripping tabs" $'cat <<-EOF\n\tone\n\tEOF\nnext' $'w cat\nh one\\n\ne\nw next\ne'
+  parses "two heredocs, each on its statement" $'cat <<A; cat <<B\na\nA\nb\nB' $'w cat\nh a\\n\ne\nw cat\nh b\\n\ne'
+  parses "a delimiter as a substring" $'cat <<END\nENDING\nEND' $'w cat\nh ENDING\\n\ne'
+  parses "a here-string" 'cat <<<"hi there"' $'w cat\nh hi there\\n\ne'
+  parses "a subshell" '(cd x && git push); y' $'w cd\nw x\ne 1\nw git\nw push\ne 1\nw y\ne'
+  parses "\$( ) inside double quotes" 'echo "$(git status)" done' \
+    $'w echo\nw $(git status)\nw done\ne\nw git\nw status\ne 1'
+  parses "backticks" 'echo `date`' $'w echo\nw `date`\ne\nw date\ne 1'
+  parses "nested \$( )" 'a $(b $(c))' $'w a\nw $(b $(c))\ne\nw b\nw $(c)\ne 1\nw c\ne 1/2'
+  parses "process substitution" 'diff <(a) >(b)' $'w diff\nw <(a)\nw >(b)\ne\nw a\ne 1\nw b\ne 2'
+  parses "braces and reserved words" '{ git add .; } && if a; then b; fi' \
+    $'w git\nw add\nw .\ne\nw a\ne\nw b\ne'
+  parses "a function body" 'f() { g; }' $'w f\ne\nw g\ne'
+  parses "a comment" 'echo a # git add .' $'w echo\nw a\ne'
+  parses "arithmetic and parameter expansion" 'echo $((1+2)) ${a//;/,}' $'w echo\nw $((1+2))\nw ${a//;/,}\ne'
+  parses "a heredoc inside \$( )" $'git commit -m "$(cat <<\'EOF\'\nfix: x\nEOF\n)"' \
+    $'w git\nw commit\nw -m\nw $(cat <<\'EOF\'\\nfix: x\\nEOF\\n)\ne\nw cat\nh fix: x\\n\ne 1'
+  parses "a newline inside quotes" $'echo "a\nb"' $'w echo\nw a\\nb\ne'
+  parses "a backslash" "echo 'a\\b'" $'w echo\nw a\\\\b\ne'
+  parses "a line continuation" $'echo a \\\nb' $'w echo\nw a\nw b\ne'
+  parses "an empty command" '' ''
+}
 
 # --------------------------------------------------------------------------
 section "bash guard hook"
@@ -696,6 +741,81 @@ CASES
     bad "ordinary work is not blocked" "$allowed"
   fi
 
+  # Each hides its command from a reader that splits on separators alone: behind
+  # an assignment, inside a subshell or substitution, or after a wrapper.
+  hidden=""
+  while IFS= read -r c; do
+    [ -n "$c" ] || continue
+    [ "$(guard "$c")" = "2" ] || hidden="$hidden
+    let through: $c"
+  done <<'CASES'
+FOO=1 git push --force
+(git add .)
+$(git reset --hard)
+echo "$(git reset --hard)"
+echo `git reset --hard`
+x=$(git add .)
+cat <(git add .)
+sudo git add .
+sudo -u root git push --force
+env git add .
+env -i PATH=/x git add .
+command git add .
+exec git add .
+time git reset --hard
+nohup git clean -fd
+/usr/bin/git add .
+{ git add .; }
+if true; then git add .; fi
+! git add .
+(cd /tmp && git reset --hard)
+true && git add . # a trailing comment
+CASES
+  if [ -z "$hidden" ]; then
+    ok "a rule sees past quotes, subshells and wrappers"
+  else
+    bad "a rule sees past quotes, subshells and wrappers" "$hidden"
+  fi
+
+  as_text=""
+  while IFS= read -r c; do
+    [ -n "$c" ] || continue
+    [ "$(guard "$c")" = "0" ] || as_text="$as_text
+    blocked: $c"
+  done <<'CASES'
+echo "note; git reset --hard x"
+echo 'git add .'
+echo git add .
+git commit -m "note: git add . and git reset --hard"
+printf '%s' "git push --force"
+# git add .
+git log --grep 'reset --hard'
+command -v git
+echo "a; git add ." | cat
+CASES
+  if [ -z "$as_text" ]; then
+    ok "a command named in text is not run"
+  else
+    bad "a command named in text is not run" "$as_text"
+  fi
+  heredoc_text=$'cat <<\'EOF\' > notes.md\ngit add .\ngit reset --hard\nEOF'
+  eq "a heredoc body naming a blocked command passes" "0" "$(guard "$heredoc_text")"
+  # The hooks are linked into ~/.claude through the store, so the parser has to
+  # be found beside the real file at the end of that chain.
+  mkdir -p "$WORK/guard-link/store" "$WORK/guard-link/home"
+  ln -s "$GUARD" "$WORK/guard-link/store/guard-bash.sh"
+  ln -s ../store/guard-bash.sh "$WORK/guard-link/home/guard-bash.sh"
+  eq "a guard reached through two links still finds the parser" "2" \
+    "$(printf '%s' '{"tool_name":"Bash","tool_input":{"command":"git add ."}}' |
+      "$WORK/guard-link/home/guard-bash.sh" >/dev/null 2>&1; echo $?)"
+  mkdir -p "$WORK/guard-alone"
+  cp "$GUARD" "$WORK/guard-alone/guard-bash.sh"
+  lone_err="$(printf '%s' '{"tool_name":"Bash","tool_input":{"command":"git add ."}}' |
+    "$WORK/guard-alone/guard-bash.sh" 2>&1 >/dev/null)"
+  lone_rc=$?
+  eq "a guard without its parser fails without blocking" "1" "$lone_rc"
+  contains "a guard without its parser says so" "$lone_err" "shell-parse.sh is missing"
+
   # A push is judged against the repo it runs in, so these carry a cwd and
   # real repos: one opted in, one not, and a directory that is no repo at all.
   guard_in() { printf '{"tool_name":"Bash","tool_input":{"command":%s},"cwd":%s}' \
@@ -748,6 +868,17 @@ CASES
   else
     bad "a force push is blocked even in an opted-in repo" "$forced"
   fi
+  # A subshell's cd ends with the subshell, so it moves only the pushes inside it.
+  eq "cd and push inside one subshell is allowed" "0" \
+    "$(guard_in "$PUSHES/closed" "(cd $PUSHES/opted && git push)")"
+  eq "a cd inside a subshell does not carry out of it" "2" \
+    "$(guard_in "$PUSHES/closed" "(cd $PUSHES/opted) && git push")"
+  eq "a cd inside \$( ) does not carry out of it" "2" \
+    "$(guard_in "$PUSHES/closed" "echo \$(cd $PUSHES/opted) && git push")"
+  eq "a cd inside braces carries on" "0" \
+    "$(guard_in "$PUSHES/closed" "{ cd $PUSHES/opted; } && git push")"
+  eq "a wrapper that changes directory blocks the push" "2" \
+    "$(guard_in "$PUSHES/opted" 'sudo -D /tmp git push')"
 fi
 if grep -q 'guard-bash.sh' "$DIR/home/.claude/settings.base.json"; then
   ok "settings.base.json registers it on PreToolUse"
@@ -1219,7 +1350,7 @@ section "--help"
 # Every script's, not just one: these printed their own source with a line
 # range until a line moved and one of them started leaking `set -euo pipefail`
 # into its help text.
-for s in bootstrap.sh rebuild.sh users.sh; do
+for s in bootstrap.sh rebuild.sh users.sh home/.claude/shell-parse.sh; do
   run env -u SUDO_USER "$DIR/$s" --help
   eq "$s --help exits 0" "0" "$RUN_RC"
   contains "$s --help prints usage" "$RUN_OUT" "usage:"
@@ -1637,6 +1768,23 @@ CASES
     ok "reading TypeScript through Bash passes"
   else
     bad "reading TypeScript through Bash passes" "$stopped"
+  fi
+  nested=""
+  while IFS= read -r c; do
+    [ -n "$c" ] || continue
+    [ "$(bash_gate "$c")" = "2" ] || nested="$nested
+    let through: $c"
+  done <<'CASES'
+echo "$(cp a src/a.ts)"
+x=`tee src/a.ts`
+(cd web && sed -i 's/a/b/' src/a.ts)
+if cp a src/b.tsx; then :; fi
+{ mv a src/c.mts; }
+CASES
+  if [ -z "$nested" ]; then
+    ok "a write inside a subshell or a compound command is blocked"
+  else
+    bad "a write inside a subshell or a compound command is blocked" "$nested"
   fi
   # A heredoc body is data, so an apostrophe in it must not open a quote that
   # hides the command after it, and its text must not read as a command.

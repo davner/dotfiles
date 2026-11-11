@@ -15,92 +15,14 @@ required_skill() { # path -> the skill it needs, or nothing
   done <<<"$RULES"
 }
 
-# Heredoc bodies are skipped as data. awk, since a per-character bash loop
-# over a long heredoc would outrun the hook's 5 s timeout.
-# shellcheck disable=SC2016
-TOKENIZE='
-function flush(   name) {
-  if (!inword) return
-  if (!redir && !nwords && cur ~ /^[A-Za-z_][A-Za-z0-9_]*=/) {
-    name = cur; sub(/=.*/, "", name)
-    sub(/^[^=]*=/, "", cur); vars[name] = cur
-  } else if (redir != 2) {
-    # `f=src/a.ts && echo x > "$f"` is the one indirection a hook can see through.
-    if (cur ~ /^\$\{?[A-Za-z_][A-Za-z0-9_]*\}?$/) { name = cur; gsub(/[${}]/, "", name); cur = vars[name] }
-    print (redir ? "r " : "w ") cur
-    if (!redir) nwords++
-  }
-  cur = ""; inword = 0; redir = 0
-}
-function end() { flush(); redir = 0; nwords = 0; print "e" }
-function fd_number() { if (inword && cur ~ /^[0-9]+$/) { cur = ""; inword = 0 } }
-function heredoc(   d, s, c) {
-  s = 0
-  if (substr(line, i, 1) == "-") { s = 1; i++ }
-  while (substr(line, i, 1) ~ /[ \t]/) i++
-  d = ""
-  while (i <= n) {
-    c = substr(line, i, 1)
-    if (c ~ /[ \t;|&<>()]/) break
-    if (c == "\047" || c == "\"") {
-      i++
-      while (i <= n && substr(line, i, 1) != c) { d = d substr(line, i, 1); i++ }
-    } else if (c == "\\") {
-      i++; d = d substr(line, i, 1)
-    } else d = d c
-    i++
-  }
-  delim[++nd] = d; strip[nd] = s
-}
-BEGIN { hd = 1 }
-body {
-  l = $0
-  if (strip[hd]) sub(/^\t+/, "", l)
-  if (l == delim[hd] && ++hd > nd) { body = 0; nd = 0; hd = 1 }
-  next
-}
-{
-  line = $0; n = length(line); i = 1; cont = 0
-  while (i <= n) {
-    c = substr(line, i, 1)
-    if (q == "\047") { if (c == q) q = ""; else cur = cur c; i++; continue }
-    if (q == "\"") {
-      if (c == "\\" && index("$`\"\\", substr(line, i + 1, 1))) { cur = cur substr(line, i + 1, 1); i += 2; continue }
-      if (c == q) q = ""; else cur = cur c
-      i++; continue
-    }
-    if (c == "\\") {
-      if (i == n) cont = 1; else { cur = cur substr(line, i + 1, 1); inword = 1 }
-      i += 2; continue
-    }
-    if (c == "\047" || c == "\"") { q = c; inword = 1; i++; continue }
-    if (c == " " || c == "\t") { flush(); i++; continue }
-    if (c == "#" && !inword) break
-    if (c == "&" && substr(line, i + 1, 1) == ">") { flush(); i++; continue }
-    if (c ~ /[;|&()]/) { end(); i++; continue }
-    if (c == ">") {
-      fd_number(); flush(); i++
-      if (substr(line, i, 1) ~ /[>|]/) i++
-      if (substr(line, i, 1) == "&") {
-        i++
-        if (substr(line, i, 1) ~ /[0-9-]/) { while (substr(line, i, 1) ~ /[0-9-]/) i++; continue }
-      }
-      redir = 1; continue
-    }
-    if (c == "<") {
-      fd_number(); flush(); i++
-      if (substr(line, i, 2) == "<<") { i += 2; redir = 2; continue }
-      if (substr(line, i, 1) == "<") { i++; heredoc(); continue }
-      redir = 2; continue
-    }
-    cur = cur c; inword = 1; i++
-  }
-  if (q) { cur = cur " "; next }
-  if (cont) next
-  end()
-  if (nd >= hd) body = 1
-}
-END { end() }'
+# Followed to the real file, so an edit to the parser beside it is live without a rebuild.
+self=${BASH_SOURCE[0]}
+while [[ -L $self ]]; do
+  link=$(readlink "$self")
+  [[ $link == /* ]] || link=$(dirname "$self")/$link
+  self=$link
+done
+PARSE=$(dirname "$self")/shell-parse.sh
 
 # The destination is the last operand, or a folder that each source lands in
 # under its own name; the sources are only read.
@@ -155,18 +77,35 @@ command_writes() { # one simple command's words -> the paths it writes
 }
 
 write_words() { # command -> every word in a write position, one per line
-  local kind w words=()
+  local kind w k words=() names=() values=()
+  local ref='^\$\{?([A-Za-z_][A-Za-z0-9_]*)\}?$'
   while IFS= read -r w; do
-    kind=${w%% *} w=${w#* }
+    kind=${w:0:1} w=${w:2}
+    [[ $w != *\\* ]] || printf -v w '%b' "$w"
+    w=${w//$'\n'/ }
+    # `f=src/a.ts && echo x > "$f"` is the one indirection a hook can see through.
+    if [[ $kind == [w\>] && $w =~ $ref ]]; then
+      w=""
+      for ((k = ${#names[@]} - 1; k >= 0; k--)); do
+        if [[ ${names[k]} == "${BASH_REMATCH[1]}" ]]; then
+          w=${values[k]}
+          break
+        fi
+      done
+    fi
     case $kind in
-      r) printf '%s\n' "$w" ;;
+      a)
+        names+=("${w%%=*}")
+        values+=("${w#*=}")
+        ;;
+      '>') printf '%s\n' "$w" ;;
       w) words+=("$w") ;;
       e)
         ((${#words[@]} == 0)) || command_writes "${words[@]}"
         words=()
         ;;
     esac
-  done < <(awk "$TOKENIZE" <<<"$1") # w <word>, r <redirect target>, e at a command's end
+  done < <("$PARSE" <<<"$1" | grep -v '^h ') # bash reads a long heredoc's record a byte at a time
 }
 
 payload=$(cat)

@@ -8,21 +8,26 @@ cmd=$(jq -r '.tool_input.command // empty' <<<"$payload")
 [[ -n $cmd ]] || exit 0
 here=$(jq -r '.cwd // empty' <<<"$payload")
 
-# One shell word, quoted or bare, so a quoted path with a space stays whole.
-WORD="(\"[^\"]*\"|'[^']*'|[^[:space:]]+)"
+# Followed to the real file, so an edit to the parser beside it is live without a rebuild.
+self=${BASH_SOURCE[0]}
+while [[ -L $self ]]; do
+  link=$(readlink "$self")
+  [[ $link == /* ]] || link=$(dirname "$self")/$link
+  self=$link
+done
+PARSE=$(dirname "$self")/shell-parse.sh
+if [[ ! -x $PARSE ]]; then
+  echo "guard-bash.sh: $PARSE is missing, so no command is being checked" >&2
+  exit 1
+fi
 
-unquote() {
-  local s=$1
-  case $s in
-    \"*\") s=${s#\"} s=${s%\"} ;;
-    \'*\') s=${s#\'} s=${s%\'} ;;
-  esac
-  printf '%s' "$s"
+unescape() { # parser text -> REPLY
+  REPLY=$1
+  [[ $REPLY != *\\* ]] || printf -v REPLY '%b' "$REPLY"
 }
 
 resolve_dir() { # base, word -> absolute directory, or fail when it cannot be known
-  local base=$1 d
-  d=$(unquote "$2")
+  local base=$1 d=$2
   case $d in
     \~) d=$HOME ;;
     \~/*) d=$HOME/${d#\~/} ;;
@@ -41,61 +46,165 @@ push_allowed() { # directory -> success when that repo has opted in to pushes
   [[ $(git -C "$1" config --local --get claude.allowPush 2>/dev/null) == true ]]
 }
 
-# A blocked command hides behind `&&` as well as at a line start, so each
-# segment is judged alone - which also keeps `echo "git add ."` from matching.
-segments=$(printf '%s\n' "$cmd" | sed -E 's/(\&\&|\|\||;|\|)/\n/g')
+# A cd inside a subshell is undone when it closes, so each one is kept against
+# its scope and a statement sees only its own scope's and its parents'.
+SCOPE_KEYS=()
+SCOPE_DIRS=()
+dir_for() { # scope -> DIR
+  local s=$1 k
+  while :; do
+    for ((k = ${#SCOPE_KEYS[@]} - 1; k >= 0; k--)); do
+      if [[ ${SCOPE_KEYS[k]} == "$s" ]]; then
+        DIR=${SCOPE_DIRS[k]}
+        return
+      fi
+    done
+    [[ -n $s ]] || break
+    if [[ $s == */* ]]; then s=${s%/*}; else s=""; fi
+  done
+  DIR=$here
+}
 
-reason=""
-while IFS= read -r seg; do
-  seg="${seg#"${seg%%[![:space:]]*}"}"
-  seg="${seg%"${seg##*[![:space:]]}"}"
-  [[ -n $seg ]] || continue
+# A wrapper runs the command after it unchanged, so `sudo git push --force` is
+# the force push it wraps; one that changes directory leaves the repo unknown.
+command_words() { # W -> CW, the words that run once wrappers are dropped; DIR_LOST
+  local i=0 n=${#W[@]}
+  CW=()
+  DIR_LOST=""
+  while ((i < n)); do
+    case ${W[i]} in
+      env)
+        i=$((i + 1))
+        while ((i < n)); do
+          case ${W[i]} in
+            -u | --unset) i=$((i + 2)) ;;
+            -C | --chdir) DIR_LOST=1 i=$((i + 2)) ;;
+            -C* | --chdir=*) DIR_LOST=1 i=$((i + 1)) ;;
+            -* | [A-Za-z_]*=*) i=$((i + 1)) ;;
+            *) break ;;
+          esac
+        done
+        ;;
+      sudo | doas)
+        i=$((i + 1))
+        while ((i < n)); do
+          case ${W[i]} in
+            --)
+              i=$((i + 1))
+              break
+              ;;
+            -D | --chdir) DIR_LOST=1 i=$((i + 2)) ;;
+            -D* | --chdir=*) DIR_LOST=1 i=$((i + 1)) ;;
+            --*=*) i=$((i + 1)) ;;
+            --user | --group | --host | --prompt | --close-from | --role | --type | --other-user | --chroot | --command-timeout)
+              i=$((i + 2))
+              ;;
+            --*) i=$((i + 1)) ;;
+            -*[ugpCrtTURh]) i=$((i + 2)) ;;
+            -* | [A-Za-z_]*=*) i=$((i + 1)) ;;
+            *) break ;;
+          esac
+        done
+        ;;
+      command)
+        i=$((i + 1))
+        while ((i < n)); do
+          case ${W[i]} in
+            -v | -V) return ;;
+            -*) i=$((i + 1)) ;;
+            *) break ;;
+          esac
+        done
+        ;;
+      exec | nohup | builtin | time | nice | timeout)
+        local wrapper=${W[i]}
+        i=$((i + 1))
+        while ((i < n)); do
+          case $wrapper:${W[i]} in
+            exec:-a | nice:-n | timeout:-s | timeout:-k | timeout:--signal | timeout:--kill-after) i=$((i + 2)) ;;
+            *:-*) i=$((i + 1)) ;;
+            *) break ;;
+          esac
+        done
+        [[ $wrapper != timeout ]] || i=$((i + 1))
+        ;;
+      *) break ;;
+    esac
+  done
+  ((i < n)) && CW=("${W[@]:i}")
+  return 0
+}
+
+has_arg() { # ERE -> success when some argument after the subcommand is all of it
+  local a
+  for a in ${ARGS[@]+"${ARGS[@]}"}; do
+    [[ $a =~ ^($1)$ ]] && return 0
+  done
+  return 1
+}
+
+judge_statement() { # scope -> reason, msg_reason, for the statement in W and BODY
+  local scope=$1 repo sub="" i n j out
+  ((${#W[@]} > 0)) || return 0
+  command_words
+  n=${#CW[@]}
+  ((n > 0)) || return 0
+  dir_for "$scope"
+  repo=$DIR
+  [[ -z $DIR_LOST ]] || repo=""
 
   # Followed so a push is checked against the repo it runs in; a `cd` this
   # cannot resolve leaves the directory unknown, and an unknown one never pushes.
-  if [[ $seg =~ ^cd([[:space:]]+(.*))?$ ]]; then
-    if [[ -z ${BASH_REMATCH[2]} ]]; then
-      here=$HOME
+  if [[ ${CW[0]} == cd ]]; then
+    i=1
+    while ((i < n)) && [[ ${CW[i]} == -[LPe@]* || ${CW[i]} == -- ]]; do i=$((i + 1)); done
+    if ((i >= n)); then
+      repo=$HOME
     else
-      here=$(resolve_dir "$here" "${BASH_REMATCH[2]}") || here=""
+      repo=$(resolve_dir "$repo" "${CW[i]}") || repo=""
     fi
-    continue
+    SCOPE_KEYS+=("$scope")
+    SCOPE_DIRS+=("$repo")
+    return 0
   fi
 
   # Global options go before the subcommand, so they are peeled off here and
   # every rule below can match `git <subcommand>` whatever preceded it.
-  repo=$here
-  if [[ $seg =~ ^git[[:space:]]+(.*)$ ]]; then
-    rest=${BASH_REMATCH[1]}
-    while :; do
-      if [[ $rest =~ ^-C[[:space:]]+${WORD}[[:space:]]*(.*)$ ]]; then
-        repo=$(resolve_dir "$repo" "${BASH_REMATCH[1]}") || repo=""
-        rest=${BASH_REMATCH[2]}
-      elif [[ $rest =~ ^--(git-dir|work-tree)(=|[[:space:]]+)${WORD}[[:space:]]*(.*)$ ]]; then
-        repo=""
-        rest=${BASH_REMATCH[4]}
-      elif [[ $rest =~ ^-c[[:space:]]+${WORD}[[:space:]]*(.*)$ ]]; then
-        rest=${BASH_REMATCH[2]}
-      elif [[ $rest =~ ^--?[a-zA-Z][-a-zA-Z]*(=[^[:space:]]*)?([[:space:]]+(.*))?$ ]]; then
-        rest=${BASH_REMATCH[3]}
-      else
-        break
-      fi
+  ARGS=()
+  if [[ ${CW[0]} == git || ${CW[0]} == */git ]]; then
+    i=1
+    while ((i < n)); do
+      case ${CW[i]} in
+        -C)
+          repo=$(resolve_dir "$repo" "${CW[i + 1]-}") || repo=""
+          i=$((i + 2))
+          ;;
+        --git-dir | --work-tree)
+          repo=""
+          i=$((i + 2))
+          ;;
+        --git-dir=* | --work-tree=*)
+          repo=""
+          i=$((i + 1))
+          ;;
+        -c) i=$((i + 2)) ;;
+        -*) i=$((i + 1)) ;;
+        *) break ;;
+      esac
     done
-    seg="git $rest"
+    sub=${CW[i]-}
+    ((i + 1 < n)) && ARGS=("${CW[@]:i+1}")
   fi
 
-  if [[ $seg =~ ^git[[:space:]]+add([[:space:]]|$) ]]; then
-    if [[ $seg =~ [[:space:]](\.|-A|--all|:/)([[:space:]]|$) ]]; then
-      reason="git add with a wildcard stages whatever else is in the tree - a
+  if [[ $sub == add ]] && has_arg '\.|-A|--all|:/'; then
+    reason="git add with a wildcard stages whatever else is in the tree - a
 half-finished edit, a generated file, another agent's worktree. Stage the paths
 this task actually touched, by name."
-    fi
   fi
 
-  if [[ $seg =~ ^git[[:space:]]+push([[:space:]]|$) ]]; then
+  if [[ $sub == push ]]; then
     # A `+` on a refspec forces that one ref exactly as --force forces them all.
-    if [[ $seg =~ (--force|--force-with-lease|[[:space:]]-[a-zA-Z]*f[a-zA-Z]*([[:space:]]|$)|[[:space:]]\+[^[:space:]]) ]]; then
+    if has_arg '--force.*|-[a-zA-Z]*f[a-zA-Z]*|\+.+'; then
       reason="A force push rewrites history the user did not ask you to rewrite.
 Ask for it in words and let them run it."
     elif ! push_allowed "$repo"; then
@@ -110,81 +219,89 @@ push command to run themselves."
   fi
 
   # Setting the opt-in is left to the user, or this rule would unlock itself.
-  if [[ $seg =~ ^git[[:space:]]+config([[:space:]]|$) ]] &&
-    [[ $(tr '[:upper:]' '[:lower:]' <<<"$seg") == *claude.allowpush* ]] &&
-    ! [[ $seg =~ [[:space:]](--get|--get-all|get)([[:space:]]|$) ]]; then
-    reason="claude.allowPush is the user's switch for letting agents push from a
+  if [[ $sub == config ]] && ! has_arg '--get|--get-all|get'; then
+    shopt -s nocasematch
+    for out in ${ARGS[@]+"${ARGS[@]}"}; do
+      [[ $out == *claude.allowpush* ]] || continue
+      reason="claude.allowPush is the user's switch for letting agents push from a
 repo, so an agent never sets or clears it. Ask the user to run the git config
 command themselves."
+    done
+    shopt -u nocasematch
   fi
   # The same switch behind the user's zsh function, which agent shells load too.
-  if [[ $seg =~ ^cc-push([[:space:]]|$) ]] && ! [[ $seg =~ ^cc-push[[:space:]]+status([[:space:]]|$) ]]; then
+  if [[ ${CW[0]} == cc-push && ${CW[1]-} != status ]]; then
     reason="cc-push flips the user's switch for letting agents push from a
 repo, so an agent never runs it. \`cc-push status\` only reads it; ask the
 user to flip it themselves."
   fi
 
   # Opening or merging a PR puts work in front of other people, so it stays the user's act.
-  if [[ $seg =~ ^gh[[:space:]]+pr[[:space:]]+(create|new|merge)([[:space:]]|$) ]] ||
-    [[ $seg =~ ^(npx[[:space:]]+(-y[[:space:]]+|--yes[[:space:]]+)?)?gh-axi[[:space:]]+pr[[:space:]]+(create|merge)([[:space:]]|$) ]]; then
+  j=0
+  if [[ ${CW[0]} == npx ]]; then
+    j=1
+    [[ ${CW[1]-} != -y && ${CW[1]-} != --yes ]] || j=2
+  fi
+  if { [[ ${CW[0]} == gh && ${CW[1]-} == pr ]] && [[ ${CW[2]-} =~ ^(create|new|merge)$ ]]; } ||
+    { [[ ${CW[j]-} == gh-axi && ${CW[j + 1]-} == pr ]] && [[ ${CW[j + 2]-} =~ ^(create|merge)$ ]]; }; then
     reason="Opening or merging a pull request is the user's call, in every repo.
 Write the PR title and body on a page with a Copy button and hand them over;
 the user opens and merges it themselves."
   fi
 
-  if [[ $seg =~ ^git[[:space:]]+reset([[:space:]]|$) ]] && [[ $seg =~ [[:space:]]--hard([[:space:]]|$) ]]; then
+  if [[ $sub == reset ]] && has_arg '--hard'; then
     reason="git reset --hard throws away every uncommitted change in the tree,
 including edits the user or another agent is making right now, and git keeps no
 copy. Name the paths to restore, or ask the user to run it."
   fi
 
-  if [[ $seg =~ ^git[[:space:]]+merge([[:space:]]|$) ]] &&
-    ! [[ $seg =~ [[:space:]]--(ff-only|squash|abort|continue|quit)([[:space:]]|$) ]]; then
+  if [[ $sub == merge ]] && ! has_arg '--ff-only|--squash|--abort|--continue|--quit'; then
     reason="The user keeps history linear: no merge commits on any branch. Bring
 work over with \`git merge --ff-only\` when the branch sits on the tip, or
 \`git cherry-pick\` its commits when it does not."
   fi
 
-  if [[ $seg =~ ^git[[:space:]]+pull([[:space:]]|$) ]] &&
-    ! [[ $seg =~ [[:space:]](--rebase|-r|--ff-only)([[:space:]=]|$) ]]; then
+  if [[ $sub == pull ]] && ! has_arg '(--rebase|-r|--ff-only)(=.*)?'; then
     reason="A plain git pull can create a merge commit, and the user keeps history
 linear. Use \`git pull --rebase\` or \`git pull --ff-only\`."
   fi
 
-  if [[ $seg =~ ^git[[:space:]]+clean([[:space:]]|$) ]] &&
-    [[ $seg =~ ([[:space:]]-[a-zA-Z]*f|[[:space:]]--force([[:space:]]|$)) ]]; then
+  if [[ $sub == clean ]] && has_arg '-[a-zA-Z]*f.*|--force'; then
     reason="git clean -f deletes untracked files, which git has never seen and
 cannot bring back - a new file not yet added is gone for good. Remove the files
 you created by name, or ask the user to run it."
   fi
 
   # Working notes such as .scratch/ are gitignored, so -x is the flag that reaches them.
-  if [[ $seg =~ ^git[[:space:]]+clean([[:space:]]|$) ]] && [[ $seg =~ [[:space:]]-[a-zA-Z]*x ]]; then
+  if [[ $sub == clean ]] && has_arg '-[a-zA-Z]*x.*'; then
     reason="git clean -x deletes ignored files, which includes specs and tickets
 under .scratch/, local env files, and anything else git was told not to track."
   fi
 
-  if [[ $seg =~ ^git[[:space:]]+branch([[:space:]]|$) ]] &&
-    { [[ $seg =~ [[:space:]]-[a-zA-Z]*D ]] ||
-      { [[ $seg =~ [[:space:]](-[a-zA-Z]*d|--delete) ]] &&
-        [[ $seg =~ [[:space:]](-[a-zA-Z]*f|--force) ]]; }; }; then
+  if [[ $sub == branch ]] &&
+    { has_arg '-[a-zA-Z]*D.*' ||
+      { has_arg '(-[a-zA-Z]*d|--delete).*' && has_arg '(-[a-zA-Z]*f|--force).*'; }; }; then
     reason="git branch -D deletes a branch even when its commits are merged
 nowhere else, and they are then reachable only through the reflog. Use
 git branch -d, which refuses unless the work is safe, or ask the user."
   fi
 
   # --staged alone only unstages, so it loses nothing and stays allowed.
-  if [[ $seg =~ ^git[[:space:]]+(checkout|restore)([[:space:]]|$) ]] &&
-    [[ $seg =~ [[:space:]](\.|\./|:/)([[:space:]]|$) ]] &&
-    ! { [[ $seg =~ ^git[[:space:]]+restore ]] &&
-      [[ $seg =~ [[:space:]](--staged|-S)([[:space:]]|$) ]] &&
-      ! [[ $seg =~ [[:space:]](--worktree|-W)([[:space:]]|$) ]]; }; then
+  if [[ $sub == checkout || $sub == restore ]] && has_arg '\.|\./|:/' &&
+    ! { [[ $sub == restore ]] && has_arg '--staged|-S' && ! has_arg '--worktree|-W'; }; then
     reason="Checking out or restoring the whole tree discards every uncommitted
 edit in it, including ones the user or another agent is making right now. Name
 the paths this task changed and restore only those."
   fi
 
-done <<<"$segments"
+  if [[ $sub == commit && -z $msg_reason ]] && statement_message; then
+    # Attribution first: it is the rule that overrides the harness, and unlike
+    # the shape caps it reads the trailers as well as the body.
+    out=$(attribution_reason "$MSG$MSG_TRAILERS") || out=$(judge_message "$MSG") || out=""
+    msg_reason=$out
+  fi
+  return 0
+}
 
 # Brands only: `cody`, `cursor` and `codex` are all names a human contributor
 # can carry, but `devin-ai-integration` is a handle nobody is christened with.
@@ -203,238 +320,37 @@ SUBJECT_MAX=72
 BODY_MAX_LINES=3
 BODY_MAX_BULLETS=2
 
-TOKENS=()
-TOK_STMT=()
-STMT_DOC=()
-
-emit_token() { # append the token being built; reads scan_command's locals
-  if ((have)) || [[ -n $cur ]]; then
-    TOKENS+=("$cur")
-    TOK_STMT+=("$stmt")
-    cur=""
-    have=0
-  fi
-}
-
-# A commit is judged on its own statement, so the scan has to know where one
-# ends: a newline separates, `#` opens a comment, and a heredoc body is data.
-scan_command() { # command -> TOKENS, TOK_STMT (statement per token), STMT_DOC
-  # Line by line: indexing a character out of the whole command is linear in its
-  # length, so doing that per character made a long heredoc quadratic.
-  local -a L=() pd=() ps=()
-  local line trimmed body delim q c two
-  local nl li i n cur="" have=0 stmt=0 inq="" cont=0 j st
-  TOKENS=()
-  TOK_STMT=()
-  STMT_DOC=()
-
-  while IFS= read -r line; do L+=("$line"); done <<<"$1"
-  nl=${#L[@]}
-  li=0
-
-  while ((li < nl)); do
-    line=${L[li]}
-    li=$((li + 1))
-    n=${#line}
-    i=0
-    cont=0
-
-    while ((i < n)); do
-      c=${line:i:1}
-      if [[ -n $inq ]]; then
-        if [[ $c == "$inq" ]]; then
-          inq=""
-        elif [[ $inq == '"' && $c == $'\\' ]] && ((i + 1 < n)); then
-          i=$((i + 1))
-          cur+=${line:i:1}
-        else
-          cur+=$c
-        fi
-        i=$((i + 1))
-        continue
-      fi
-      two=${line:i:2}
-      case $c in
-        "'" | '"')
-          inq=$c
-          have=1
-          i=$((i + 1))
-          ;;
-        $'\\')
-          if ((i + 1 < n)); then
-            cur+=${line:i+1:1}
-            have=1
-            i=$((i + 2))
-          else
-            cont=1
-            i=$((i + 1))
-          fi
-          ;;
-        '#')
-          if ((have == 0)) && [[ -z $cur ]]; then
-            i=$n
-          else
-            cur+=$c
-            i=$((i + 1))
-          fi
-          ;;
-        '<')
-          if [[ $two == '<<' && ${line:i+2:1} != '<' ]]; then
-            i=$((i + 2))
-            [[ ${line:i:1} == '-' ]] && i=$((i + 1))
-            while ((i < n)) && [[ ${line:i:1} == ' ' || ${line:i:1} == $'\t' ]]; do i=$((i + 1)); done
-            delim=""
-            case ${line:i:1} in
-              "'" | '"')
-                q=${line:i:1}
-                i=$((i + 1))
-                while ((i < n)) && [[ ${line:i:1} != "$q" ]]; do
-                  delim+=${line:i:1}
-                  i=$((i + 1))
-                done
-                i=$((i + 1))
-                ;;
-              *)
-                while ((i < n)) && [[ ${line:i:1} == [A-Za-z0-9_] ]]; do
-                  delim+=${line:i:1}
-                  i=$((i + 1))
-                done
-                ;;
-            esac
-            if [[ -n $delim ]]; then
-              pd+=("$delim")
-              ps+=("$stmt")
-            fi
-          else
-            cur+=$c
-            have=1
-            i=$((i + 1))
-          fi
-          ;;
-        '$')
-          if [[ $two == "\$(" ]]; then
-            emit_token
-            stmt=$((stmt + 1))
-            i=$((i + 2))
-          else
-            cur+=$c
-            have=1
-            i=$((i + 1))
-          fi
-          ;;
-        ' ' | $'\t')
-          emit_token
-          i=$((i + 1))
-          ;;
-        ';' | '&' | '|' | '(' | ')')
-          emit_token
-          while ((i < n)); do
-            case ${line:i:1} in
-              ';' | '&' | '|' | '(' | ')') i=$((i + 1)) ;;
-              *) break ;;
-            esac
-          done
-          stmt=$((stmt + 1))
-          ;;
-        *)
-          cur+=$c
-          have=1
-          i=$((i + 1))
-          ;;
-      esac
-    done
-
-    # A quoted string and a trailing backslash both carry the statement on.
-    if [[ -n $inq ]]; then
-      cur+=$'\n'
-      continue
-    fi
-    ((cont == 0)) || continue
-
-    emit_token
-    j=0
-    while ((j < ${#pd[@]})); do
-      delim=${pd[j]}
-      st=${ps[j]}
-      body=""
-      while ((li < nl)); do
-        line=${L[li]}
-        li=$((li + 1))
-        trimmed=${line#"${line%%[![:space:]]*}"}
-        trimmed=${trimmed%"${trimmed##*[![:space:]]}"}
-        [[ $trimmed == "$delim" ]] && break
-        body+=$line$'\n'
-      done
-      STMT_DOC[st]="${STMT_DOC[st]-}$body"
-      j=$((j + 1))
-    done
-    pd=()
-    ps=()
-    stmt=$((stmt + 1))
-  done
-  emit_token
-}
-
-commit_sites() { # -> "statement token-index" for every real `git commit`
-  local n=${#TOKENS[@]} k j st
-  for ((k = 0; k < n; k++)); do
-    [[ ${TOKENS[k]} == commit ]] || continue
-    st=${TOK_STMT[k]}
-    for ((j = k - 1; j >= 0; j--)); do
-      [[ ${TOK_STMT[j]} == "$st" ]] || break
-      case ${TOKENS[j]} in
-        git | */git)
-          printf '%s %s\n' "$st" "$k"
-          break
-          ;;
-      esac
-    done
-  done
-}
-
-heredoc_in() { # text -> the body of the first heredoc inside it
-  local text=$1 opener line probe trimmed delim="" body=""
-  opener=$'<<-?[[:space:]]*["\']?([A-Za-z_][A-Za-z0-9_]*)'
-  while IFS= read -r line; do
-    if [[ -z $delim ]]; then
-      probe=${line//<<</   }
-      [[ $probe =~ $opener ]] && delim=${BASH_REMATCH[1]}
-      continue
-    fi
-    trimmed=${line#"${line%%[![:space:]]*}"}
-    trimmed=${trimmed%"${trimmed##*[![:space:]]}"}
-    if [[ $trimmed == "$delim" ]]; then
-      printf '%s' "$body"
-      return 0
-    fi
-    body+=$line$'\n'
-  done <<<"$text"
+first_body() { # command -> the first heredoc body inside it
+  local rec
+  while IFS= read -r rec; do
+    [[ ${rec:0:1} == h ]] || continue
+    unescape "${rec:2}"
+    printf '%s' "$REPLY"
+    return 0
+  done < <("$PARSE" <<<"$1")
   return 1
 }
 
 MSG=""
 MSG_TRAILERS=""
 
-statement_message() { # statement, commit index -> MSG, MSG_TRAILERS
-  local st=$1
-  local ci=$2
-  local n=${#TOKENS[@]} k t cluster opt val file="" out="" p
+statement_message() { # ARGS after `commit`, BODY -> MSG, MSG_TRAILERS
+  local n=${#ARGS[@]} k t cluster opt val file="" out="" p
   local -a parts=() trailers=()
   MSG=""
   MSG_TRAILERS=""
-  for ((k = ci + 1; k < n; k++)); do
-    [[ ${TOK_STMT[k]} == "$st" ]] || break
-    t=${TOKENS[k]}
+  for ((k = 0; k < n; k++)); do
+    t=${ARGS[k]}
     case $t in
       --file=*) file=${t#--file=} ;;
       --message=*) parts+=("${t#--message=}") ;;
       --trailer=*) trailers+=("${t#--trailer=}") ;;
       --file | --message | --trailer)
-        if ((k + 1 < n)) && [[ ${TOK_STMT[k + 1]} == "$st" ]]; then
+        if ((k + 1 < n)); then
           case $t in
-            --file) file=${TOKENS[k + 1]} ;;
-            --message) parts+=("${TOKENS[k + 1]}") ;;
-            *) trailers+=("${TOKENS[k + 1]}") ;;
+            --file) file=${ARGS[k + 1]} ;;
+            --message) parts+=("${ARGS[k + 1]}") ;;
+            *) trailers+=("${ARGS[k + 1]}") ;;
           esac
           k=$((k + 1))
         fi
@@ -463,8 +379,8 @@ statement_message() { # statement, commit index -> MSG, MSG_TRAILERS
           esac
         done
         if [[ -n $opt ]]; then
-          if [[ -z $val ]] && ((k + 1 < n)) && [[ ${TOK_STMT[k + 1]} == "$st" ]]; then
-            val=${TOKENS[k + 1]}
+          if [[ -z $val ]] && ((k + 1 < n)); then
+            val=${ARGS[k + 1]}
             k=$((k + 1))
           fi
           if [[ -n $val ]]; then
@@ -481,9 +397,9 @@ statement_message() { # statement, commit index -> MSG, MSG_TRAILERS
   fi
   if ((${#parts[@]} > 0)); then
     for p in "${parts[@]}"; do
-      # `-m "$(cat <<'EOF' ...)"` keeps the whole heredoc inside the one token,
-      # so it is unwrapped here rather than by any scan of the command.
-      [[ $p != *'<<'* ]] || p=$(heredoc_in "$p") || continue
+      # `-m "$(cat <<'EOF' ...)"` keeps the source of its substitution, heredoc
+      # and all, so the parser reads that source again for the body.
+      [[ $p != *'<<'* ]] || p=$(first_body "$p") || continue
       # git joins repeated -m values as paragraphs, so the first is the subject.
       [[ -z $out ]] || out+=$'\n\n'
       out+=$p
@@ -497,8 +413,8 @@ statement_message() { # statement, commit index -> MSG, MSG_TRAILERS
     MSG=$(cat -- "$file")
     return 0
   fi
-  if [[ -n ${STMT_DOC[st]-} ]]; then
-    MSG=${STMT_DOC[st]}
+  if [[ -n $BODY ]]; then
+    MSG=$BODY
     return 0
   fi
   # A --trailer with no readable message still credits whoever it names.
@@ -618,29 +534,25 @@ is, or drop the line. An \"and also\" means it was two commits - split it."
   return 1
 }
 
-message_reason() { # -> why some staged message is not allowed, if one is not
-  local st ci out
-  # commit_sites needs both words as literal tokens, so a command without them
-  # never needs scanning - which is nearly every command this hook sees.
-  [[ $cmd == *git* && $cmd == *commit* ]] || return 1
-  scan_command "$cmd"
-  while read -r st ci; do
-    [[ -n $st ]] || continue
-    statement_message "$st" "$ci" || continue
-    # Attribution first: it is the rule that overrides the harness, and unlike
-    # the shape caps it reads the trailers as well as the body.
-    out=$(attribution_reason "$MSG$MSG_TRAILERS") || out=$(judge_message "$MSG") || continue
-    printf '%s' "$out"
-    return 0
-  done < <(commit_sites)
-  return 1
-}
-
 # Best effort by design: a message this cannot read - an --amend reusing the
 # stored one, a -F pointing nowhere - goes through unjudged rather than blocked.
-if [[ -z $reason ]]; then
-  reason=$(message_reason) || reason=""
-fi
+reason=""
+msg_reason=""
+W=()
+BODY=""
+while IFS= read -r rec; do
+  unescape "${rec:2}"
+  case ${rec:0:1} in
+    w) W+=("$REPLY") ;;
+    h) BODY+=$REPLY ;;
+    e)
+      judge_statement "$REPLY"
+      W=()
+      BODY=""
+      ;;
+  esac
+done < <("$PARSE" <<<"$cmd")
+[[ -n $reason ]] || reason=$msg_reason
 
 [[ -n $reason ]] || exit 0
 

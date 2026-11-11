@@ -201,6 +201,14 @@ see [AGENTS.md](AGENTS.md#installing-the-skills). Third-party license notices ar
 | Session start, after Edit or Write, and on stop | impeccable's own `scripts/impeccable hook` | Checks UI files for design anti-patterns; does nothing until impeccable is installed |
 | Always | `statusline.sh` | Shows model, context used, and rate limits |
 
+`guard-bash.sh` and `skill-gate.sh` read a command through one parser,
+`shell-parse.sh` (`--help` lists its output). Text in quotes, a heredoc body or
+a comment never counts as a command. A command inside `( )`, `$( )`, backticks
+or `{ }` still counts, and `guard-bash.sh` also judges git behind `VAR=x`,
+`env`, `sudo`, `command`, `exec`, `nohup`, `time`, `nice` and `timeout`. The
+parser has no link of its own: each hook follows its `~/.claude` link back to
+the repo and runs the parser that sits beside it.
+
 ## Tests and CI
 
 `./test.sh` runs everything with no sudo and no writes outside a temp folder;
