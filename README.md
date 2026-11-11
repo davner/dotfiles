@@ -50,7 +50,8 @@ with no rebuild. Adding or removing a linked file does need `./rebuild.sh`.
 | `home/AGENTS.md` | Global agent rules, linked to `~/.claude/CLAUDE.md`, Codex and opencode |
 | `home/.claude/skills/` | The skills below, each folder linked into `~/.claude/skills/` |
 | `home/.claude/rules/` | Path-scoped rules, each file linked into `~/.claude/rules/`: reading a TypeScript or Python file asks for that language's skills |
-| `home/.claude/*.sh`, `settings.base.json` | Hooks, status line and `local-skills.sh`; the settings merged into `~/.claude/settings.json` |
+| `home/.claude/hooks/` | Everything `settings.base.json` runs, hooks and status line, plus the helpers they share, each file linked into `~/.claude/hooks/` |
+| `home/.claude/settings.base.json`, `local-skills.sh` | Run by every rebuild, not linked: the settings merged into `~/.claude/settings.json`, and the script that puts back the vault skills and `impeccable` |
 | `home/vscode/` | VS Code: settings and keybindings merged into the user folder, each profile's extensions installed when missing, and `metals-java-home` linked into `~/.local/bin` |
 | `home/json-merge.sh` | Run by every rebuild, not linked: merges a base JSON file into a live one an app also writes, for Claude's and VS Code's settings |
 | `home/.config/zsh/functions.zsh` | Shell functions: `cc` (named Claude session), `cc-push` (push switch), `cc-flow` (the workflow below as a table) |
@@ -205,14 +206,14 @@ see [AGENTS.md](AGENTS.md#installing-the-skills). Third-party license notices ar
 `shell-parse.sh` (`--help` lists its output). Text in quotes, a heredoc body or
 a comment never counts as a command. A command inside `( )`, `$( )`, backticks
 or `{ }` still counts, and `guard-bash.sh` also judges git behind `VAR=x`,
-`env`, `sudo`, `command`, `exec`, `nohup`, `time`, `nice` and `timeout`. The
-parser has no link of its own: each hook follows its `~/.claude` link back to
-the repo and runs the parser that sits beside it.
+`env`, `sudo`, `command`, `exec`, `nohup`, `time`, `nice` and `timeout`. Each
+hook follows its `~/.claude/hooks` link back to the repo and runs the parser
+that sits beside it.
 
 `ai-credit.sh` is the one place that decides what credits an AI tool and which
 phrases narrate the session. `guard-bash.sh`, `comment-audit.sh` and the `pr`
 skill's `provenance.sh` all source it; the hooks find it beside their real file
-the same way, and `provenance.sh` falls back to its `~/.claude` link.
+the same way, and `provenance.sh` falls back to its `~/.claude/hooks` link.
 
 ## Tests and CI
 

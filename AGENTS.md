@@ -46,9 +46,14 @@ the flake sees only tracked files and skips an untracked folder silently.
 Full-mode `test.sh` fails on any skill folder the evaluated config does not
 link.
 
-Rules under `home/.claude/rules/` are linked one file at a time for the same
-reason, but not discovered: adding one is a new
-`home.file.".claude/rules/<name>.md"` line in `home.nix`.
+Rules (`home/.claude/rules/*.md`) and hooks (every file in
+`home/.claude/hooks/`) are discovered the same way and linked one file at a
+time, into `~/.claude/rules/` and `~/.claude/hooks/`, by the `linkEach` helper
+in `home.nix`. `hooks/` holds everything `settings.base.json` runs, status line
+included, and the helpers the hooks source; `local-skills.sh` stays out, since
+the rebuild runs it rather than Claude Code. Full-mode `test.sh` fails on an
+unlinked file, and on a path `settings.base.json` runs that is not linked to an
+executable tracked file.
 
 `to-spec`, `to-tickets` and
 `implement-spec` point at `setup-dan-skills`, and `code-review` runs without it;

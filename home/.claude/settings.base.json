@@ -5,7 +5,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "~/.claude/session-name.sh --hook"
+            "command": "~/.claude/hooks/session-name.sh --hook"
           }
         ]
       },
@@ -26,7 +26,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "[ ! -x \"$HOME/.claude/comment-audit.sh\" ] || \"$HOME/.claude/comment-audit.sh\"",
+            "command": "[ ! -x \"$HOME/.claude/hooks/comment-audit.sh\" ] || \"$HOME/.claude/hooks/comment-audit.sh\"",
             "timeout": 5,
             "statusMessage": "Auditing comments"
           }
@@ -50,7 +50,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "\"$HOME/.claude/guard-bash.sh\"",
+            "command": "\"$HOME/.claude/hooks/guard-bash.sh\"",
             "timeout": 5,
             "statusMessage": "Checking command"
           }
@@ -61,7 +61,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "[ ! -x \"$HOME/.claude/skill-gate.sh\" ] || \"$HOME/.claude/skill-gate.sh\"",
+            "command": "[ ! -x \"$HOME/.claude/hooks/skill-gate.sh\" ] || \"$HOME/.claude/hooks/skill-gate.sh\"",
             "timeout": 5,
             "statusMessage": "Checking required skills"
           }
@@ -83,7 +83,7 @@
   },
   "statusLine": {
     "type": "command",
-    "command": "~/.claude/statusline.sh"
+    "command": "~/.claude/hooks/statusline.sh"
   },
   "skipDangerousModePermissionPrompt": true,
   "agentPushNotifEnabled": true,

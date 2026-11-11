@@ -9,7 +9,7 @@
 # including a --name of your own: the last one on the line wins.
 cc() {
   local name; local -a flag
-  name="$(~/.claude/session-name.sh)"
+  name="$(~/.claude/hooks/session-name.sh)"
   # An array, not ${name:+--name "$name"}: zsh does not split an expansion
   # into words, so that form would hand claude one argument reading
   # "--name dotfiles" and it would reject it.

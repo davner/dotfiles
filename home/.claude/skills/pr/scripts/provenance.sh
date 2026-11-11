@@ -13,7 +13,7 @@ done
 # Through the skill's link to the repo first, so an edit there is live without a rebuild.
 here=$(cd "$(dirname "$0")" && pwd -P)
 credit=""
-for c in "$here/../../../ai-credit.sh" "$HOME/.claude/ai-credit.sh"; do
+for c in "$here/../../../hooks/ai-credit.sh" "$HOME/.claude/hooks/ai-credit.sh"; do
   [[ -r $c ]] && { credit=$c; break; }
 done
 [[ -n $credit ]] || { echo "UNVERIFIED: ai-credit.sh not found, no patterns to check against" >&2; exit 2; }

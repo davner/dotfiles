@@ -34,6 +34,17 @@ let
     modern-python = "${inputs.trailofbits-skills}/plugins/modern-python/skills/modern-python";
     python-anti-patterns = "${inputs.wshobson-agents}/plugins/python-development/skills/python-anti-patterns";
   };
+
+  # Per entry, never the folder, so a file added by hand on the home side
+  # stays out of this repo.
+  linkEach =
+    dir: dst: keep:
+    lib.mapAttrs' (
+      name: _:
+      lib.nameValuePair "${dst}/${name}" {
+        source = config.lib.file.mkOutOfStoreSymlink "${dotfiles}/${dir}/${name}";
+      }
+    ) (lib.filterAttrs keep (builtins.readDir (./. + "/${dir}")));
 in
 
 {
@@ -158,49 +169,23 @@ in
   # Run by hand after opening a multi-root Scala workspace or bumping a flake's JDK.
   home.file.".local/bin/metals-java-home".source =
     config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/vscode/metals-java-home.sh";
-  # settings.base.json points at this by path, so it has to land in ~/.claude too.
-  home.file.".claude/statusline.sh".source =
-    config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.claude/statusline.sh";
-  # likewise the naming script: the cc function and a SessionStart hook both
-  # call it, so it has to be on disk at a path neither one has to guess.
-  home.file.".claude/session-name.sh".source =
-    config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.claude/session-name.sh";
-  # a PostToolUse hook, so settings.json reaches it by path the same way. it
-  # runs inside subagents too, which is where the code actually gets written.
-  home.file.".claude/comment-audit.sh".source =
-    config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.claude/comment-audit.sh";
-  # a PreToolUse hook on Bash, reached by path the same way. it blocks rather
-  # than nudges, so it has to exist before the tool call it judges.
-  home.file.".claude/guard-bash.sh".source =
-    config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.claude/guard-bash.sh";
-  # The hooks find it beside their own real file; this link is the pr skill's
-  # fallback for a copy of the skill that is not reached through the repo.
-  home.file.".claude/ai-credit.sh".source =
-    config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.claude/ai-credit.sh";
-  # A PreToolUse hook on Skill and the write tools, reached by path the same way.
-  # It must see the Skill call too, since that is the only evidence of a load.
-  home.file.".claude/skill-gate.sh".source =
-    config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.claude/skill-gate.sh";
-  # Linked per file, so a rule added by hand to ~/.claude/rules stays out of this repo.
-  home.file.".claude/rules/typescript.md".source =
-    config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.claude/rules/typescript.md";
-  home.file.".claude/rules/python.md".source =
-    config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.claude/rules/python.md";
   # The vault skills and impeccable live outside this repo, so no home.file can
-  # carry them. After linkGeneration, so a clash with a link above warns instead.
+  # carry them. After linkGeneration, so a clash with a home.file link warns instead.
   home.activation.localSkills = config.lib.dag.entryAfter [
     "linkGeneration"
   ] "run env PATH=${pkgs.nodejs}/bin:$PATH ${pkgs.bash}/bin/bash ${./home/.claude/local-skills.sh}";
-  # One link per skill, never the folder: impeccable's installer also writes there.
-  # A module each, because a computed home.file cannot share this attrset with home.file."x".
+  # A module, because a computed home.file cannot share this attrset with home.file."x".
   imports = [
     {
-      home.file = lib.mapAttrs' (
-        name: _:
-        lib.nameValuePair ".claude/skills/${name}" {
-          source = config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.claude/skills/${name}";
-        }
-      ) (lib.filterAttrs (_: type: type == "directory") (builtins.readDir ./home/.claude/skills));
+      home.file = lib.mergeAttrsList [
+        # impeccable's installer and local-skills.sh also write into ~/.claude/skills.
+        (linkEach "home/.claude/skills" ".claude/skills" (_: type: type == "directory"))
+        # settings.base.json and the cc function reach these by path.
+        (linkEach "home/.claude/hooks" ".claude/hooks" (_: type: type == "regular"))
+        (linkEach "home/.claude/rules" ".claude/rules" (
+          name: type: type == "regular" && lib.hasSuffix ".md" name
+        ))
+      ];
     }
     # Also into ~/.agents/skills, the shared folder other agents read.
     {

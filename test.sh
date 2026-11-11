@@ -96,26 +96,29 @@ run() { # run a repo script with the stubs in place; never touches real $HOME
   DR_ARGS="$(cat "$STUB/darwin-rebuild-args" 2>/dev/null)"
 }
 
-SCRIPTS=(bootstrap.sh rebuild.sh users.sh test.sh
-  home/.claude/statusline.sh home/.claude/session-name.sh
-  home/.claude/ai-credit.sh home/.claude/comment-audit.sh home/.claude/guard-bash.sh
-  home/.claude/skill-gate.sh
-  home/.claude/shell-parse.sh home/.claude/local-skills.sh home/json-merge.sh
-  home/vscode/extensions.sh home/vscode/metals-java-home.sh)
+# From git, so a new script is linted without anyone listing it. Untracked
+# files count too: the flake would miss them, but a typo in one should not.
+SCRIPTS=()
+while IFS= read -r s; do SCRIPTS+=("$s"); done < <(cd "$DIR" && git ls-files -co --exclude-standard '*.sh')
 
 # --------------------------------------------------------------------------
 section "syntax and lint"
+[ "${#SCRIPTS[@]}" -gt 0 ] || bad "git lists the shell scripts" "git ls-files found no *.sh in $DIR"
+have_shellcheck=""
+command -v shellcheck >/dev/null 2>&1 && have_shellcheck=1
 for s in "${SCRIPTS[@]}"; do
+  # zsh syntax is not bash syntax, and shellcheck does not read zsh at all.
+  case "$(head -n 1 "$DIR/$s")" in
+    *zsh*)
+      if err="$(zsh -n "$DIR/$s" 2>&1)"; then ok "zsh -n $s"; else bad "zsh -n $s" "$err"; fi
+      continue
+      ;;
+  esac
   if err="$(bash -n "$DIR/$s" 2>&1)"; then ok "bash -n $s"; else bad "bash -n $s" "$err"; fi
-  if [ -x "$DIR/$s" ]; then ok "$s is executable"; else bad "$s is executable" "chmod +x $s"; fi
+  if [ -z "$have_shellcheck" ]; then continue; fi
+  if err="$(shellcheck "$DIR/$s" 2>&1)"; then ok "shellcheck $s"; else bad "shellcheck $s" "$err"; fi
 done
-if command -v shellcheck >/dev/null 2>&1; then
-  for s in "${SCRIPTS[@]}"; do
-    if err="$(shellcheck "$DIR/$s" 2>&1)"; then ok "shellcheck $s"; else bad "shellcheck $s" "$err"; fi
-  done
-else
-  skip "shellcheck (nix develop --command ./test.sh installs it)"
-fi
+[ -n "$have_shellcheck" ] || skip "shellcheck (nix develop --command ./test.sh installs it)"
 # Catches a broken workflow before a push finds out, and shellchecks the
 # `run:` blocks that CI would otherwise only fail on inside the runner.
 if command -v actionlint >/dev/null 2>&1; then
@@ -140,7 +143,7 @@ fi
 section "shell parser"
 # Both Bash hooks read a command through this, so a case it gets wrong is a
 # rule in each of them that fires on plain text or misses a real command.
-PARSER="$DIR/home/.claude/shell-parse.sh"
+PARSER="$DIR/home/.claude/hooks/shell-parse.sh"
 parses() { # name, command, expected records
   eq "parses $1" "$3" "$(printf '%s' "$2" | "$PARSER" 2>&1)"
 }
@@ -185,7 +188,7 @@ parses() { # name, command, expected records
 section "ai credit module"
 # guard-bash.sh, provenance.sh and comment-audit.sh all judge by this one file,
 # so its cases live here and each caller's section tests only how it reads them.
-CREDIT="$DIR/home/.claude/ai-credit.sh"
+CREDIT="$DIR/home/.claude/hooks/ai-credit.sh"
 credit_check() { # function, text with \n escapes -> its exit status
   local t
   printf -v t '%b' "$2"
@@ -274,7 +277,7 @@ section "bash guard hook"
 # they are a hook: a prompt is advice and a hook is a decision. The allow cases
 # matter more than the block cases - a guard that blocks ordinary work is one
 # that gets switched off.
-GUARD="$DIR/home/.claude/guard-bash.sh"
+GUARD="$DIR/home/.claude/hooks/guard-bash.sh"
 if ! command -v jq >/dev/null 2>&1; then
   skip "guard-bash.sh (jq not found)"
 elif [ ! -x "$GUARD" ]; then
@@ -806,7 +809,7 @@ CASES
     [ "$(guard "$c")" = "0" ] || allowed="$allowed
     blocked: $c"
   done <<'CASES'
-git add home/.claude/guard-bash.sh
+git add home/.claude/hooks/guard-bash.sh
 git add ./src/foo.ts
 git add -u home/AGENTS.md
 git status --short
@@ -918,7 +921,7 @@ CASES
   lone_rc=$?
   eq "a guard without its parser fails without blocking" "1" "$lone_rc"
   contains "a guard without its parser says so" "$lone_err" "shell-parse.sh is missing"
-  cp "$DIR/home/.claude/shell-parse.sh" "$WORK/guard-alone/shell-parse.sh"
+  cp "$DIR/home/.claude/hooks/shell-parse.sh" "$WORK/guard-alone/shell-parse.sh"
   lone_err="$(printf '%s' '{"tool_name":"Bash","tool_input":{"command":"git add ."}}' |
     "$WORK/guard-alone/guard-bash.sh" 2>&1 >/dev/null)"
   lone_rc=$?
@@ -989,11 +992,6 @@ CASES
   eq "a wrapper that changes directory blocks the push" "2" \
     "$(guard_in "$PUSHES/opted" 'sudo -D /tmp git push')"
 fi
-if grep -q 'guard-bash.sh' "$DIR/home/.claude/settings.base.json"; then
-  ok "settings.base.json registers it on PreToolUse"
-else
-  bad "settings.base.json registers it on PreToolUse" "the hook would never fire"
-fi
 
 # --------------------------------------------------------------------------
 section "claude user settings"
@@ -1029,6 +1027,32 @@ else
     bad "settings.base.json declares and enables the obsidian plugin" \
       "want extraKnownMarketplaces.obsidian-skills.autoUpdate and enabledPlugins.obsidian@obsidian-skills both true"
   fi
+  # A hook on the wrong event or matcher never fires, and nothing says so. The
+  # gate must match Skill, its only evidence of a load; "-" is no matcher.
+  rows=0
+  while read -r ev matcher script; do
+    [ -n "$ev" ] || continue
+    rows=$((rows + 1))
+    if jq -e --arg ev "$ev" --arg m "$matcher" --arg s "$script" '
+        if $ev == "statusLine" then [.statusLine.command]
+        else [.hooks[$ev][]? | select((.matcher // "-") == $m) | .hooks[]?.command] end
+        | map(select(contains($s))) | length == 1' "$BASE" >/dev/null 2>&1; then
+      ok "settings.base.json runs $script on $ev ($matcher)"
+    else
+      bad "settings.base.json runs $script on $ev ($matcher)" "want exactly one such command"
+    fi
+  done <<'HOOKS'
+SessionStart  -                               ~/.claude/hooks/session-name.sh --hook
+SessionStart  -                               skills/impeccable/scripts/impeccable
+PreToolUse    Bash                            $HOME/.claude/hooks/guard-bash.sh
+PreToolUse    Skill|Write|Edit|MultiEdit|Bash $HOME/.claude/hooks/skill-gate.sh
+PostToolUse   Write|Edit|MultiEdit            $HOME/.claude/hooks/comment-audit.sh
+PostToolUse   Edit|Write                      skills/impeccable/scripts/impeccable
+Stop          -                               skills/impeccable/scripts/impeccable
+statusLine    -                               ~/.claude/hooks/statusline.sh
+HOOKS
+  eq "the table above covers every command settings.base.json runs" "$rows" \
+    "$(jq '[.. | objects | .command? // empty] | length' "$BASE")"
 fi
 if grep -q 'mkOutOfStoreSymlink.*\.claude/settings\.json' "$DIR/home.nix"; then
   bad "home.nix does not link settings.json" \
@@ -1459,7 +1483,7 @@ section "--help"
 # Every script's, not just one: these printed their own source with a line
 # range until a line moved and one of them started leaking `set -euo pipefail`
 # into its help text.
-for s in bootstrap.sh rebuild.sh users.sh home/.claude/shell-parse.sh; do
+for s in bootstrap.sh rebuild.sh users.sh home/.claude/hooks/shell-parse.sh; do
   run env -u SUDO_USER "$DIR/$s" --help
   eq "$s --help exits 0" "0" "$RUN_RC"
   contains "$s --help prints usage" "$RUN_OUT" "usage:"
@@ -1500,7 +1524,7 @@ eq "bootstrap.sh unknown flag never reaches sudo" "" "$SUDO_ARGS"
 section "out-of-store symlink targets"
 # mkOutOfStoreSymlink does not check its target, so a typo here is a dangling
 # symlink in $HOME that no build or activation ever complains about.
-# Templated targets are left to the evaluated skills check below.
+# Templated targets are left to the evaluated "links from the repo" check below.
 targets="$(sed -nE 's|.*mkOutOfStoreSymlink "\$\{dotfiles\}/([^"$]+)".*|\1|p' "$DIR/home.nix" | sort -u)"
 if [ -z "$targets" ]; then
   bad "found mkOutOfStoreSymlink targets in home.nix" "the sed found nothing - did home.nix change shape?"
@@ -1511,49 +1535,92 @@ else
 fi
 
 # --------------------------------------------------------------------------
+section "links from the repo"
+# A flake sees only tracked files and mkOutOfStoreSymlink never checks its
+# target, so a missed `git add` or a wrong path is a silently broken link.
+entries() { # repo folder, find tests -> the names in it, sorted
+  local d=$1
+  shift
+  find "$DIR/$d" -mindepth 1 -maxdepth 1 "$@" -exec basename {} \; | sort
+}
+link_target() { # links, user, home.file key -> the repo path it links to
+  awk -F'\t' -v k="$3" -v p="ln -s /Users/$2/.dotfiles/" -v e=' $out' \
+    '$1 == k && index($2, p) == 1 && substr($2, length($2) - length(e) + 1) == e {
+      print substr($2, length(p) + 1, length($2) - length(p) - length(e)) }' <<<"$1"
+}
+linked_each() { # links, user, repo folder, home folder, names on disk
+  local name missing="" extra why=()
+  while read -r name; do
+    [ -n "$name" ] || continue
+    [ "$(link_target "$1" "$2" "$4/$name")" = "$3/$name" ] || missing="$missing $name"
+  done <<<"$5"
+  extra="$(awk -F'\t' -v d="$4/" 'index($1, d) == 1 { n = substr($1, length(d) + 1); if (n !~ /\//) print n }' <<<"$1" |
+    grep -vxF -f <(printf '%s\n' "$5") | tr '\n' ' ')"
+  [ -z "$missing" ] || why+=("not linked to its repo path:$missing - a flake sees only tracked files, git add it")
+  [ -z "${extra// /}" ] || why+=("linked but not on disk: $extra")
+  if [ "${#why[@]}" -eq 0 ]; then
+    ok "$2: each entry of $3 is linked into ~/$4"
+  else
+    bad "$2: each entry of $3 is linked into ~/$4" "${why[@]}"
+  fi
+}
+if [ -n "$FAST" ]; then
+  skip "home.nix links what settings.base.json runs, and each hook, rule and skill (--fast)"
+elif ! command -v nix >/dev/null 2>&1; then
+  skip "home.nix links what settings.base.json runs, and each hook, rule and skill (nix not found)"
+elif ! command -v jq >/dev/null 2>&1; then
+  skip "home.nix links what settings.base.json runs, and each hook, rule and skill (jq not found)"
+else
+  # impeccable's paths are under skills/, where its own installer puts them.
+  # shellcheck disable=SC2016  # the $HOME is the literal text being matched
+  settings_runs="$(jq -r '.. | objects | .command? // empty' "$BASE" |
+    grep -oE '(~|\$HOME|\$\{HOME\})/\.claude/[A-Za-z0-9._/-]+' |
+    sed -E 's#^(~|\$HOME|\$\{HOME\})/##' | grep -v '^\.claude/skills/' | sort -u)"
+  [ -n "$settings_runs" ] ||
+    bad "found the ~/.claude paths settings.base.json runs" "none matched - did the commands change shape?"
+  hooks_on_disk="$(entries home/.claude/hooks -type f)"
+  rules_on_disk="$(entries home/.claude/rules -type f -name '*.md')"
+  skills_on_disk="$(entries home/.claude/skills -type d)"
+  while read -r u; do
+    [ -n "$u" ] || continue
+    # shellcheck disable=SC2016  # the ${} are Nix interpolation, not shell
+    links="$(nix eval --raw "$DIR#darwinConfigurations.${u//./-}.config.home-manager.users.\"$u\".home.file" \
+      --apply 'f: builtins.concatStringsSep "\n" (builtins.concatMap (n:
+        let s = f.${n}.source; in
+        if builtins.substring 0 8 n == ".claude/" && builtins.isAttrs s && s ? buildCommand
+        then [ "${n}\t${s.buildCommand}" ] else [ ]) (builtins.attrNames f))' \
+      2>"$WORK/stderr")"
+    if [ -z "$links" ]; then
+      bad "$u: home.file evaluates" "$(grep -v '^warning:' "$WORK/stderr" | head -5)"
+      continue
+    fi
+    broken=""
+    while read -r p; do
+      [ -n "$p" ] || continue
+      rel="$(link_target "$links" "$u" "$p")"
+      if [ -z "$rel" ]; then
+        broken="$broken ~/$p(no out-of-store link into ~/.dotfiles)"
+      elif [ ! -f "$DIR/$rel" ] || [ ! -x "$DIR/$rel" ]; then
+        broken="$broken ~/$p($rel is not an executable file)"
+      elif ! git -C "$DIR" ls-files --error-unmatch -- "$rel" >/dev/null 2>&1; then
+        broken="$broken ~/$p($rel is untracked)"
+      fi
+    done <<<"$settings_runs"
+    if [ -z "$broken" ]; then
+      ok "$u: everything settings.base.json runs is linked to an executable tracked file"
+    else
+      bad "$u: everything settings.base.json runs is linked to an executable tracked file" "$broken"
+    fi
+    linked_each "$links" "$u" home/.claude/hooks .claude/hooks "$hooks_on_disk"
+    linked_each "$links" "$u" home/.claude/rules .claude/rules "$rules_on_disk"
+    linked_each "$links" "$u" home/.claude/skills .claude/skills "$skills_on_disk"
+  done <<<"$listed"
+fi
+
+# --------------------------------------------------------------------------
 section "skills"
 SKILLS_DIR="$DIR/home/.claude/skills"
 on_disk="$(find "$SKILLS_DIR" -mindepth 1 -maxdepth 1 -type d -exec basename {} \; | sort)"
-# A flake sees only tracked files, so an un-added skill folder silently never loads.
-if [ -n "$FAST" ]; then
-  skip "every skill folder is linked (--fast)"
-elif ! command -v nix >/dev/null 2>&1; then
-  skip "every skill folder is linked (nix not found)"
-else
-  u="$(printf '%s\n' "$listed" | head -n1)"
-  # shellcheck disable=SC2016  # the ${} are Nix interpolation, not shell
-  links="$(nix eval --raw "$DIR#darwinConfigurations.${u//./-}.config.home-manager.users.\"$u\".home.file" \
-    --apply 'f: builtins.concatStringsSep "\n" (map (n: "${n}\t${f.${n}.source.buildCommand}")
-      (builtins.filter (n: builtins.substring 0 15 n == ".claude/skills/" && builtins.isAttrs f.${n}.source)
-        (builtins.attrNames f)))' \
-    2>"$WORK/stderr")"
-  if [ -z "$links" ]; then
-    bad "home.nix links skills" "$(grep -v '^warning:' "$WORK/stderr" | head -5)"
-  else
-    linked="$(printf '%s\n' "$links" | sed -E 's|^\.claude/skills/([^[:space:]]+).*|\1|' | sort)"
-    unlinked="$(comm -23 <(echo "$on_disk") <(echo "$linked") | tr '\n' ' ')"
-    if [ -z "${unlinked// /}" ]; then
-      ok "every skill folder is linked"
-    else
-      bad "every skill folder is linked" "not linked: $unlinked" "a flake sees only tracked files - git add the folder"
-    fi
-    # The link is a string the build never checks, so a wrong target is a
-    # dangling link in $HOME that nothing reports.
-    wrong=""
-    while IFS=$'\t' read -r name cmd; do
-      want="/Users/$u/.dotfiles/home/$name"
-      case "$cmd" in
-        "ln -s $want "*) [ -d "$DIR/home/$name" ] || wrong="$wrong $name(no folder)" ;;
-        *) wrong="$wrong $name($cmd)" ;;
-      esac
-    done <<<"$links"
-    if [ -z "$wrong" ]; then
-      ok "every skill link points at its folder in the working tree"
-    else
-      bad "every skill link points at its folder in the working tree" "$wrong"
-    fi
-  fi
-fi
 # Third-party skills come from flake inputs, so an upstream move or rename is
 # a link to nothing, or to a skill Claude knows by another name.
 if [ -n "$FAST" ]; then
@@ -1697,19 +1764,6 @@ if grep -q 'home\.activation\.localSkills' "$DIR/home.nix" && grep -q 'local-ski
 else
   bad "home.nix runs local-skills.sh on rebuild" "nothing would put the vault skills or impeccable on a new machine"
 fi
-# The install skips impeccable's hooks, so these are the only copy.
-if ! command -v jq >/dev/null 2>&1; then
-  skip "settings.base.json carries impeccable's hooks (jq not found)"
-else
-  for ev in SessionStart PostToolUse Stop; do
-    if jq -e --arg ev "$ev" '[.hooks[$ev][]?.hooks[]?.command | select(test("skills/impeccable/scripts/impeccable"))] | length == 1' \
-      "$BASE" >/dev/null 2>&1; then
-      ok "settings.base.json carries impeccable's $ev hook"
-    else
-      bad "settings.base.json carries impeccable's $ev hook" "want exactly one, under hooks.$ev"
-    fi
-  done
-fi
 
 # --------------------------------------------------------------------------
 section "pr provenance check"
@@ -1759,7 +1813,7 @@ eq "a missing ai-credit.sh is unverified, not clean" 2 \
 section "skill gate hook"
 # The pass cases matter as much as the blocks: a gate that stops reading
 # TypeScript, or locks out a machine without the skill, gets switched off.
-GATE="$DIR/home/.claude/skill-gate.sh"
+GATE="$DIR/home/.claude/hooks/skill-gate.sh"
 if ! command -v jq >/dev/null 2>&1; then
   skip "skill-gate.sh (jq not found)"
 else
@@ -1912,27 +1966,10 @@ CASES
   else
     bad "a 400-line heredoc is judged within 2 s" "took $((SECONDS - start)) s"
   fi
-
-  # The gate only sees a load it is invoked for, so dropping Skill from the
-  # matcher would block every TypeScript write forever.
-  gate_matcher="$(jq -r '.hooks.PreToolUse[] | select(any(.hooks[]; .command | contains("skill-gate.sh"))) | .matcher' \
-    "$DIR/home/.claude/settings.base.json")"
-  eq "settings.base.json runs the gate before Skill, Write, Edit, MultiEdit and Bash" \
-    "Skill|Write|Edit|MultiEdit|Bash" "$gate_matcher"
-fi
-if grep -q 'home.file.".claude/skill-gate.sh"' "$DIR/home.nix"; then
-  ok "home.nix links skill-gate.sh into ~/.claude"
-else
-  bad "home.nix links skill-gate.sh into ~/.claude" "settings.base.json would call a path that does not exist"
 fi
 # The rule loads the skill before the gate has to fire; it only loads for a
 # path its frontmatter names, so each extension the gate covers must be there.
 TS_RULE="$DIR/home/.claude/rules/typescript.md"
-if grep -q 'home.file.".claude/rules/typescript.md"' "$DIR/home.nix"; then
-  ok "home.nix links the TypeScript rule into ~/.claude/rules"
-else
-  bad "home.nix links the TypeScript rule into ~/.claude/rules" "no home.file line for it"
-fi
 rule_paths="$(sed -n '/^---$/,/^---$/p' "$TS_RULE" 2>/dev/null | grep -E '^[[:space:]]*-')"
 for ext in ts tsx mts cts; do
   case "$rule_paths" in
@@ -1943,11 +1980,6 @@ done
 contains "the TypeScript rule names the skill" "$(cat "$TS_RULE" 2>/dev/null)" "typescript-style-guide"
 # No gate backs this one, so a rule that stops loading is the whole failure.
 PY_RULE="$DIR/home/.claude/rules/python.md"
-if grep -q 'home.file.".claude/rules/python.md"' "$DIR/home.nix"; then
-  ok "home.nix links the Python rule into ~/.claude/rules"
-else
-  bad "home.nix links the Python rule into ~/.claude/rules" "no home.file line for it"
-fi
 contains "the Python rule's paths cover .py and .pyi" "$(sed -n '/^---$/,/^---$/p' "$PY_RULE" 2>/dev/null)" '**/*.{py,pyi}'
 for s in python-anti-patterns modern-python; do
   contains "the Python rule names $s" "$(cat "$PY_RULE" 2>/dev/null)" "$s"
@@ -1960,7 +1992,7 @@ section "comment audit hook"
 # everywhere at once and a false positive teaches everyone to ignore it. Both
 # failure modes are silent - settings.base.json invokes it behind `[ ! -x ... ] ||`,
 # so losing the executable bit disables the whole thing without a word.
-AUDIT="$DIR/home/.claude/comment-audit.sh"
+AUDIT="$DIR/home/.claude/hooks/comment-audit.sh"
 if ! command -v jq >/dev/null 2>&1; then
   skip "comment audit behaviour (needs jq; macOS ships it at /usr/bin/jq)"
 else
@@ -2057,7 +2089,7 @@ else
   # The cap is only credible if the repo it ships from meets it, so every hook
   # script is replayed as the full-file Write it would arrive as.
   unaudited=""
-  for s in "$DIR"/home/.claude/*.sh; do
+  for s in "$DIR"/home/.claude/hooks/*.sh "$DIR"/home/.claude/local-skills.sh; do
     out=$(jq -Rs --arg p "$s" '{tool_input:{file_path:$p,content:.}}' "$s" |
       "$AUDIT" 2>&1 >/dev/null) && continue
     unaudited="$unaudited
@@ -2071,21 +2103,12 @@ $out"
   fi
 fi
 
-# The hook is inert unless settings.base.json still registers it on the write tools.
-if grep -q 'comment-audit.sh' "$DIR/home/.claude/settings.base.json" &&
-  grep -q 'Write|Edit|MultiEdit' "$DIR/home/.claude/settings.base.json"; then
-  ok "settings.base.json registers the hook on Write|Edit|MultiEdit"
-else
-  bad "settings.base.json registers the hook on Write|Edit|MultiEdit" \
-    "the script exists but nothing calls it"
-fi
-
 # --------------------------------------------------------------------------
 section "status line"
 # Claude Code renders whatever this prints, so a crash costs the whole line.
 # Most of the payload is optional, and the interesting cases are the ones where
 # a field has not arrived yet.
-SL="$DIR/home/.claude/statusline.sh"
+SL="$DIR/home/.claude/hooks/statusline.sh"
 plain() { sed $'s/\x1b\\[[0-9;]*m//g'; }
 NOW="$(date +%s)"
 
@@ -2118,25 +2141,13 @@ sl_out="$(printf 'not json at all' | "$SL" 2>/dev/null)" || sl_rc=$?
 eq "garbage in exits 0" "0" "$sl_rc"
 eq "garbage in prints nothing" "" "$sl_out"
 
-# shellcheck disable=SC2088  # the tilde is the literal text being searched for
-if grep -qF '~/.claude/statusline.sh' "$DIR/home/.claude/settings.base.json"; then
-  ok "settings.base.json points at the status line"
-else
-  bad "settings.base.json points at the status line" "statusLine.command does not reference it"
-fi
-if grep -qF '.claude/statusline.sh' "$DIR/home.nix"; then
-  ok "home.nix links the status line into ~/.claude"
-else
-  bad "home.nix links the status line into ~/.claude" "settings.base.json would point at a missing file"
-fi
-
 # --------------------------------------------------------------------------
 section "session name"
 # The script that names a session after its repo, called two ways: bare by the
 # cc function, and with --hook by Claude Code itself. Every case runs against a
 # throwaway $HOME holding a fabricated session registry, so nothing here depends
 # on which real sessions happen to be open while the suite runs.
-SN="$DIR/home/.claude/session-name.sh"
+SN="$DIR/home/.claude/hooks/session-name.sh"
 STHOME="$WORK/name-home"
 REPO="$WORK/repos/myrepo"
 OTHER="$WORK/repos/elsewhere"
@@ -2213,18 +2224,6 @@ else
     bad "garbage in still emits a title" "output was: $sn_out"
   fi
 fi
-
-# shellcheck disable=SC2088  # the tilde is the literal text being searched for
-if grep -qF '~/.claude/session-name.sh --hook' "$DIR/home/.claude/settings.base.json"; then
-  ok "settings.base.json runs it on SessionStart"
-else
-  bad "settings.base.json runs it on SessionStart" "no SessionStart hook references it"
-fi
-if grep -qF '.claude/session-name.sh' "$DIR/home.nix"; then
-  ok "home.nix links it into ~/.claude"
-else
-  bad "home.nix links it into ~/.claude" "settings.base.json would point at a missing file"
-fi
 # --------------------------------------------------------------------------
 section "the cc function"
 # The whole point of the exercise: cc has to hand the name to claude, as two
@@ -2232,8 +2231,7 @@ section "the cc function"
 # even when the array reached claude as the single argument "--name myrepo",
 # which is exactly the bug the comment inside the function warns about.
 FN="$DIR/home/.config/zsh/functions.zsh"
-# Its own check, because it cannot join SCRIPTS: bash -n and shellcheck both
-# reject zsh array syntax.
+# Its own check, because SCRIPTS takes only *.sh files.
 if err="$(zsh -n "$FN" 2>&1)"; then ok "zsh -n functions.zsh"; else bad "zsh -n functions.zsh" "$err"; fi
 
 # Prints its arguments one per line, so a name that arrived as one word
@@ -2246,11 +2244,12 @@ chmod +x "$STUB/claude"
 # A naming script that answers, under the throwaway $HOME built above. Without
 # one, cc's command substitution fails, the name is empty and the whole --name
 # assertion below would pass while asserting nothing.
-cat >"$STHOME/.claude/session-name.sh" <<'EOF'
+mkdir -p "$STHOME/.claude/hooks"
+cat >"$STHOME/.claude/hooks/session-name.sh" <<'EOF'
 #!/usr/bin/env bash
 echo myrepo
 EOF
-chmod +x "$STHOME/.claude/session-name.sh"
+chmod +x "$STHOME/.claude/hooks/session-name.sh"
 
 cc_argv() { # $HOME to run under -> the argv claude was called with
   HOME="$1" PATH="$STUB:$PATH" zsh -c "source '$FN'; cc --foo" 2>/dev/null
@@ -2261,7 +2260,7 @@ eq "cc passes the name to claude as two words" "--dangerously-skip-permissions
 myrepo
 --foo" "$(cc_argv "$STHOME")"
 
-# $FAKEHOME has no ~/.claude/session-name.sh, so the name comes back empty.
+# $FAKEHOME has no ~/.claude/hooks/session-name.sh, so the name comes back empty.
 # The array has to vanish entirely rather than leave claude a bare --name or an
 # empty string after it.
 eq "no name means no --name, not an empty one" "--dangerously-skip-permissions
@@ -2381,8 +2380,8 @@ $u
   # indexing cfg.system directly would bury the useful message under a
   # module-system stack trace and this is the test that notices.
   FLAKECOPY="$WORK/flakecopy"
-  # home.nix reads the skills folder at eval time; every other home/ path is a string.
-  mkdir -p "$FLAKECOPY/home/.claude/skills"
+  # home.nix reads these folders at eval time; every other home/ path is a string.
+  mkdir -p "$FLAKECOPY/home/.claude/skills" "$FLAKECOPY/home/.claude/hooks" "$FLAKECOPY/home/.claude/rules"
   cp "$COPY" "$FLAKECOPY/flake.nix"
   cp "$DIR/flake.lock" "$DIR/configuration.nix" "$DIR/home.nix" "$FLAKECOPY/"
 
