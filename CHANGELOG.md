@@ -9,6 +9,8 @@ machine's configuration, not a package anyone installs a version of.
 
 ## 2026-11-11
 
+- **Fixed** claude: Read hook commands through one shared shell parser ([`4e0fbdf`](https://github.com/davner/dotfiles/commit/4e0fbdf01782ad6fee000ff629df7ece10d41a32))
+- **Fixed** claude: Block git pull --rebase=false as a plain pull ([`250cbd6`](https://github.com/davner/dotfiles/commit/250cbd6a6a738aacd9c93455b5a17bf98baee5ba))
 - **Fixed** home: Keep linked content, dedupe and write json merges safely ([`1cee126`](https://github.com/davner/dotfiles/commit/1cee1261068f3615907258746ea50016b3699f62))
 - **Docs** List home/vscode in the README layout table ([`402d217`](https://github.com/davner/dotfiles/commit/402d2174def24c7c3d61f431f6f5fcbf7c8736a4))
 - **Changed** home: Merge settings files through one json-merge script ([`97fafe8`](https://github.com/davner/dotfiles/commit/97fafe88e32510527b1a1d757929103d98d7f466))
