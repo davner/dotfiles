@@ -76,16 +76,12 @@ skill name to its folder in an input; a rebuild links each one into both
 input line (if the repo is new), `nix flake lock`, then an attrset line. The
 weekly `update.yml` PR bumps them with everything else.
 
-Two kinds no flake input can carry come from `home/.claude/local-skills.sh`,
-which every rebuild runs after linking:
-
-- Each folder under `~/Vault/.skills` with a `SKILL.md` is linked into
-  `~/.claude/skills/`; a machine without `~/Vault` skips this.
-- `impeccable`, when missing, is installed by its own installer into both
-  skill folders: it downloads an engine and writes agents, which a read-only
-  store path cannot hold. It installs `--no-hooks`, because the settings merge
-  drops hooks it does not own; its three hooks live in `settings.base.json`
-  instead.
+`impeccable` is the one no flake input can carry: it downloads an engine and
+writes agents, which a read-only store path cannot hold. When missing, it is
+installed by its own installer into both skill folders by
+`home/.claude/local-skills.sh`, which every rebuild runs after linking. It
+installs `--no-hooks`, because the settings merge drops hooks it does not own;
+its three hooks live in `settings.base.json` instead.
 
 `npx impeccable update` upgrades it and `npx impeccable check` says whether you
 are behind. Both resolve against the working directory, so run them from `~`;

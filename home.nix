@@ -164,8 +164,8 @@ in
         "vscodeSettings"
       ]
       "run env PATH=${pkgs.jq}/bin:$PATH ${pkgs.bash}/bin/bash ${./home/vscode/extensions.sh} ${./home/vscode/extensions.json}";
-  # The vault skills and impeccable live outside this repo, so no home.file can
-  # carry them. After linkGeneration, so a clash with a home.file link warns instead.
+  # impeccable writes into its own folder, so no home.file can carry it.
+  # After linkGeneration, so an impeccable a home.file links is seen, not reinstalled.
   home.activation.localSkills = config.lib.dag.entryAfter [
     "linkGeneration"
   ] "run env PATH=${pkgs.nodejs}/bin:$PATH ${pkgs.bash}/bin/bash ${./home/.claude/local-skills.sh}";
