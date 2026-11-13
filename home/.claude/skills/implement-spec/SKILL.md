@@ -24,7 +24,7 @@ Tickets that touch a user interface are built through `impeccable` and checked o
 
 2. (optional) Use an **exploration subagent** to conduct any exploration required by the tickets - relevant codebase files or external documentation. Ensure the exploration subagent can save files - it should save its markdown notes in a directory outside the repo, accessible by all future subagents. This lets **implementer subagents** focus on implementation rather than exploration.
 
-3. Create the integration branch. If the issue tracker closes work through PRs, or the user asks for one, open a draft PR once the first ticket lands in step 5 (a branch with no commits ahead of main can't open one), marked as closing the spec and tickets.
+3. Create the integration branch. When the tickets group into several PRs, each PR gets its own integration branch, **stacked**: the next one starts from the previous one's tip, and once the lower PR merges, its successor moves onto main by `git rebase --onto` with the old base named by commit ID. Every step below then runs per PR, code review included. If the issue tracker closes work through PRs, or the user asks for one, open a draft PR once the first ticket lands in step 5 (a branch with no commits ahead of main can't open one), marked as closing the spec and tickets.
 
 4. Use **implementer subagents** to implement each ticket, each in its own worktree on its own branch. Create each worktree in its own command, then work in it. Hand each one its ticket's absolute path in this checkout, since a new worktree has no copy of a gitignored scratch folder. Each implementer subagent:
    - is told the integration tip's commit ID and confirms its worktree starts there before anything else, recreating its branch from that tip if not;

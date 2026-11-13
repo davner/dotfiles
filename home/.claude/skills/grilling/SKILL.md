@@ -5,6 +5,8 @@ description: Grill the user relentlessly about a plan, decision, or idea. Use wh
 
 Interview the user relentlessly until you reach a shared understanding. Map this as a **design tree**: every decision branches into the decisions that hang off it.
 
+The tree's **root** is the need: what needs this to exist, and what breaks without it. The first round always asks the root, with the **prior art** beside it: what established tools do for the same need, which you look up. Every how-question hangs off the root, so it waits for the root's answer: a settled root often moves or cuts whole branches.
+
 Work the tree in **rounds**. The **frontier** is every decision whose prerequisites are already settled: the questions you can ask _now_ without guessing at answers you haven't heard yet. Ask the whole frontier in one round: number each question and give your recommended answer. Then wait for the user's answers before the next round.
 
 Format a round like so:
