@@ -79,6 +79,10 @@ Present the two reports under `## Standards` and `## Spec` headings, verbatim or
 
 End with a one-line summary: total findings per axis, and the worst issue _within each axis_ (if any). Don't pick a single winner across axes: that's the reranking the separation exists to prevent.
 
+## When headless:
+
+When the conversation has said the run is headless, nobody will answer step 2's question. Take the run's spec path as the spec in its place, and log that pick to the decision log in `grilling`'s "When headless:" section (`~/.claude/skills/grilling/SKILL.md`). With no spec path in the run, skip the Spec sub-agent as step 4 says.
+
 ## Why two axes
 
 A change can pass one axis and fail the other:
