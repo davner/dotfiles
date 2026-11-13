@@ -154,17 +154,17 @@ fixture_consumer() { # Nix module body -> sets $CONSUMER, a flake importing both
 }
 EOF
 }
-consumer_eval() { # attribute path under the fixture's config -> sets EV_RC, EV_OUT, EV_ERR, EV_MSG
+consumer_eval() { # attribute path under the fixture's config, extra nix eval args -> sets EV_RC, EV_OUT, EV_ERR, EV_MSG
   EV_RC=0
   EV_OUT="$(nix eval --raw --no-write-lock-file --override-input core "git+file://$DIR" \
-    "$CONSUMER#darwinConfigurations.fixture.config.$1" 2>"$WORK/stderr")" || EV_RC=$?
+    "$CONSUMER#darwinConfigurations.fixture.config.$1" "${@:2}" 2>"$WORK/stderr")" || EV_RC=$?
   # The lock report for the unlocked fixture comes first; the error starts at "error:".
   EV_ERR="$(sed -n '/^error:/,$p' "$WORK/stderr")"
   # The message itself is the last "error:" line, under the stack trace.
   EV_MSG="$(grep -E '^ *error: .' <<<"$EV_ERR" | tail -n 1 | sed 's/^ *error: //')"
 }
 consumer_home() { # attribute path under the fixture user's home-manager config -> as consumer_eval
-  consumer_eval "home-manager.users.\"$CONSUMER_USER\".$1"
+  consumer_eval "home-manager.users.\"$CONSUMER_USER\".$1" "${@:2}"
 }
 
 fixture_sthome() { # sets $STHOME, a $HOME with an empty session registry

@@ -42,4 +42,39 @@ if full_only && require nix; then
     "$EV_MSG"
 fi
 
+section "a flake that imports the core's modules with the core checked out elsewhere"
+if full_only && require nix; then
+  checkout="/Volumes/src/core"
+  fixture_consumer "dotfiles.git.email = \"fixture@example.org\";
+    home-manager.users.\"$CONSUMER_USER\".dotfiles.checkout = \"$checkout\";"
+  # shellcheck disable=SC2016  # the ${} are Nix interpolation, not shell
+  consumer_home home.file --apply 'f: builtins.concatStringsSep "\n" (builtins.concatMap (n:
+    let s = f.${n}.source; in
+    if builtins.isAttrs s && s ? buildCommand && builtins.substring 0 6 s.buildCommand == "ln -s "
+    then [ s.buildCommand ] else [ ]) (builtins.attrNames f))'
+  if [ "$EV_RC" -ne 0 ] || [ -z "$EV_OUT" ]; then
+    bad "its live links evaluate" "${EV_MSG:-no out-of-store links found}"
+  else
+    stray=""
+    while read -r cmd; do
+      target="${cmd#ln -s }"
+      target="${target% \$out}"
+      rel="${target#"$checkout"/}"
+      if [ "$rel" = "$target" ]; then
+        stray="$stray $target"
+      elif [ ! -e "$DIR/$rel" ]; then
+        stray="$stray $target(no $rel in the core)"
+      fi
+    done <<<"$EV_OUT"
+    if [ -z "$stray" ]; then
+      ok "every live link resolves under the checkout it set"
+    else
+      bad "every live link resolves under the checkout it set" "$stray"
+    fi
+  fi
+  consumer_home home.activation.claudeSettings.data
+  contains "Claude's settings merge reads the base from that checkout" \
+    "$EV_OUT" "$checkout/home/.claude/settings.base.json"
+fi
+
 finish

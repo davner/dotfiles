@@ -9,7 +9,7 @@ inputs:
 
 let
   user = config.dotfiles.user.name;
-  dotfiles = "${config.home.homeDirectory}/.dotfiles";
+  dotfiles = config.dotfiles.checkout;
 
   jsonMerge = "env PATH=${pkgs.jq}/bin:$PATH ${pkgs.bash}/bin/bash ${./home/json-merge.sh}";
   vscodeUser = "$HOME/Library/Application Support/Code/User";
@@ -188,6 +188,14 @@ in
             apply = email: if email == "" then missing else email;
             description = "The address git commits as.";
           };
+        # A string, not a path: a path literal would be copied into the store,
+        # and the links would stop being live.
+        checkout = lib.mkOption {
+          type = lib.types.str;
+          default = "${config.home.homeDirectory}/.dotfiles";
+          defaultText = lib.literalExpression ''"''${config.home.homeDirectory}/.dotfiles"'';
+          description = "Where this core is checked out. Its live links and settings merges read from here.";
+        };
       };
     }
     {
