@@ -35,6 +35,16 @@ else
   bad "the README skill table has no phantom rows" "in the table but not on disk: $phantom"
 fi
 
+# A headless run reads these skills with nobody there to answer their stop
+# points, so each one must say what to do in place of asking.
+for s in grilling; do
+  if grep -qE '^#+ When headless:' "$SKILLS_DIR/$s/SKILL.md"; then
+    ok "$s has a When headless: section"
+  else
+    bad "$s has a When headless: section" "no '## When headless:' heading in $s/SKILL.md"
+  fi
+done
+
 section "third-party skills"
 # Third-party skills come from flake inputs, so an upstream move or rename is
 # a link to nothing, or to a skill Claude knows by another name.
