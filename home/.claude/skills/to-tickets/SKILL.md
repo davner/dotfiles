@@ -125,4 +125,4 @@ In either form, avoid specific file paths or code snippets: they go stale fast. 
 
 ## When headless:
 
-When the conversation has said the run is headless, nobody will answer step 4. Put its four questions to yourself, settle each by the confidence rule in `grilling`'s "When headless:" section (`~/.claude/skills/grilling/SKILL.md`), and approve the breakdown yourself. Log the breakdown and each answer to the decision log that section names. A parked question stops the run before step 5.
+When the conversation has said the run is headless, nobody will answer step 4. With no tracker file, use the layout autopilot's Start names (`~/.claude/skills/autopilot/SKILL.md`). Put its four questions to yourself, settle each by the confidence rule in `grilling`'s "When headless:" section (`~/.claude/skills/grilling/SKILL.md`), and approve the breakdown yourself. Log the breakdown and each answer to the decision log that section names. A parked question stops the run before step 5.

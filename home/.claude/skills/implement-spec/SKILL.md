@@ -47,7 +47,7 @@ Tickets that touch a user interface are built through `impeccable` and checked o
 
 ## When headless:
 
-When the conversation has said the run is headless, nobody will answer. Carry on through every step that would wait on the user, and say in each implementer brief that the run is headless. A choice the user would have made, such as a decision changed mid-build in step 6, goes through the confidence rule in `grilling`'s "When headless:" section (`~/.claude/skills/grilling/SKILL.md`) and into the decision log it names; a park stops the run. Every artefact stays the same, the recap page in step 8 included.
+When the conversation has said the run is headless, nobody will answer. Carry With no tracker file, use the layout autopilot's Start names (`~/.claude/skills/autopilot/SKILL.md`). on through every step that would wait on the user, and say in each implementer brief that the run is headless. A choice the user would have made, such as a decision changed mid-build in step 6, goes through the confidence rule in `grilling`'s "When headless:" section (`~/.claude/skills/grilling/SKILL.md`) and into the decision log it names; a park stops the run. Every artefact stays the same, the recap page in step 8 included.
 
 In step 3, use the integration branch the run names in place of creating one. Open the draft PR in step 3, and mark it ready in step 9, only when `git config --get claude.allowPrs` prints `true`; otherwise skip both.
 
