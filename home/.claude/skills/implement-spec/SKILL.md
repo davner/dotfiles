@@ -26,12 +26,12 @@ Tickets that touch a user interface are built through `impeccable` and checked o
 
 3. Create the integration branch. If the issue tracker closes work through PRs, or the user asks for one, open a draft PR once the first ticket lands in step 5 (a branch with no commits ahead of main can't open one), marked as closing the spec and tickets.
 
-4. Use **implementer subagents** to implement each ticket, each in its own worktree on its own branch. Hand each one its ticket's absolute path in this checkout, since a new worktree has no copy of a gitignored scratch folder. Each implementer subagent:
+4. Use **implementer subagents** to implement each ticket, each in its own worktree on its own branch. Create each worktree in its own command, then work in it. Hand each one its ticket's absolute path in this checkout, since a new worktree has no copy of a gitignored scratch folder. Each implementer subagent:
    - is told the integration tip's commit ID and confirms its worktree starts there before anything else, recreating its branch from that tip if not;
    - calls the Skill tool with `tdd` to build the ticket, starting from the ticket's **First red test**. Every behaviour is its own red → green slice, and the report pastes the red run of each one (a ticket whose First red test is `none` names the existing check it kept green instead);
    - leaves linear commits on its own branch and reports done. Integrating is the orchestrator's job.
 
-5. Once an **implementer subagent** completes, check its report has a red run for every behaviour it added; send back any slice that lacks one to be redone red-first. Then bring its commits onto the integration branch yourself with `git merge --ff-only`. When its branch no longer sits on the integration tip, send it back to its implementer to rebase onto the tip and re-run its checks; the implementer resolves its own conflicts. History stays linear. Run the checks on every commit that comes over, stopping at the first failure, not only on the tip.
+5. Once an **implementer subagent** completes, check its report has a red run for every behaviour it added; send back any slice that lacks one to be redone red-first. Then bring its commits onto the integration branch yourself with `git merge --ff-only`. When its branch no longer sits on the integration tip, send it back to its implementer to rebase onto the tip and re-run its checks, naming the old base and the target by commit ID, since a branch name can move; the implementer resolves its own conflicts. History stays linear. Run the checks on every commit that comes over, stopping at the first failure, not only on the tip.
 
 6. If this changes the **frontier** of available tickets, kick off more **implementer subagents** to work on the new tickets. This allows for maximum concurrency.
 
