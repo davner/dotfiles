@@ -201,7 +201,9 @@ in
     {
       home.file = lib.mergeAttrsList [
         # impeccable's installer and local-skills.sh also write into ~/.claude/skills.
-        (linkEach "home/.claude/skills" ".claude/skills" (_: type: type == "directory"))
+        (linkEach "home/.claude/skills" ".claude/skills" (
+          name: type: type == "directory" && !lib.elem name config.dotfiles.skills.exclude
+        ))
         # settings.base.json and the cc function reach these by path.
         (linkEach "home/.claude/hooks" ".claude/hooks" (_: type: type == "regular"))
         (linkEach "home/.claude/rules" ".claude/rules" (
@@ -211,10 +213,47 @@ in
     }
     # Also into ~/.agents/skills, the shared folder other agents read.
     {
-      home.file = lib.concatMapAttrs (name: src: {
-        ".claude/skills/${name}".source = src;
-        ".agents/skills/${name}".source = src;
-      }) thirdPartySkills;
+      options.dotfiles.skills.extra = lib.mkOption {
+        type = lib.types.attrsOf lib.types.path;
+        default = { };
+        description = "Skills to link beside the core's, by name to folder; the name must match the SKILL.md's.";
+      };
+      options.dotfiles.skills.exclude = lib.mkOption {
+        type = lib.types.listOf lib.types.str;
+        default = [ ];
+        # A typo would otherwise leave the skill linked with nothing to say so.
+        apply =
+          names:
+          let
+            known =
+              lib.attrNames (
+                lib.filterAttrs (_: type: type == "directory") (builtins.readDir ./home/.claude/skills)
+              )
+              ++ lib.attrNames thirdPartySkills;
+            unknown = lib.subtractLists known names;
+          in
+          if unknown == [ ] then
+            names
+          else
+            throw "dotfiles.skills.exclude names ${
+              lib.concatMapStringsSep ", " (n: "\"${n}\"") unknown
+            }, which is neither a core nor a third-party skill.";
+        description = "Core or third-party skills not to link, by name.";
+      };
+      # Two definitions, not one merged attrset, so an extra that reuses a core name is a conflict, not a silent swap.
+      config.home.file = lib.mkMerge (
+        map
+          (lib.concatMapAttrs (
+            name: src: {
+              ".claude/skills/${name}".source = src;
+              ".agents/skills/${name}".source = src;
+            }
+          ))
+          [
+            (removeAttrs thirdPartySkills config.dotfiles.skills.exclude)
+            config.dotfiles.skills.extra
+          ]
+      );
     }
   ];
 

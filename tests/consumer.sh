@@ -77,4 +77,53 @@ if full_only && require nix; then
     "$EV_OUT" "$checkout/home/.claude/settings.base.json"
 fi
 
+section "a flake that adds a skill and excludes two"
+if full_only && require nix; then
+  fixture_consumer "dotfiles.git.email = \"fixture@example.org\";
+    home-manager.users.\"$CONSUMER_USER\".dotfiles.skills = {
+      extra.fixture-extra = ./fixture-extra;
+      exclude = [ \"grilling\" \"humanizer\" ];
+    };"
+  mkdir -p "$CONSUMER/fixture-extra"
+  printf -- '---\nname: fixture-extra\n---\n' >"$CONSUMER/fixture-extra/SKILL.md"
+  skill_links='f: builtins.concatStringsSep "\n" (builtins.filter (n: builtins.match "\\.(claude|agents)/skills/[^/]+" n != null) (builtins.attrNames f))'
+  consumer_home home.file --apply "$skill_links"
+  if [ "$EV_RC" -eq 0 ]; then
+    links="$EV_OUT"
+    contains "the extra skill is linked into .claude/skills" "$links" ".claude/skills/fixture-extra"
+    contains "and into .agents/skills" "$links" ".agents/skills/fixture-extra"
+    # Read through Nix, since lazy trees can leave the store path unmaterialised on disk.
+    # shellcheck disable=SC2016  # the ${} is Nix interpolation, not shell
+    consumer_home 'home.file.".claude/skills/fixture-extra".source' --apply 'p: builtins.readFile "${p}/SKILL.md"'
+    contains "from the folder the consumer named" "$EV_OUT$EV_MSG" "name: fixture-extra"
+    if grep -qE '^\.claude/skills/grilling$' <<<"$links"; then
+      bad "the excluded core skill is not linked" "$links"
+    else
+      ok "the excluded core skill is not linked"
+    fi
+    if grep -qE '^\.(claude|agents)/skills/humanizer$' <<<"$links"; then
+      bad "the excluded third-party skill is linked in neither folder" "$links"
+    else
+      ok "the excluded third-party skill is linked in neither folder"
+    fi
+    contains "the skills it kept are still linked" "$links" ".claude/skills/tdd"
+  else
+    bad "its skill links evaluate" "$EV_MSG"
+  fi
+fi
+
+section "a flake that excludes a skill the core does not have"
+if full_only && require nix; then
+  fixture_consumer "dotfiles.git.email = \"fixture@example.org\";
+    home-manager.users.\"$CONSUMER_USER\".dotfiles.skills.exclude = [ \"no-such-skill\" ];"
+  consumer_home home.file --apply 'f: builtins.concatStringsSep "\n" (builtins.attrNames f)'
+  if [ "$EV_RC" -eq 0 ]; then
+    bad "it fails instead of ignoring the name" "evaluated"
+  else
+    ok "it fails instead of ignoring the name"
+  fi
+  contains "with a message that names the skill and the option" "$EV_MSG" \
+    'dotfiles.skills.exclude names "no-such-skill"'
+fi
+
 finish
