@@ -49,4 +49,6 @@ Tickets that touch a user interface are built through `impeccable` and checked o
 
 When the conversation has said the run is headless, nobody will answer. Carry on through every step that would wait on the user, and say in each implementer brief that the run is headless. A choice the user would have made, such as a decision changed mid-build in step 6, goes through the confidence rule in `grilling`'s "When headless:" section (`~/.claude/skills/grilling/SKILL.md`) and into the decision log it names; a park stops the run. Every artefact stays the same, the recap page in step 8 included.
 
+In step 3, use the integration branch the run names in place of creating one.
+
 Each implementer brief also says to follow the retry rule in `~/.claude/skills/autopilot/SKILL.md` ("The retry rule") for a failing check. Step 7 gives `code-review` the run's spec path, and its fix pass follows that rule's review-finding row: a failing test where it can, else one attempt and a fresh reviewer rechecks the finding.
