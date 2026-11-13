@@ -28,4 +28,18 @@ if full_only && require nix; then
     "$EV_MSG"
 fi
 
+section "a flake that imports the core's modules and sets an empty email"
+if full_only && require nix; then
+  fixture_consumer 'dotfiles.git.email = "";'
+  consumer_home programs.git.settings.user.email
+  if [ "$EV_RC" -eq 0 ]; then
+    bad "it treats the empty address as missing" "evaluated to \"$EV_OUT\""
+  else
+    ok "it treats the empty address as missing"
+  fi
+  eq "with the same one-line message" \
+    "no git email for \"$CONSUMER_USER\". Set dotfiles.git.email; this repo's own Macs take it from flake.nix's users." \
+    "$EV_MSG"
+fi
+
 finish

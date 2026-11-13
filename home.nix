@@ -176,12 +176,18 @@ in
           description = "The macOS username this home belongs to.";
         };
         # No silent default: committing from the wrong address is what this prevents.
-        git.email = lib.mkOption {
-          type = lib.types.str;
-          default = throw "no git email for \"${user}\". Set dotfiles.git.email; this repo's own Macs take it from flake.nix's users.";
-          defaultText = lib.literalMD "none; the build fails without one";
-          description = "The address git commits as.";
-        };
+        git.email =
+          let
+            missing = throw "no git email for \"${user}\". Set dotfiles.git.email; this repo's own Macs take it from flake.nix's users.";
+          in
+          lib.mkOption {
+            type = lib.types.str;
+            default = missing;
+            defaultText = lib.literalMD "none; the build fails without one";
+            # An empty address is a missing one that got past the type check.
+            apply = email: if email == "" then missing else email;
+            description = "The address git commits as.";
+          };
       };
     }
     {
