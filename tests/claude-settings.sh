@@ -152,11 +152,48 @@ else
 fi
 # The merge itself is tested in tests/json-merge.sh; this is the one call site.
 # shellcheck disable=SC2016  # the ${} are Nix interpolation, not shell
-if grep -q 'jsonMerge} --drop-link deep "${dotfiles}/home/\.claude/settings\.base\.json"' "$DIR/home.nix"; then
+if grep -q 'jsonMerge} --drop-link\(${claudeFragmentArgs}\)\? deep "${dotfiles}/home/\.claude/settings\.base\.json"' "$DIR/home.nix"; then
   ok "home.nix merges settings.base.json, failing on invalid JSON"
 else
   bad "home.nix merges settings.base.json, failing on invalid JSON" \
     "want --drop-link deep and no --skip-invalid: a broken settings.json must stop the rebuild"
+fi
+
+# shellcheck disable=SC2154  # lib.sh sets CONSUMER
+fragments_eval() { # -> sets EV_RC, EV_OUT (each fragment the merge step folds in, as a JSON array), EV_MSG
+  local script drv f
+  EV_RC=0
+  EV_OUT=""
+  script="$(nix eval --json --no-write-lock-file --override-input core "git+file://$DIR" \
+    "$CONSUMER#darwinConfigurations.fixture.config.home-manager.users.\"$CONSUMER_USER\".home.activation.claudeSettings.data" \
+    --apply 'data: { inherit data; drvs = builtins.attrNames (builtins.getContext data); }' 2>"$WORK/stderr")" || EV_RC=$?
+  EV_MSG="$(grep -E '^ *error: .' "$WORK/stderr" | tail -n 1 | sed 's/^ *error: //')"
+  [ "$EV_RC" -eq 0 ] || return
+  # Built so the files the script names exist to be read.
+  while IFS= read -r drv; do
+    nix build --no-link "$drv^out" 2>"$WORK/stderr" || { EV_RC=1; EV_MSG="$(tail -n 1 "$WORK/stderr")"; return; }
+  done < <(jq -r '.drvs[] | select(endswith("-claude-settings-fragment.json.drv"))' <<<"$script")
+  while IFS= read -r f; do
+    EV_OUT="$EV_OUT$(cat "$f")"
+  done < <(jq -r '.data | [scan("--extend ([^ ]+)")[0]] | .[]' <<<"$script")
+  EV_OUT="$(jq -cs . <<<"$EV_OUT")"
+}
+
+section "a flake that imports the core's modules and adds Claude settings fragments"
+if full_only && require nix jq; then
+  fixture_consumer '
+    dotfiles.git.email = "fixture@example.org";
+    home-manager.users."'"$CONSUMER_USER"'".dotfiles.claude.settingsFragments = [
+      { enabledPlugins."p@m" = true; }
+      { permissions.deny = [ "Bash(wget *)" ]; }
+    ];'
+  fragments_eval
+  if [ "$EV_RC" -eq 0 ]; then
+    eq "the merge step folds in each fragment, in order" \
+      '[{"enabledPlugins":{"p@m":true}},{"permissions":{"deny":["Bash(wget *)"]}}]' "$EV_OUT"
+  else
+    bad "the merge step folds in each fragment, in order" "$EV_MSG"
+  fi
 fi
 
 finish

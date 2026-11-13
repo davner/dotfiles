@@ -13,6 +13,10 @@ let
 
   jsonMerge = "env PATH=${pkgs.jq}/bin:$PATH ${pkgs.bash}/bin/bash ${./home/json-merge.sh}";
   vscodeUser = "$HOME/Library/Application Support/Code/User";
+  # Empty with no fragments, so the merge line and the personal Macs' builds stay as they were.
+  claudeFragmentArgs = lib.concatMapStrings (
+    f: " --extend ${pkgs.writeText "claude-settings-fragment.json" (builtins.toJSON f)}"
+  ) config.dotfiles.claude.settingsFragments;
 
   # Skill name -> its folder inside a pinned flake input. The name must match
   # the SKILL.md frontmatter, since Claude Code invokes a skill by that name.
@@ -146,7 +150,7 @@ in
   # names, so adding model, effortLevel or theme to it would revert /config on
   # every rebuild. A link there dates from when this file was linked, so it goes.
   home.activation.claudeSettings = config.lib.dag.entryAfter [ "writeBoundary" ] ''
-    run ${jsonMerge} --drop-link deep "${dotfiles}/home/.claude/settings.base.json" "$HOME/.claude/settings.json"
+    run ${jsonMerge} --drop-link${claudeFragmentArgs} deep "${dotfiles}/home/.claude/settings.base.json" "$HOME/.claude/settings.json"
   '';
   # VS Code allows comments in these files and jq does not, so a hand-commented file is skipped.
   home.activation.vscodeSettings = config.lib.dag.entryAfter [ "writeBoundary" ] ''
@@ -195,6 +199,11 @@ in
           default = "${config.home.homeDirectory}/.dotfiles";
           defaultText = lib.literalExpression ''"''${config.home.homeDirectory}/.dotfiles"'';
           description = "Where this core is checked out. Its live links and settings merges read from here.";
+        };
+        claude.settingsFragments = lib.mkOption {
+          type = lib.types.listOf (lib.types.attrsOf (pkgs.formats.json { }).type);
+          default = [ ];
+          description = "JSON objects folded into Claude's settings after settings.base.json, in order. A fragment may add keys and extend the base's arrays, never replace an array or object the base sets.";
         };
       };
     }
