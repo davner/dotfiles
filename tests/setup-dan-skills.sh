@@ -180,6 +180,14 @@ label delete invalid -R owner/repo --yes" "$(labels_calls label delete)"
   labels_run
   eq "bug beside an existing fix: bug is not renamed" "" "$(labels_calls label edit)"
   contains "bug beside an existing fix: it is reported" "$LABELS_OUT" "kept bug: fix already exists"
+
+  for failing in repo-view label-list label-edit issue-list pr-list label-delete label-create; do
+    labels_repo "$LABELS_DEFAULTS"
+    labels_run GH_FAIL="$failing"
+    want_exit "a failing gh ${failing/-/ } stops labels.sh non-zero" 1 "$LABELS_RC"
+    eq "a failing gh ${failing/-/ } is the last call made" "${failing/-/ }" \
+      "$(tail -n 1 <<<"$LABELS_CALLS" | awk '{print $1, $2}')"
+  done
 fi
 # ---- end labels.sh block ----
 
