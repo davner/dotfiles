@@ -28,6 +28,7 @@ Lead each question with the recommended answer so a one-word reply accepts it. S
 3. **Scratch folder** for specs, tickets, and the TODO list: `.scratch/` (recommended), gitignored so working notes stay out of commits; or a committed folder such as `docs/specs/` when the team reviews specs in PRs.
 4. **Glossary**: `GLOSSARY.md` at the repo root (recommended), or a path the user names.
 5. **ADRs**: `docs/adr/` (recommended), or a folder the user names.
+6. **Agent pushes and PRs**: will agents push branches and open or merge pull requests in this repo? No (recommended) leaves both to the user. On a yes, give the user the switch to run themselves inside the repo, since an agent may not set it: `cc-push on` for pushes, `git config claude.allowPrs true` for PRs. The tracker file then says who pushes, opens and merges.
 
 ## 3. Show the drafts
 
