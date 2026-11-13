@@ -53,6 +53,8 @@ Go as far as the repo allows. The switches are `git config --get claude.allowPus
 3. Else a **pushed branch** when `claude.allowPush` is on.
 4. Else the **local branch**, with the recap page `implement-spec` made.
 
+A rung a hook or permission refuses drops to the next rung, and the report says which was refused.
+
 The PR body says nothing about the decision log.
 
 **Park.** Move the item to "Needs info" (a `Status: needs-info` line for a paste-ready tracker) and write the parked question and its options on it. Before `to-spec` publishes anything, an idea run has no item: the report carries the question. Leave the branch as it is.
