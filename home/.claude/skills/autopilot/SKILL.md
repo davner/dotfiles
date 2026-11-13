@@ -65,4 +65,4 @@ Then open `retro`. Put its suggestions in the report and apply none.
 
 Before writing it, load `PushNotification` (a deferred tool: `ToolSearch` with `select:PushNotification`) and send the headline. If it is not available, say so in the report.
 
-Headline first, in plain words: done, parked or failed, with the PR or branch. Then what was built; what parked and why; the decisions, with the path to `decisions.md`; the skills chosen with their reasons, and the gaps; retro's suggestions. End with two short lists: what you verified, and what you took on trust.
+Headline first, in plain words: done, parked or failed, with the PR or branch. Then what was built; what parked and why; the decisions, with the path to `decisions.md`; the skills chosen with their reasons, and the gaps; retro's suggestions.
