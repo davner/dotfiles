@@ -55,6 +55,94 @@ statusLine    -                               ~/.claude/hooks/statusline.sh
 HOOKS
   eq "the table above covers every command settings.base.json runs" "$rows" \
     "$(jq '[.. | objects | .command? // empty] | length' "$BASE")"
+  # A soft fence: Claude's read-only GitHub token is the hard limit, and these
+  # rules only make Claude work around them on purpose to reach the owner's.
+  while read -r rule; do
+    [ -n "$rule" ] || continue
+    if jq -e --arg r "$rule" '.permissions.deny // [] | index($r) != null' "$BASE" >/dev/null 2>&1; then
+      ok "settings.base.json denies $rule"
+    else
+      bad "settings.base.json denies $rule" "missing from permissions.deny"
+    fi
+  done <<'DENY'
+Bash(git push *--force*)
+Bash(git push -f *)
+Bash(git push * -f)
+Bash(git push * -f *)
+Bash(git push * +*)
+Bash(gh pr merge *)
+Bash(gh repo delete *)
+Read(~/.ssh/**)
+Bash(security find-*)
+Bash(gh auth token *)
+Bash(unset *GH_TOKEN*)
+Bash(env *GH_TOKEN*)
+DENY
+  # Claude Code's documented matching; a rule that also catches everyday git
+  # or gh work would just get switched off.
+  denied_by() {
+    local cmd="$1" rule pat
+    while IFS= read -r rule; do
+      pat="${rule#Bash(}"
+      [ "$pat" != "$rule" ] || continue
+      pat="${pat%)}"
+      # shellcheck disable=SC2053  # $pat is a glob on purpose
+      if [[ $cmd == $pat ]]; then printf '%s\n' "$rule"; return; fi
+      if [[ $pat == *' *' && ${pat%' *'} != *'*'* && $cmd == "${pat%' *'}" ]]; then
+        printf '%s\n' "$rule"; return
+      fi
+    done < <(jq -r '.permissions.deny // [] | .[]' "$BASE")
+  }
+  while IFS='|' read -r want cmd; do
+    [ -n "$want" ] || continue
+    got="$(denied_by "$cmd")"
+    if [ "$want" = deny ] && [ -n "$got" ]; then
+      ok "denied: $cmd"
+    elif [ "$want" = allow ] && [ -z "$got" ]; then
+      ok "not denied: $cmd"
+    elif [ "$want" = deny ]; then
+      bad "denied: $cmd" "no deny rule matches"
+    else
+      bad "not denied: $cmd" "matched by $got"
+    fi
+  done <<'CMDS'
+deny|git push --force
+deny|git push --force origin main
+deny|git push origin main --force-with-lease
+deny|git push -f
+deny|git push -f origin main
+deny|git push origin main -f
+deny|git push origin -f main
+deny|git push origin +main
+deny|gh pr merge
+deny|gh pr merge 12 --squash
+deny|gh repo delete davner/x --yes
+deny|security find-generic-password -s claude-gh-token -w
+deny|security find-internet-password -s github.com
+deny|gh auth token
+deny|gh auth token --hostname github.com
+deny|unset GH_TOKEN
+deny|unset FOO GH_TOKEN
+deny|env -u GH_TOKEN gh pr create
+deny|env --unset=GH_TOKEN gh pr list
+allow|git push
+allow|git push origin main
+allow|git push -u origin feature-flag
+allow|git push origin fix-f
+allow|git push --set-upstream origin my-branch
+allow|git push --tags
+allow|git status
+allow|gh pr view 12
+allow|gh pr list
+allow|gh pr checks
+allow|gh pr create --fill
+allow|gh repo view
+allow|gh auth status
+allow|security list-keychains
+allow|security add-generic-password -s claude-gh-token -w
+allow|env
+allow|unset FOO
+CMDS
 fi
 if grep -q 'mkOutOfStoreSymlink.*\.claude/settings\.json' "$DIR/home.nix"; then
   bad "home.nix does not link settings.json" \

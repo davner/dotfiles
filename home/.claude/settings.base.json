@@ -85,6 +85,22 @@
     "type": "command",
     "command": "~/.claude/hooks/statusline.sh"
   },
+  "permissions": {
+    "deny": [
+      "Bash(git push *--force*)",
+      "Bash(git push -f *)",
+      "Bash(git push * -f)",
+      "Bash(git push * -f *)",
+      "Bash(git push * +*)",
+      "Bash(gh pr merge *)",
+      "Bash(gh repo delete *)",
+      "Read(~/.ssh/**)",
+      "Bash(security find-*)",
+      "Bash(gh auth token *)",
+      "Bash(unset *GH_TOKEN*)",
+      "Bash(env *GH_TOKEN*)"
+    ]
+  },
   "skipDangerousModePermissionPrompt": true,
   "agentPushNotifEnabled": true,
   "worktree": {
