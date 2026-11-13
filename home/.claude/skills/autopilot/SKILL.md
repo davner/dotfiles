@@ -5,7 +5,7 @@ argument-hint: "<idea | board>"
 disable-model-invocation: true
 ---
 
-Take `$ARGUMENTS` from idea to reviewed code with nobody watching: free text is the idea; the word `board` takes the next board item. Typing `/autopilot` approves this run's subagents: about 10 build and research agents in all, plus the voters `grilling` allows. One item per run.
+Take `$ARGUMENTS` from idea to reviewed code with nobody watching: free text is the idea; the word `board` takes the next board item. Typing `/autopilot` approves this run's subagents: at most about 10 build and research agents, plus up to 50 small voters. One item per run.
 
 ## Skills it opens
 
