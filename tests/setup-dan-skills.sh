@@ -254,6 +254,30 @@ for wf in "Item closed: set Status to Done" "Pull request merged: set Status to 
 done
 contains "it prints the board's workflows page" "$B_OUT" $'\nhttps://github.com/users/me/projects/8/workflows'
 contains "it prints the auto-add filter" "$B_OUT" "is:issue is:open"
+board_not_called() { # name, pattern -> ok when no recorded gh call matches the extended regex
+  if grep -Eq -- "$2" <<<"$B_CALLS"; then bad "$1" "a gh call matches: $2" "calls: ${B_CALLS//$'\n'/ | }"; else ok "$1"; fi
+}
+
+board_run "3=dan-skills template" "4=me/other"
+want_exit "with the template and no board, board.sh exits 0" 0 "$B_RC"
+board_not_called "it creates nothing" '^project create'
+board_not_called "it leaves the template's Status alone" '^api graphql'
+board_not_called "it does not mark a template again" '^project mark-template'
+board_called "it copies the existing template" '^project copy 3 .*--title me/app'
+board_called "and links the copy" '^project link 8 '
+eq "it prints the numbers, the URL and only the auto-add step" "template=3
+board=8
+url=https://github.com/users/me/projects/8
+
+Board created. Turn on Auto-add to project for me/app with the filter is:issue is:open at:
+https://github.com/users/me/projects/8/workflows" "$B_OUT"
+
+board_run "3=dan-skills template" "5=me/app"
+want_exit "with the template and the board, board.sh exits 0" 0 "$B_RC"
+board_not_called "it creates, copies or links nothing" '^(project (create|copy|link|mark-template)|api graphql)'
+eq "it prints the numbers and the URL, and no manual steps" "template=3
+board=5
+url=https://github.com/users/me/projects/5" "$B_OUT"
 # --- end board.sh block ---
 
 finish
