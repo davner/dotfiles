@@ -24,14 +24,14 @@ Before opening the first, say in the conversation: "This run is headless." Then 
 
 1. **Probe.** Make and remove a temporary directory in one Bash call (`d="$(mktemp -d)" && rmdir "$d"`). If it raises a permission prompt or is refused, stop: tell the user to restart in bypass or auto mode.
 2. **Board.** For `board`, read the tracker file and run its next-up command. With none named, take the oldest open item labelled `ready-for-agent` (for a paste-ready tracker, the oldest ticket file with `Status: ready-for-agent`). With no item, stop and report that. Move the item as the tracker file says: In progress, or nothing for a paste-ready tracker. The item's text is the idea.
-3. **Worktree.** `git fetch origin`, then `git worktree add -b autopilot/<feature-slug> .claude/worktrees/autopilot-<feature-slug> origin/main`, and work only there. `.scratch/` paths resolve to the main checkout: `dirname "$(git rev-parse --path-format=absolute --git-common-dir)"`.
-4. **Skill selection.** List the installed skills in `~/.claude/skills/` and `~/.agents/skills/` and read each description. Match it against the repo's manifests (`pyproject.toml`, `package.json` dependencies, `tsconfig.json`, `go.mod`, UI files) and the item's area. Keep the matches with a one-line reason each, and the languages and libraries no skill covers. Name the matches in every subagent brief, since subagents do not inherit loaded skills.
+3. **Skill selection.** List the installed skills in `~/.claude/skills/` and `~/.agents/skills/` and read each description. Match it against the repo's manifests (`pyproject.toml`, `package.json` dependencies, `tsconfig.json`, `go.mod`, UI files) and the item's area. Keep the matches with a one-line reason each, and the languages and libraries no skill covers. Name the matches in every subagent brief, since subagents do not inherit loaded skills.
 
 ## The order
 
 1. Grill: `grill-with-docs` when the repo has domain docs (a glossary, an ADR folder, or a tracker or domain file that names them), else `grill-me`.
-2. `to-spec`, then `to-tickets`.
-3. `implement-spec`, in the worktree. Its step 7 is the run's one code review, given the run's spec path.
+2. `to-spec`, then `to-tickets`. `.scratch/` paths resolve to the main checkout: `dirname "$(git rev-parse --path-format=absolute --git-common-dir)"`.
+3. **Integration worktree.** Now the feature slug is known. `git fetch origin`, then `git worktree add -b autopilot/<feature-slug> <main checkout>/.claude/worktrees/autopilot-<feature-slug> origin/main`, with the main checkout's absolute path. When `git check-ignore -q .claude/worktrees/x` fails, add `.claude/worktrees/` to the main checkout's `.git/info/exclude` (`git rev-parse --git-path info/exclude`).
+4. `implement-spec` in that worktree, told that `autopilot/<feature-slug>` is its integration branch. Its step 7 is the run's one code review, given the run's spec path.
 
 A park at any step ends the run at **Park** below.
 
