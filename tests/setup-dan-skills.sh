@@ -205,6 +205,7 @@ d=$(dirname "$0")
 args="$*"
 printf '%s\n' "${args//$'\n'/ }" >>"$d/calls"
 user=me
+if [ "$(cat "$d/fail" 2>/dev/null)" = "$1 $2" ]; then echo "gh: HTTP 502" >&2; exit 1; fi
 case "$1 $2" in
   "auth status")
     printf 'github.com\n  - Token scopes: %s\n' "$(cat "$d/scopes")" ;;
@@ -285,6 +286,15 @@ want_exit "without the project scope, board.sh exits 1" 1 "$B_RC"
 contains "and tells the user how to add it" "$B_ERR" "gh auth refresh -s project"
 board_not_called "before touching any project" '^(project|api) '
 echo "'gist', 'project', 'read:org', 'repo'" >"$BSTUB/scopes"
+
+for step in "project list" "project copy" "project link"; do
+  echo "$step" >"$BSTUB/fail"
+  board_run "3=dan-skills template"
+  want_exit "a failing gh $step stops board.sh" 1 "$B_RC"
+  eq "and prints no board line" "" "$(grep '^board=' <<<"$B_OUT")"
+done
+rm -f "$BSTUB/fail"
+if [ -x "$BOARD" ]; then ok "board.sh is executable"; else bad "board.sh is executable" "the skill runs it by path"; fi
 # --- end board.sh block ---
 
 finish
