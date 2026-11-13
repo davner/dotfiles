@@ -1,6 +1,6 @@
 ---
 name: setup-dan-skills
-description: "Configure this repo for the planning and review skills: which tracker (Shortcut or Jira) and where specs, tickets, the TODO list, the glossary, and ADRs are saved. Run once per repo before /to-spec, /to-tickets, /implement-spec, or code-review."
+description: "Configure this repo for the planning and review skills: which tracker (Shortcut or Jira) and where specs, tickets, the TODO list, the glossary, and ADRs are saved. Run once per repo before /to-spec, /to-tickets, /implement-spec, /autopilot, or code-review."
 disable-model-invocation: true
 ---
 
