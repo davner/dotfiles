@@ -23,8 +23,9 @@ Before opening the first, say in the conversation: "This run is headless." Then 
 ## Start
 
 1. **Probe.** Make and remove a temporary directory in one Bash call (`d="$(mktemp -d)" && rmdir "$d"`). If it raises a permission prompt or is refused, stop: tell the user to restart in bypass or auto mode.
-2. **Board.** For `board`, read the tracker file and run its next-up command. With none named, take the oldest open item labelled `ready-for-agent` (for a paste-ready tracker, the oldest ticket file with `Status: ready-for-agent`). With no item, stop and report that. Move the item as the tracker file says: In progress, or nothing for a paste-ready tracker. The item's text is the idea.
-3. **Skill selection.** List the installed skills in `~/.claude/skills/` and `~/.agents/skills/` and read each description. Match it against the repo's manifests (`pyproject.toml`, `package.json` dependencies, `tsconfig.json`, `go.mod`, UI files) and the item's area. Keep the matches with a one-line reason each, and the languages and libraries no skill covers. Name the matches in every subagent brief, since subagents do not inherit loaded skills.
+2. **Tracker.** Find the tracker file. With none, use the paste-ready `.scratch/` layout `setup-dan-skills` writes by default (its `issue-tracker.md` with every recommended answer), and the report says so. For `board`, stop and report that the repo has no tracker file.
+3. **Board.** For `board`, read the tracker file and run its next-up command. With none named, take the oldest open item labelled `ready-for-agent` (for a paste-ready tracker, the oldest ticket file with `Status: ready-for-agent`). With no item, stop and report that. Move the item as the tracker file says: In progress, or nothing for a paste-ready tracker. The item's text is the idea.
+4. **Skill selection.** List the installed skills in `~/.claude/skills/` and `~/.agents/skills/` and read each description. Match it against the repo's manifests (`pyproject.toml`, `package.json` dependencies, `tsconfig.json`, `go.mod`, UI files) and the item's area. Keep the matches with a one-line reason each, and the languages and libraries no skill covers. Name the matches in every subagent brief, since subagents do not inherit loaded skills.
 
 ## The order
 
