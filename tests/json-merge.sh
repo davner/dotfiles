@@ -112,6 +112,55 @@ if require jq; then
   jm append-unique key,command,when "$JW/dup.base.json" "$JW/dup.json"
   eq "append-unique: an entry repeated in the base is added once" "1" "$(jq length "$JW/dup.json")"
 
+  # A fragment is folded into the base before the base is merged over the target.
+  printf '%s\n' '{"a": 1, "permissions": {"deny": ["Bash(rm *)"]}}' >"$JW/fb.json"
+  printf '%s\n' '{"enabledPlugins": {"p@m": true}}' >"$JW/frag1.json"
+  printf '%s\n' '{"mine": true}' >"$JW/f1.json"
+  jm --extend "$JW/frag1.json" deep "$JW/fb.json" "$JW/f1.json"
+  eq "--extend: the fragment's keys land alongside the base's and the target's" \
+    '{"a":1,"enabledPlugins":{"p@m":true},"mine":true,"permissions":{"deny":["Bash(rm *)"]}}' \
+    "$(jq -cS . "$JW/f1.json" 2>&1)"
+  # Arrays replace outright in the final merge, so a fragment that replaced one
+  # would drop the base's deny rules from every machine that takes the fragment.
+  printf '%s\n' '{"permissions": {"deny": ["Bash(curl *)", "Bash(rm *)"]}}' >"$JW/frag2.json"
+  printf '%s\n' '{"permissions": {"deny": ["Bash(wget *)"]}}' >"$JW/frag3.json"
+  printf '%s\n' '{}' >"$JW/f2.json"
+  jm --extend "$JW/frag2.json" --extend "$JW/frag3.json" deep "$JW/fb.json" "$JW/f2.json"
+  eq "--extend: a fragment's array extends the base's, in order, each entry once" \
+    '["Bash(rm *)","Bash(curl *)","Bash(wget *)"]' "$(jq -c .permissions.deny "$JW/f2.json" 2>&1)"
+  while IFS='|' read -r label frag; do
+    [ -n "$label" ] || continue
+    printf '%s\n' "$frag" >"$JW/frag4.json"
+    printf '%s\n' '{"mine": true}' >"$JW/f3.json"
+    jm --skip-invalid --extend "$JW/frag4.json" deep "$JW/fb.json" "$JW/f3.json"
+    if [ "$JM_RC" = 1 ] && [ "$(cat "$JW/f3.json")" = '{"mine": true}' ]; then
+      ok "--extend: a fragment that $label is refused, even with --skip-invalid, and the target is left alone"
+    else
+      bad "--extend: a fragment that $label is refused, even with --skip-invalid, and the target is left alone" \
+        "rc=$JM_RC" "$(cat "$JW/f3.json")"
+    fi
+    contains "and the refusal names the fragment and the key" "$JM_ERR" "$JW/frag4.json: permissions"
+  done <<'FRAGS'
+nulls the base's array|{"permissions": {"deny": null}}
+swaps the base's array for a string|{"permissions": {"deny": "Bash(rm *)"}}
+nulls the base's object|{"permissions": null}
+swaps the base's object for an array|{"permissions": []}
+FRAGS
+  printf '%s\n' '[]' >"$JW/frag5.json"
+  jm --extend "$JW/frag5.json" deep "$JW/fb.json" "$JW/f3.json"
+  want_exit "--extend: a fragment that is not an object is refused" 1 "$JM_RC"
+  jm --extend "$JW/gone.json" deep "$JW/fb.json" "$JW/f3.json"
+  if [ "$JM_RC" = 1 ] && [ "$(cat "$JW/f3.json")" = '{"mine": true}' ]; then
+    ok "--extend: a missing fragment fails before touching the target"
+  else
+    bad "--extend: a missing fragment fails before touching the target" "rc=$JM_RC"
+  fi
+  contains "and names it" "$JM_ERR" "$JW/gone.json"
+  printf '{} // mine\n' >"$JW/frag6.json"
+  jm --extend "$JW/frag6.json" deep "$JW/fb.json" "$JW/f3.json"
+  want_exit "--extend: a fragment that is not plain JSON fails" 1 "$JM_RC"
+  contains "and names it" "$JM_ERR" "$JW/frag6.json"
+
   for args in "" "deep" "deep $JW/obj.base.json" "append-unique $JW/arr.base.json $JW/x.json" "--bogus deep a b" "shallow a b"; do
     # shellcheck disable=SC2086 # each case is deliberately split into words
     jm $args
