@@ -154,7 +154,7 @@ label delete help wanted -R owner/repo --yes
 label delete question -R owner/repo --yes
 label delete invalid -R owner/repo --yes" "$(labels_calls label delete)"
   eq "a fresh repo: each delete is checked against issues and PRs in every state" "8" \
-    "$(grep -E '^(issue|pr) list .*--state all' <<<"$LABELS_CALLS" | wc -l | tr -d ' ')"
+    "$(grep -cE '^(issue|pr) list .*--state all' <<<"$LABELS_CALLS")"
 
   labels_repo "$LABELS_DEFAULTS"
   echo '[{"number":7}]' >"$LGH/canned/issue-list.json"
