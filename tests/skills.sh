@@ -37,7 +37,7 @@ fi
 
 # A headless run reads these skills with nobody there to answer their stop
 # points, so each one must say what to do in place of asking.
-headless_skills="grilling to-tickets"
+headless_skills="grilling to-tickets to-spec"
 for s in $headless_skills; do
   if grep -qE '^#+ When headless:' "$SKILLS_DIR/$s/SKILL.md"; then
     ok "$s has a When headless: section"

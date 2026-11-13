@@ -75,3 +75,7 @@ A description of the things that are out of scope for this spec.
 Any further notes about the feature.
 
 </spec-template>
+
+## When headless:
+
+When the conversation has said the run is headless, nobody will answer step 2's check. Accept your own seams, and log them, with why each is the highest one, to the decision log in `grilling`'s "When headless:" section (`~/.claude/skills/grilling/SKILL.md`). A choice between seams goes through that section's confidence rule; a park stops the run before step 3.
