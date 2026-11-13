@@ -191,4 +191,69 @@ label delete invalid -R owner/repo --yes" "$(labels_calls label delete)"
 fi
 # ---- end labels.sh block ----
 
+# --- board.sh: fake gh and helpers (ticket 02; ticket 05 merges the fakes) ---
+section "setup-dan-skills board"
+BOARD="$DIR/home/.claude/skills/setup-dan-skills/scripts/board.sh"
+BSTUB="$WORK/board-stub"
+BREPO="$WORK/board-repo"
+mkdir -p "$BSTUB" "$BREPO"
+# Replays canned JSON from $BSTUB and records every call, so no test reaches GitHub.
+# The project list is a file the test writes, holding only the titles that exist.
+cat >"$BSTUB/gh" <<'EOF'
+#!/usr/bin/env bash
+d=$(dirname "$0")
+args="$*"
+printf '%s\n' "${args//$'\n'/ }" >>"$d/calls"
+user=me
+case "$1 $2" in
+  "auth status")
+    printf 'github.com\n  - Token scopes: %s\n' "$(cat "$d/scopes")" ;;
+  "repo view") echo "$user/app" ;;
+  "project list")
+    jq -n --arg u "$user" '{projects: [inputs | split("\n")[] | select(. != "") | split("=") |
+      {number: (.[0] | tonumber), title: .[1], url: "https://github.com/users/\($u)/projects/\(.[0])"}],
+      totalCount: 0}' -R -s "$d/projects" ;;
+  "project create")
+    echo '{"number":7,"id":"PVT_t","title":"dan-skills template","url":"https://github.com/users/me/projects/7"}' ;;
+  "project copy")
+    echo '{"number":8,"id":"PVT_b","title":"me/app","url":"https://github.com/users/me/projects/8"}' ;;
+  "project field-list")
+    echo '{"fields":[{"id":"PVTF_title","name":"Title","type":"ProjectV2Field"},{"id":"PVTSSF_status","name":"Status","type":"ProjectV2SingleSelectField","options":[{"id":"a","name":"Todo"},{"id":"b","name":"In Progress"},{"id":"c","name":"Done"}]}],"totalCount":2}' ;;
+  "api graphql") echo '{"data":{}}' ;;
+  *) echo '{}' ;;
+esac
+EOF
+chmod +x "$BSTUB/gh"
+board_run() { # [title of each existing project as number=title]... -> sets B_OUT, B_ERR, B_RC, B_CALLS
+  printf '%s\n' "$@" >"$BSTUB/projects"
+  : >"$BSTUB/calls"
+  B_RC=0
+  B_OUT="$(cd "$BREPO" && PATH="$BSTUB:$PATH" "$BOARD" 2>"$WORK/board-err")" || B_RC=$?
+  B_ERR="$(cat "$WORK/board-err")"
+  B_CALLS="$(cat "$BSTUB/calls")"
+}
+board_called() { # name, pattern -> ok when a recorded gh call matches the extended regex
+  if grep -Eq -- "$2" <<<"$B_CALLS"; then ok "$1"; else bad "$1" "no gh call matches: $2" "calls: ${B_CALLS//$'\n'/ | }"; fi
+}
+echo "'gist', 'project', 'read:org', 'repo'" >"$BSTUB/scopes"
+
+board_run
+want_exit "with no projects, board.sh exits 0" 0 "$B_RC"
+board_called "it creates the template" '^project create .*--title dan-skills template'
+board_called "it copies the template to the repo's title" '^project copy 7 .*--title me/app'
+board_called "it links the board to the repo" '^project link 8 '
+contains "it prints the board number" "$B_OUT" $'\nboard=8\n'
+board_called "it replaces the Status field of the new template" '^api graphql .*fieldId=PVTSSF_status'
+board_called "with Backlog, Ready, In progress, In review, Done in order" \
+  '^api graphql .*updateProjectV2Field.*"Backlog".*"Ready".*"In progress".*"In review".*"Done"'
+board_called "it marks the template a template" '^project mark-template 7( |$)'
+contains "it prints the template's workflows page" "$B_OUT" $'\nhttps://github.com/users/me/projects/7/workflows\n'
+for wf in "Item closed: set Status to Done" "Pull request merged: set Status to Done" \
+  "Auto-close issue: on" "Auto-archive items: Done items after 14 days" "Item added to project: set Status to Backlog"; do
+  contains "it lists the template workflow '$wf'" "$B_OUT" "$wf"
+done
+contains "it prints the board's workflows page" "$B_OUT" $'\nhttps://github.com/users/me/projects/8/workflows'
+contains "it prints the auto-add filter" "$B_OUT" "is:issue is:open"
+# --- end board.sh block ---
+
 finish
