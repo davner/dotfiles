@@ -37,7 +37,7 @@ When the conversation has said the run is headless, nobody will answer. Put each
 
 **Confidence rule.** Take the checks in order. A **park** ends the grill: stop, and say which question parked, its options, and why.
 
-1. Hard to undo (deletes or migrates data, changes a public interface or file format, touches secrets, permissions or money, reaches outside the repo): park. Nothing below overrides this.
+1. Hard to undo (deletes or migrates data, changes a public interface or file format, touches secrets, permissions or money, reaches outside the repo), except filing or moving items on the tracker as the repo's tracker file prescribes: park. Nothing below overrides this.
 2. Evidence: your recommendation names a file and line, a test, or a doc or ADR rule, and your own tool call confirms it. If it settles the question, decide. If the cited thing does not say what was claimed, park.
 3. Runnable options: when every option is code, write 3 to 5 versions and run them on the same inputs. Different outputs park.
 4. Vote: 5 fresh Haiku or Sonnet voters, each given the question, the labelled options and the evidence, never your pick, each returning one label and nothing else. 5 of 5 for your pick: decide. 4 of 5: decide if cheap to undo, else ask 5 more and decide at 9 or 10 of 10. 3 or fewer, or a majority for another option: park. At most 50 voters per run; after that, every undecided question parks.
