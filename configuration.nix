@@ -38,7 +38,8 @@ in
 
   home-manager.useGlobalPkgs = true;
   home-manager.useUserPackages = true;
-  # mkMerge, not imports, so the home module sits where home.nix always did in import order.
+  # mkMerge, not imports: imports would move the home module later in merge order,
+  # and the reordered lists would change the personal Macs' builds.
   home-manager.users.${user} = lib.mkMerge [
     self.homeModules.default
     {

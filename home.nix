@@ -13,7 +13,7 @@ let
 
   jsonMerge = "env PATH=${pkgs.jq}/bin:$PATH ${pkgs.bash}/bin/bash ${./home/json-merge.sh}";
   vscodeUser = "$HOME/Library/Application Support/Code/User";
-  # Empty with no fragments, so the merge line and the personal Macs' builds stay as they were.
+  # Empty with no fragments, so a machine without any runs the plain base merge.
   claudeFragmentArgs = lib.concatMapStrings (
     f: " --extend ${pkgs.writeText "claude-settings-fragment.json" (builtins.toJSON f)}"
   ) config.dotfiles.claude.settingsFragments;
