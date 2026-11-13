@@ -18,7 +18,6 @@ Before opening the first, say in the conversation: "This run is headless." Then 
 - `to-spec` (headless)
 - `to-tickets` (headless)
 - `implement-spec` (headless)
-- `code-review` (headless)
 - `retro`
 
 ## Start
@@ -32,8 +31,7 @@ Before opening the first, say in the conversation: "This run is headless." Then 
 
 1. Grill: `grill-with-docs` when the repo has domain docs (a glossary, an ADR folder, or a tracker or domain file that names them), else `grill-me`.
 2. `to-spec`, then `to-tickets`.
-3. `implement-spec`, in the worktree.
-4. `code-review` of the branch since `origin/main`, with the run's spec path.
+3. `implement-spec`, in the worktree. Its step 7 is the run's one code review, given the run's spec path.
 
 A park at any step ends the run at **Park** below.
 
