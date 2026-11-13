@@ -149,6 +149,8 @@ in
   # in by an activation step rather than linked. Base wins on the keys it
   # names, so adding model, effortLevel or theme to it would revert /config on
   # every rebuild. A link there dates from when this file was linked, so it goes.
+  # A consumer's settingsFragments fold into the base first and may only add to
+  # it: a fragment that replaced an array would drop the base's entries, deny rules included.
   home.activation.claudeSettings = config.lib.dag.entryAfter [ "writeBoundary" ] ''
     run ${jsonMerge} --drop-link${claudeFragmentArgs} deep "${dotfiles}/home/.claude/settings.base.json" "$HOME/.claude/settings.json"
   '';
@@ -203,6 +205,17 @@ in
         claude.settingsFragments = lib.mkOption {
           type = lib.types.listOf (lib.types.attrsOf (pkgs.formats.json { }).type);
           default = [ ];
+          # Same rule as settings.base.json: the merge wins, so these would undo /config on every rebuild.
+          apply = map (
+            fragment:
+            let
+              claimed = lib.intersectLists [ "model" "effortLevel" "theme" ] (builtins.attrNames fragment);
+            in
+            if claimed == [ ] then
+              fragment
+            else
+              throw "a Claude settings fragment sets ${lib.concatStringsSep ", " claimed}; /config owns those, and the merge would revert them on every rebuild (ADR 0007)."
+          );
           description = "JSON objects folded into Claude's settings after settings.base.json, in order. A fragment may add keys and extend the base's arrays, never replace an array or object the base sets.";
         };
       };

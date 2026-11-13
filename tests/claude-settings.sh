@@ -196,4 +196,23 @@ if full_only && require nix jq; then
   fi
 fi
 
+section "a flake that imports the core's modules and adds a fragment claiming /config's keys"
+if full_only && require nix jq; then
+  fixture_consumer '
+    dotfiles.git.email = "fixture@example.org";
+    home-manager.users."'"$CONSUMER_USER"'".dotfiles.claude.settingsFragments = [
+      { enabledPlugins."p@m" = true; }
+      { theme = "dark"; model = "opus"; }
+    ];'
+  fragments_eval
+  if [ "$EV_RC" -eq 0 ]; then
+    bad "it is refused at build time" "evaluated to $EV_OUT"
+  else
+    ok "it is refused at build time"
+  fi
+  eq "in one line that names the keys and why" \
+    "a Claude settings fragment sets model, theme; /config owns those, and the merge would revert them on every rebuild (ADR 0007)." \
+    "$EV_MSG"
+fi
+
 finish
