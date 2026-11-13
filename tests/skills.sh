@@ -65,17 +65,20 @@ for s in $headless_skills; do
     bad "$s has a When headless: section" "no '## When headless:' heading in $s/SKILL.md"
   fi
 done
-# The cut-offs in grilling's headless rule rest on these notes; a reader who
-# doubts a number needs the evidence one link away.
-headless="$(sed -n '/^#* *When headless:/,$p' "$SKILLS_DIR/grilling/SKILL.md")"
-for note in agent-decision-confidence agent-retry-limits; do
-  if [ -f "$DIR/docs/research/$note.md" ] && grep -qF "docs/research/$note.md" <<<"$headless"; then
-    ok "grilling's headless section links docs/research/$note.md"
+# The cut-offs in each rule rest on a research note; a reader who doubts a
+# number needs the evidence one link away, beside the rule it backs.
+links_note() {
+  local skill="$1" heading="$2" note="$3" body
+  body="$(awk -v h="$heading" '/^## /{f=(index($0, h)==4)} f' "$SKILLS_DIR/$skill/SKILL.md")"
+  if [ -f "$DIR/docs/research/$note.md" ] && grep -qF "docs/research/$note.md" <<<"$body"; then
+    ok "$skill's $heading section links docs/research/$note.md"
   else
-    bad "grilling's headless section links docs/research/$note.md" \
+    bad "$skill's $heading section links docs/research/$note.md" \
       "the note must exist in the repo and be named in the section"
   fi
-done
+}
+links_note grilling "When headless:" agent-decision-confidence
+links_note autopilot "The retry rule" agent-retry-limits
 
 section "third-party skills"
 # Third-party skills come from flake inputs, so an upstream move or rename is
