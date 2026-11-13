@@ -3,6 +3,13 @@ set -euo pipefail
 
 TEMPLATE_TITLE="dan-skills template"
 
+# Quoted, so read:project, which cannot create boards, does not count.
+auth=$(gh auth status 2>&1) || true
+if [[ $auth != *"'project'"* ]]; then
+  echo "board.sh: gh lacks the project scope; run: gh auth refresh -s project" >&2
+  exit 1
+fi
+
 repo=$(gh repo view --json nameWithOwner --jq .nameWithOwner)
 
 find_project() { # title -> "number url" of the user's project with that title, or nothing

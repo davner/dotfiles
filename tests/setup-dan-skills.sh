@@ -278,6 +278,13 @@ board_not_called "it creates, copies or links nothing" '^(project (create|copy|l
 eq "it prints the numbers and the URL, and no manual steps" "template=3
 board=5
 url=https://github.com/users/me/projects/5" "$B_OUT"
+
+echo "'gist', 'read:org', 'repo'" >"$BSTUB/scopes"
+board_run
+want_exit "without the project scope, board.sh exits 1" 1 "$B_RC"
+contains "and tells the user how to add it" "$B_ERR" "gh auth refresh -s project"
+board_not_called "before touching any project" '^(project|api) '
+echo "'gist', 'project', 'read:org', 'repo'" >"$BSTUB/scopes"
 # --- end board.sh block ---
 
 finish
