@@ -42,7 +42,6 @@ if [[ -z $found ]]; then
   created=$(gh project create --owner @me --title "$TEMPLATE_TITLE" --format json)
   found=$(jq -r '"\(.number) \(.url)"' <<<"$created")
   set_status_options "${found%% *}"
-  gh project mark-template "${found%% *}" >/dev/null
   steps+=("" "Template created. Turn on these built-in workflows at:" "${found#* }/workflows"
     "- Item closed: set Status to Done"
     "- Pull request merged: set Status to Done"

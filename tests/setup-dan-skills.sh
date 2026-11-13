@@ -236,6 +236,9 @@ board_run() { # [title of each existing project as number=title]... -> sets B_OU
 board_called() { # name, pattern -> ok when a recorded gh call matches the extended regex
   if grep -Eq -- "$2" <<<"$B_CALLS"; then ok "$1"; else bad "$1" "no gh call matches: $2" "calls: ${B_CALLS//$'\n'/ | }"; fi
 }
+board_not_called() { # name, pattern -> ok when no recorded gh call matches the extended regex
+  if grep -Eq -- "$2" <<<"$B_CALLS"; then bad "$1" "a gh call matches: $2" "calls: ${B_CALLS//$'\n'/ | }"; else ok "$1"; fi
+}
 echo "'gist', 'project', 'read:org', 'repo'" >"$BSTUB/scopes"
 
 board_run
@@ -247,7 +250,8 @@ contains "it prints the board number" "$B_OUT" $'\nboard=8\n'
 board_called "it replaces the Status field of the new template" '^api graphql .*fieldId=PVTSSF_status'
 board_called "with Backlog, Ready, In progress, In review, Done in order" \
   '^api graphql .*updateProjectV2Field.*"Backlog".*"Ready".*"In progress".*"In review".*"Done"'
-board_called "it marks the template a template" '^project mark-template 7( |$)'
+# GitHub has templates for organizations only, and copy works on any project.
+board_not_called "it leaves the template unmarked" '^project mark-template'
 contains "it prints the template's workflows page" "$B_OUT" $'\nhttps://github.com/users/me/projects/7/workflows\n'
 for wf in "Item closed: set Status to Done" "Pull request merged: set Status to Done" \
   "Auto-close issue: on" "Auto-archive items: Done items after 14 days" "Item added to project: set Status to Backlog"; do
@@ -255,15 +259,11 @@ for wf in "Item closed: set Status to Done" "Pull request merged: set Status to 
 done
 contains "it prints the board's workflows page" "$B_OUT" $'\nhttps://github.com/users/me/projects/8/workflows'
 contains "it prints the auto-add filter" "$B_OUT" "is:issue is:open"
-board_not_called() { # name, pattern -> ok when no recorded gh call matches the extended regex
-  if grep -Eq -- "$2" <<<"$B_CALLS"; then bad "$1" "a gh call matches: $2" "calls: ${B_CALLS//$'\n'/ | }"; else ok "$1"; fi
-}
 
 board_run "3=dan-skills template" "4=me/other"
 want_exit "with the template and no board, board.sh exits 0" 0 "$B_RC"
 board_not_called "it creates nothing" '^project create'
 board_not_called "it leaves the template's Status alone" '^api graphql'
-board_not_called "it does not mark a template again" '^project mark-template'
 board_called "it copies the existing template" '^project copy 3 .*--title me/app'
 board_called "and links the copy" '^project link 8 '
 eq "it prints the numbers, the URL and only the auto-add step" "template=3
@@ -275,7 +275,7 @@ https://github.com/users/me/projects/8/workflows" "$B_OUT"
 
 board_run "3=dan-skills template" "5=me/app"
 want_exit "with the template and the board, board.sh exits 0" 0 "$B_RC"
-board_not_called "it creates, copies or links nothing" '^(project (create|copy|link|mark-template)|api graphql)'
+board_not_called "it creates, copies or links nothing" '^(project (create|copy|link)|api graphql)'
 eq "it prints the numbers and the URL, and no manual steps" "template=3
 board=5
 url=https://github.com/users/me/projects/5" "$B_OUT"
