@@ -55,7 +55,7 @@ Go as far as the repo allows. The switches are `git config --get claude.allowPus
 
 A rung a hook or permission refuses drops to the next rung, and the report says which was refused.
 
-The PR body says nothing about the decision log.
+The decision log stays in `.scratch/`; the PR body carries only what the repo's PR rules ask.
 
 **Park.** Move the item to "Needs info" (a `Status: needs-info` line for a paste-ready tracker) and write the parked question and its options on it. Before `to-spec` publishes anything, an idea run has no item: the report carries the question. Leave the branch as it is.
 
