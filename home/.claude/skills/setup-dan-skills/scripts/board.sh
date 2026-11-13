@@ -23,6 +23,7 @@ set_status_options() { # project number
     jq -r '.fields[] | select(.name == "Status") | .id')
   [[ -n $field ]] || { echo "board.sh: project $1 has no Status field" >&2; exit 1; }
   # A new project's Status holds Todo, In Progress, Done; this replaces them wholesale.
+  # shellcheck disable=SC2016  # $fieldId is a GraphQL variable, not a shell one
   gh api graphql -F fieldId="$field" -f query='
     mutation($fieldId: ID!) {
       updateProjectV2Field(input: {fieldId: $fieldId, singleSelectOptions: [
