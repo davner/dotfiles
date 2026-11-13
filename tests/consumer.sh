@@ -12,8 +12,10 @@ if full_only && require nix; then
   else
     bad "it commits as the email it set" "$EV_MSG"
   fi
+fi
 
-  section "a flake that imports the core's modules and sets no email"
+section "a flake that imports the core's modules and sets no email"
+if full_only && require nix; then
   fixture_consumer ''
   consumer_home programs.git.settings.user.email
   if [ "$EV_RC" -eq 0 ]; then
