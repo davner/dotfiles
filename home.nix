@@ -32,16 +32,19 @@ let
     python-anti-patterns = "${inputs.wshobson-agents}/plugins/python-development/skills/python-anti-patterns";
   };
 
+  entries = dir: keep: lib.attrNames (lib.filterAttrs keep (builtins.readDir (./. + "/${dir}")));
+  coreSkills = entries "home/.claude/skills" (_: type: type == "directory");
+
   # Per entry, never the folder, so a file added by hand on the home side
   # stays out of this repo.
   linkEach =
-    dir: dst: keep:
-    lib.mapAttrs' (
-      name: _:
+    dir: dst: names:
+    lib.genAttrs' names (
+      name:
       lib.nameValuePair "${dst}/${name}" {
         source = config.lib.file.mkOutOfStoreSymlink "${dotfiles}/${dir}/${name}";
       }
-    ) (lib.filterAttrs keep (builtins.readDir (./. + "/${dir}")));
+    );
 in
 
 {
@@ -220,12 +223,14 @@ in
       home.file = lib.mergeAttrsList [
         # impeccable's installer and local-skills.sh also write into ~/.claude/skills.
         (linkEach "home/.claude/skills" ".claude/skills" (
-          name: type: type == "directory" && !lib.elem name config.dotfiles.skills.exclude
+          lib.subtractLists config.dotfiles.skills.exclude coreSkills
         ))
         # settings.base.json and the cc function reach these by path.
-        (linkEach "home/.claude/hooks" ".claude/hooks" (_: type: type == "regular"))
+        (linkEach "home/.claude/hooks" ".claude/hooks" (
+          entries "home/.claude/hooks" (_: type: type == "regular")
+        ))
         (linkEach "home/.claude/rules" ".claude/rules" (
-          name: type: type == "regular" && lib.hasSuffix ".md" name
+          entries "home/.claude/rules" (name: type: type == "regular" && lib.hasSuffix ".md" name)
         ))
       ];
     }
@@ -243,11 +248,7 @@ in
         apply =
           names:
           let
-            known =
-              lib.attrNames (
-                lib.filterAttrs (_: type: type == "directory") (builtins.readDir ./home/.claude/skills)
-              )
-              ++ lib.attrNames thirdPartySkills;
+            known = coreSkills ++ lib.attrNames thirdPartySkills;
             unknown = lib.subtractLists known names;
           in
           if unknown == [ ] then
