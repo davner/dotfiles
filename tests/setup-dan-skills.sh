@@ -167,6 +167,19 @@ label delete invalid -R owner/repo --yes" "$(labels_calls label delete)"
   echo '[{"number":8}]' >"$LGH/canned/pr-list.json"
   labels_run
   eq "a default a PR carries: it is kept" "" "$(labels_calls label delete)"
+
+  labels_repo "$(jq -R . <<<"$LABELS_SET" | jq -s .)"
+  labels_run
+  eq "a re-run: labels.sh exits 0" "0" "$LABELS_RC"
+  eq "a re-run: nothing is renamed" "" "$(labels_calls label edit)"
+  eq "a re-run: nothing is deleted" "" "$(labels_calls label delete)"
+  eq "a re-run: the set is written again with --force" "17" \
+    "$(labels_calls label create | grep -c -- '--force')"
+
+  labels_repo '["bug","fix"]'
+  labels_run
+  eq "bug beside an existing fix: bug is not renamed" "" "$(labels_calls label edit)"
+  contains "bug beside an existing fix: it is reported" "$LABELS_OUT" "kept bug: fix already exists"
 fi
 # ---- end labels.sh block ----
 
