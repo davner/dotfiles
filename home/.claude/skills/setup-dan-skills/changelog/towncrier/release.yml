@@ -1,0 +1,60 @@
+name: release
+
+# Builds the changelog from changes/ only at release, so fragments never
+# conflict with each other on the way in.
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version to release, without the leading v (e.g. 1.4.0)"
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: __DEFAULT_BRANCH__
+
+      - uses: astral-sh/setup-uv@v10.3.3
+
+      - name: Check the version
+        env:
+          VERSION: ${{ inputs.version }}
+        run: |
+          set -euo pipefail
+          if ! [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+([-+][0-9A-Za-z.-]+)?$ ]]; then
+            echo "::error::version '$VERSION' is not semver without a leading v"
+            exit 1
+          fi
+          if git ls-remote --exit-code --tags origin "refs/tags/v$VERSION" >/dev/null; then
+            echo "::error::tag v$VERSION already exists"
+            exit 1
+          fi
+
+      - name: Build CHANGELOG.md
+        env:
+          VERSION: ${{ inputs.version }}
+        run: uvx towncrier build --yes --version "$VERSION"
+
+      - name: Commit, tag and push
+        env:
+          VERSION: ${{ inputs.version }}
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A CHANGELOG.md changes
+          git commit -m "chore(release): v$VERSION"
+          git tag -a "v$VERSION" -m "v$VERSION"
+          git push --atomic origin HEAD:__DEFAULT_BRANCH__ "v$VERSION"

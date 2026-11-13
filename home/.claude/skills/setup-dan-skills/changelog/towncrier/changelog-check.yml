@@ -1,0 +1,32 @@
+name: changelog-check
+
+# Every PR carries its own fragment in changes/, so a squash merge keeps the
+# changelog entry with the change. Label a PR skip-changelog to exempt it.
+on:
+  pull_request:
+    # labeled and unlabeled re-run the check when skip-changelog is toggled.
+    types: [opened, synchronize, reopened, labeled, unlabeled]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: changelog-check-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  towncrier-check:
+    # A skipped job counts as passing, so this can stay a required check.
+    if: ${{ !contains(github.event.pull_request.labels.*.name, 'skip-changelog') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          # check diffs against origin/__DEFAULT_BRANCH__, which a shallow clone lacks.
+          fetch-depth: 0
+
+      - uses: astral-sh/setup-uv@v10.3.3
+
+      - name: towncrier check
+        run: uvx towncrier check --compare-with origin/__DEFAULT_BRANCH__

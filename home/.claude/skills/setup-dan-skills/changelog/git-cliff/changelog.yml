@@ -1,0 +1,46 @@
+name: changelog
+
+# git-cliff reads commits, so this runs after they land rather than as a
+# pre-commit hook, where the commit being made is not in the history yet.
+# Its own push starts no new run: GitHub does not trigger workflows for pushes
+# authenticated with GITHUB_TOKEN.
+on:
+  push:
+    branches: [__DEFAULT_BRANCH__]
+
+permissions:
+  contents: write
+
+# Two pushes in quick succession would otherwise race on the same file.
+concurrency:
+  group: changelog
+  cancel-in-progress: false
+
+jobs:
+  regenerate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          # A shallow clone would produce a changelog holding one commit.
+          fetch-depth: 0
+
+      - name: Regenerate CHANGELOG.md
+        uses: orhun/git-cliff-action@v4.9.1
+        with:
+          config: cliff.toml
+          args: --verbose --output CHANGELOG.md
+
+      - name: Commit it if it moved
+        run: |
+          set -euo pipefail
+          if git diff --quiet -- CHANGELOG.md && git ls-files --error-unmatch CHANGELOG.md >/dev/null 2>&1; then
+            echo "Changelog is already current."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add CHANGELOG.md
+          git commit -m "docs: regenerate the changelog"
+          git push
