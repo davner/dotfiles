@@ -107,7 +107,6 @@ in
     };
   };
 
-  # lucuma-odb and lucuma-core get Java and sbt only from their flakes.
   programs.direnv = {
     enable = true;
     nix-direnv.enable = true;
@@ -165,9 +164,6 @@ in
         "vscodeSettings"
       ]
       "run env PATH=${pkgs.jq}/bin:$PATH ${pkgs.bash}/bin/bash ${./home/vscode/extensions.sh} ${./home/vscode/extensions.json}";
-  # Run by hand after opening a multi-root Scala workspace or bumping a flake's JDK.
-  home.file.".local/bin/metals-java-home".source =
-    config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/vscode/metals-java-home.sh";
   # The vault skills and impeccable live outside this repo, so no home.file can
   # carry them. After linkGeneration, so a clash with a home.file link warns instead.
   home.activation.localSkills = config.lib.dag.entryAfter [

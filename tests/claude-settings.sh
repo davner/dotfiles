@@ -21,13 +21,13 @@ if require jq; then
     bad "settings.base.json claims none of model, effortLevel, theme" \
       "these would be reverted on every rebuild: $volatile"
   fi
-  # Nothing in home.nix installs the obsidian skills; Claude Code does, from these keys.
-  if jq -e '.extraKnownMarketplaces["obsidian-skills"].autoUpdate == true
-      and .enabledPlugins["obsidian@obsidian-skills"] == true' "$BASE" >/dev/null 2>&1; then
-    ok "settings.base.json declares and enables the obsidian plugin"
+  # Work-only: the private layer adds the obsidian plugin through a settings fragment.
+  if jq -e '(.extraKnownMarketplaces // {} | has("obsidian-skills"))
+      or (.enabledPlugins // {} | has("obsidian@obsidian-skills"))' "$BASE" >/dev/null 2>&1; then
+    bad "settings.base.json declares no obsidian plugin" \
+      "extraKnownMarketplaces.obsidian-skills or enabledPlugins.obsidian@obsidian-skills is still there"
   else
-    bad "settings.base.json declares and enables the obsidian plugin" \
-      "want extraKnownMarketplaces.obsidian-skills.autoUpdate and enabledPlugins.obsidian@obsidian-skills both true"
+    ok "settings.base.json declares no obsidian plugin"
   fi
   # A hook on the wrong event or matcher never fires, and nothing says so. The
   # gate must match Skill, its only evidence of a load; "-" is no matcher.

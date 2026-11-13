@@ -44,6 +44,12 @@ $u
       *@*.*) ok "#$attr commits as $email" ;;
       *) bad "#$attr has a git address" "$(grep -v '^warning:' "$WORK/stderr" | head -3)" ;;
     esac
+    # Work-only: the private layer defines it, and a second definition there
+    # would be a home-manager conflict.
+    has_mjh="$(nix eval --json \
+      "$DIR#darwinConfigurations.$attr.config.home-manager.users.\"$u\".home.file" \
+      --apply 'f: f ? ".local/bin/metals-java-home"' 2>"$WORK/stderr")"
+    eq "#$attr links no metals-java-home" "false" "$has_mjh"
     # The README's username table is only useful while it lists every
     # configuration; it leaves the addresses out so they are not published twice.
     if grep -qF "\`#$attr\`" "$DIR/README.md"; then

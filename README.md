@@ -52,7 +52,7 @@ with no rebuild. Adding or removing a linked file does need `./rebuild.sh`.
 | `home/.claude/rules/` | Path-scoped rules, each file linked into `~/.claude/rules/`: reading a TypeScript or Python file asks for that language's skills |
 | `home/.claude/hooks/` | Everything `settings.base.json` runs, hooks and status line, plus the helpers they share, each file linked into `~/.claude/hooks/` |
 | `home/.claude/settings.base.json`, `local-skills.sh` | Run by every rebuild, not linked: the settings merged into `~/.claude/settings.json`, and the script that puts back the vault skills and `impeccable` |
-| `home/vscode/` | VS Code: settings and keybindings merged into the user folder, each profile's extensions installed when missing, and `metals-java-home` linked into `~/.local/bin` |
+| `home/vscode/` | VS Code: settings and keybindings merged into the user folder, and each profile's extensions installed when missing |
 | `home/json-merge.sh` | Run by every rebuild, not linked: merges a base JSON file into a live one an app also writes, for Claude's and VS Code's settings |
 | `home/.config/zsh/functions.zsh` | Shell functions: `cc` (named Claude session), `cc-push` (push switch), `cc-flow` (the workflow below as a table) |
 
@@ -186,7 +186,6 @@ Third-party skills are pinned in `flake.lock`, linked into both
 | `modern-python` | [trailofbits/skills](https://github.com/trailofbits/skills) | Python project tooling: uv, ruff, ty, PEP 723 scripts |
 | `python-anti-patterns` | [wshobson/agents](https://github.com/wshobson/agents) | A checklist of Python mistakes to catch before finishing a change |
 
-The obsidian plugin is declared in `settings.base.json` and updates itself.
 `impeccable` and the skills in `~/Vault/.skills` are put back by every rebuild;
 see [AGENTS.md](AGENTS.md#installing-the-skills). Third-party license notices are in
 [`THIRD-PARTY-NOTICES.md`](home/.claude/skills/THIRD-PARTY-NOTICES.md).

@@ -1,5 +1,7 @@
 # Metals gets each folder's JDK from its own settings
 
+Superseded: `metals-java-home` is work-only and left this repo for the private work layer, which carries this decision. Kept for the reasoning.
+
 In a multi-root VS Code workspace, the direnv extension loads one `.envrc` for the whole window, and its maintainer has said per-folder loading is not possible ([direnv-vscode#590](https://github.com/direnv/direnv-vscode/issues/590)). Metals then runs `sbt bloopInstall` on its own fallback JDK, and a build that needs a newer JDK imports no build targets. `metals.javaHome` has `machine-overridable` scope, so a folder's own `.vscode/settings.json` can set it, and Metals reads its settings per folder. `metals-java-home` (from `home/vscode/metals-java-home.sh`, linked into `~/.local/bin`) writes each folder's flake `JAVA_HOME` there, taking folders or a `.code-workspace` file.
 
 ## Consequences
