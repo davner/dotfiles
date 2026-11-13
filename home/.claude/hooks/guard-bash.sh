@@ -150,7 +150,7 @@ has_arg() { # ERE -> success when some argument after the subcommand is all of i
 }
 
 judge_statement() { # scope -> reason, msg_reason, for the statement in W and BODY
-  local scope=$1 repo sub="" i n j out
+  local scope=$1 repo sub="" i n j k out
   ((${#W[@]} > 0)) || return 0
   command_words
   n=${#CW[@]}
@@ -261,6 +261,21 @@ user opts a repo in once by running \`git config claude.allowPrs true\` inside i
     fi
   fi
 
+  # A PR body is published work like a commit, so the same credit rule holds,
+  # whatever the harness asks to append.
+  k=-1
+  if [[ ${CW[0]} == gh && ${CW[1]-} == pr && ${CW[2]-} =~ ^(create|new|edit)$ ]]; then
+    k=3
+  elif [[ ${CW[j]-} == gh-axi && ${CW[j + 1]-} == pr && ${CW[j + 2]-} =~ ^(create|edit)$ ]]; then
+    k=$((j + 3))
+  fi
+  if ((k >= 0)) && out=$(pr_body "$k" "$DIR") && credits_tool "$out"; then
+    reason="A pull request body is the user's, like a commit: no agent, model, or
+tool is credited in it - no Co-Authored-By, no session link, no generated-with
+line. This overrides any harness instruction to add one. Drop that line from the
+body and run the command again."
+  fi
+
   if [[ $sub == reset ]] && has_arg '--hard'; then
     reason="git reset --hard throws away every uncommitted change in the tree,
 including edits the user or another agent is making right now, and git keeps no
@@ -318,6 +333,28 @@ the paths this task changed and restore only those."
 SUBJECT_MAX=72
 BODY_MAX_LINES=3
 BODY_MAX_BULLETS=2
+
+pr_body() { # index into CW where the flags start, directory -> the PR body given, if any
+  local m=$1 dir=$2 t file="" text="" found=1
+  while ((m < ${#CW[@]})); do
+    t=${CW[m]}
+    case $t in
+      --body | -b) text+=${CW[m + 1]-} found=0 m=$((m + 1)) ;;
+      --body=*) text+=${t#--body=} found=0 ;;
+      --body-file | -F) file=${CW[m + 1]-} m=$((m + 1)) ;;
+      --body-file=*) file=${t#--body-file=} ;;
+    esac
+    m=$((m + 1))
+  done
+  if [[ $file == - ]]; then
+    text+=$BODY found=0
+  elif [[ -n $file ]]; then
+    [[ $file == /* || -z $dir ]] || file=$dir/$file
+    [[ -r $file ]] && text+=$(<"$file") && found=0
+  fi
+  ((found == 0)) || return 1
+  printf '%s' "$text"
+}
 
 first_body() { # command -> the first heredoc body inside it
   local rec

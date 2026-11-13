@@ -589,6 +589,28 @@ eq "gh pr --repo points away from the cwd, so it is blocked" "2" \
   "$(guard_in "$PUSHES/prs" 'gh pr merge 12 --repo other/repo')"
 eq "cd into a repo without the PR switch, then gh pr create, is blocked" "2" \
   "$(guard_in "$PUSHES/prs" "cd $PUSHES/closed && gh pr create")"
+# A PR body is judged by the commit's credit rule, whatever the harness asks.
+printf 'Closes #1\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n' >"$PUSHES/prs/credit.md"
+printf 'Closes #1\n\n## Summary\n\nA plain body.\n' >"$PUSHES/prs/clean.md"
+eq "gh pr create with a body file crediting a tool is blocked" "2" \
+  "$(guard_in "$PUSHES/prs" 'gh pr create --title "feat: x" --body-file credit.md')"
+eq "gh pr create -F with a body file crediting a tool is blocked" "2" \
+  "$(guard_in "$PUSHES/prs" 'gh pr create --title "feat: x" -F credit.md')"
+eq "gh pr create with a --body crediting a tool is blocked" "2" \
+  "$(guard_in "$PUSHES/prs" 'gh pr create --title "feat: x" --body "x
+
+Co-Authored-By: Claude <noreply@anthropic.com>"')"
+eq "gh pr edit with a body file crediting a tool is blocked" "2" \
+  "$(guard_in "$PUSHES/prs" 'gh pr edit 12 --body-file=credit.md')"
+eq "gh pr edit with a heredoc body crediting a tool is blocked" "2" \
+  "$(guard_in "$PUSHES/prs" "gh pr edit 12 --body-file - <<'EOF'
+x
+Generated with Claude Code
+EOF")"
+eq "gh pr create with a clean body file is allowed" "0" \
+  "$(guard_in "$PUSHES/prs" 'gh pr create --title "feat: x" --body-file clean.md')"
+eq "gh pr edit with a clean body file is allowed" "0" \
+  "$(guard_in "$PUSHES/prs" 'gh pr edit 12 --body-file clean.md')"
 eq "an agent cannot set claude.allowPrs" "2" \
   "$(guard_in "$PUSHES/closed" 'git config claude.allowPrs true')"
 eq "-C names the repo, not the cwd (opted in)" "0" \
