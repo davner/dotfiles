@@ -78,4 +78,75 @@ want_exit "a repo gh cannot read exits non-zero" 1 "$RS_RC"
 eq "and prints no commands" "" "$RS_OUT"
 # --- end repo settings ---
 
+# ---- labels.sh: fake gh and helpers (ticket 01; ticket 05 merges the helpers) ----
+section "label setup script"
+LABELS="$DIR/home/.claude/skills/setup-dan-skills/scripts/labels.sh"
+LGH="$WORK/labels-gh"
+mkdir -p "$LGH/bin" "$LGH/repo"
+# Logs every call, then replays canned/<subcommand>-<action>.json through --jq as
+# real gh would. GH_FAIL names subcommands that fail, as "label-create".
+cat >"$LGH/bin/gh" <<'EOF'
+#!/usr/bin/env bash
+root="$(dirname "$0")/.."
+printf '%s\n' "$*" >>"$root/calls"
+key="$1-$2"
+case " ${GH_FAIL-} " in *" $key "*) echo "gh: $key failed" >&2; exit 1 ;; esac
+json="$root/canned/$key.json"
+[ -f "$json" ] || exit 0
+filter=""
+while [ $# -gt 0 ]; do
+  case "$1" in --jq | -q) filter="$2"; shift 2 ;; *) shift ;; esac
+done
+if [ -n "$filter" ]; then jq -r "$filter" "$json"; else cat "$json"; fi
+EOF
+chmod +x "$LGH/bin/gh"
+
+LABELS_DEFAULTS='["bug","documentation","duplicate","enhancement","good first issue","help wanted","invalid","question","wontfix"]'
+labels_repo() { # label names as a JSON array -> a fake repo holding those labels, with nothing labelled
+  rm -rf "$LGH/canned" "$LGH/calls"
+  mkdir -p "$LGH/canned"
+  echo '{"nameWithOwner":"owner/repo"}' >"$LGH/canned/repo-view.json"
+  jq '[.[] | {name: .}]' <<<"$1" >"$LGH/canned/label-list.json"
+  echo '[]' >"$LGH/canned/issue-list.json"
+  echo '[]' >"$LGH/canned/pr-list.json"
+}
+labels_run() { # extra env assignments -> sets LABELS_RC, LABELS_OUT, LABELS_CALLS
+  LABELS_RC=0
+  LABELS_OUT="$(cd "$LGH/repo" && env PATH="$LGH/bin:$PATH" "$@" "$LABELS" 2>&1 </dev/null)" || LABELS_RC=$?
+  LABELS_CALLS="$(cat "$LGH/calls" 2>/dev/null)"
+}
+labels_calls() { # gh subcommand and action -> the logged calls to it, one per line
+  grep "^$1 $2 " <<<"$LABELS_CALLS"
+}
+
+LABELS_SET="breaking
+chore
+dependencies
+docs
+duplicate
+feat
+fix
+needs-info
+needs-triage
+perf
+ready-for-agent
+ready-for-human
+refactor
+skip-changelog
+test
+todo
+wontfix"
+
+if require jq; then
+  labels_repo "$LABELS_DEFAULTS"
+  labels_run
+  eq "a fresh repo: labels.sh exits 0" "0" "$LABELS_RC"
+  eq "a fresh repo: every label in the set is created" "$LABELS_SET" \
+    "$(labels_calls label create | awk '{print $3}' | sort)"
+  eq "a fresh repo: every create is --force" "" \
+    "$(labels_calls label create | grep -v -- '--force')"
+  contains "a fresh repo: bug is renamed to fix" "$(labels_calls label edit)" "label edit bug -R owner/repo --name fix"
+fi
+# ---- end labels.sh block ----
+
 finish
