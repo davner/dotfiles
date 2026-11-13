@@ -114,36 +114,56 @@
             flake.nix: user "${user}" has unknown field(s): ${builtins.concatStringsSep ", " unknown}.
             A record holds only ${builtins.concatStringsSep " and " knownFields}. Check the spelling.'';
 
-      # Both scopes get the username and its record: configuration.nix needs
-      # the platform, home.nix needs the git address. home.nix also gets the
-      # inputs, for the skill folders inside them.
+      # A record feeds the modules' options; a field it leaves out stays unset,
+      # so the module's own default or missing-email message applies.
       mkDarwin =
         user:
         let
           cfg = checkRecord user users.${user};
         in
         nix-darwin.lib.darwinSystem {
-          specialArgs = { inherit user cfg; };
-          modules = [
-            ./configuration.nix
-            nix-homebrew.darwinModules.nix-homebrew
-            home-manager.darwinModules.home-manager
+          modules = darwinParts ++ [
             {
-              home-manager.useGlobalPkgs = true;
-              home-manager.useUserPackages = true;
-              home-manager.extraSpecialArgs = { inherit user cfg inputs; };
-              home-manager.users.${user} = import ./home.nix;
-              # A dotfile that already exists and that this config also manages
-              # gets moved to <name>.backup rather than failing the activation.
-              # Nothing is ever overwritten in place. If the activation later
-              # complains that the .backup itself would be clobbered, that means
-              # an older backup is still sitting there: read it, then delete it.
-              home-manager.backupFileExtension = "backup";
+              dotfiles = {
+                user.name = user;
+              }
+              // nixpkgs.lib.optionalAttrs (cfg ? email) { git.email = cfg.email; }
+              // nixpkgs.lib.optionalAttrs (cfg ? system) { inherit (cfg) system; };
             }
           ];
         };
+
+      # The key lets a consumer import homeModules.default, already wired in, without doubling it.
+      coreModule =
+        name: file:
+        let
+          module = import file inputs;
+        in
+        nixpkgs.lib.setFunctionArgs (
+          args:
+          module args
+          // {
+            key = "github:davner/dotfiles#${name}";
+            _file = file;
+          }
+        ) (nixpkgs.lib.functionArgs module);
+
+      # Top level for the personal Macs: lists merge in import-depth order, so a wrapper reorders them.
+      darwinParts = [
+        (coreModule "configuration" ./configuration.nix)
+        nix-homebrew.darwinModules.nix-homebrew
+        home-manager.darwinModules.home-manager
+      ];
     in
     {
+      # What another flake imports to build on this one; the personal Macs
+      # below are built from the same parts.
+      darwinModules.default = {
+        key = "github:davner/dotfiles#darwinModules.default";
+        imports = darwinParts;
+      };
+      homeModules.default = coreModule "homeModules.default" ./home.nix;
+
       # One configuration per username, e.g. `#danavner` and `#dan-avner`.
       darwinConfigurations = builtins.listToAttrs (
         map (user: {

@@ -1,25 +1,18 @@
+# Over the core's inputs, so the skill folders come from the core's lock whichever flake imports it.
+inputs:
 {
   config,
   lib,
   pkgs,
-  user,
-  cfg,
-  inputs,
   ...
 }:
 
 let
+  user = config.dotfiles.user.name;
   dotfiles = "${config.home.homeDirectory}/.dotfiles";
 
   jsonMerge = "env PATH=${pkgs.jq}/bin:$PATH ${pkgs.bash}/bin/bash ${./home/json-merge.sh}";
   vscodeUser = "$HOME/Library/Application Support/Code/User";
-
-  # Which address git commits as, per machine. Same name either way; only the
-  # address changes. A user record without one fails the build on purpose:
-  # committing work from the wrong address is the whole thing this exists to
-  # prevent, and a silent default would do exactly that.
-  gitEmail =
-    cfg.email or (throw "home.nix: no git email for \"${user}\". Add one to flake.nix's users.");
 
   # Skill name -> its folder inside a pinned flake input. The name must match
   # the SKILL.md frontmatter, since Claude Code invokes a skill by that name.
@@ -120,7 +113,7 @@ in
     enable = true;
     settings = {
       user.name = "Dan Avner";
-      user.email = gitEmail;
+      user.email = config.dotfiles.git.email;
       init.defaultBranch = "main";
       push.autoSetupRemote = "true";
     };
@@ -176,6 +169,21 @@ in
   ] "run env PATH=${pkgs.nodejs}/bin:$PATH ${pkgs.bash}/bin/bash ${./home/.claude/local-skills.sh}";
   # A module, because a computed home.file cannot share this attrset with home.file."x".
   imports = [
+    {
+      options.dotfiles = {
+        user.name = lib.mkOption {
+          type = lib.types.str;
+          description = "The macOS username this home belongs to.";
+        };
+        # No silent default: committing from the wrong address is what this prevents.
+        git.email = lib.mkOption {
+          type = lib.types.str;
+          default = throw "no git email for \"${user}\". Set dotfiles.git.email; this repo's own Macs take it from flake.nix's users.";
+          defaultText = lib.literalMD "none; the build fails without one";
+          description = "The address git commits as.";
+        };
+      };
+    }
     {
       home.file = lib.mergeAttrsList [
         # impeccable's installer and local-skills.sh also write into ~/.claude/skills.

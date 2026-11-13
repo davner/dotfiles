@@ -1,16 +1,53 @@
-{ user, cfg, ... }:
+# Over the core's inputs, so `self` is the core whichever flake imports it.
+{ self, ... }:
+{ config, lib, ... }:
 
+let
+  cfg = config.dotfiles;
+  user = cfg.user.name;
+in
 {
+  imports = [
+    {
+      options.dotfiles = {
+        user.name = lib.mkOption {
+          type = lib.types.str;
+          description = "The macOS username this machine is built for.";
+        };
+        # Null, so the home module's default is the one missing-email message.
+        git.email = lib.mkOption {
+          type = lib.types.nullOr lib.types.str;
+          default = null;
+          description = "The address git commits as. The build fails without one.";
+        };
+        # Defaulted because pkgs needs it before the missing-email throw can speak.
+        system = lib.mkOption {
+          type = lib.types.str;
+          default = "aarch64-darwin";
+          description = "The platform this machine is built for.";
+        };
+      };
+    }
+  ];
+
   # Determinate already manages the Nix daemon, so nix-darwin shouldn't.
   nix.enable = false;
 
   nixpkgs.config.allowUnfree = true;
-  # The `or` is what keeps a half-filled user record survivable. hostPlatform
-  # is needed to instantiate pkgs, which happens long before home.nix can throw
-  # about a missing email, so a record of `{ }` - exactly what `users.sh add`
-  # writes - would fail here with a module-system stack trace instead of the
-  # one-line "add an email to flake.nix" message that tells you what to do.
-  nixpkgs.hostPlatform = cfg.system or "aarch64-darwin";
+  nixpkgs.hostPlatform = cfg.system;
+
+  home-manager.useGlobalPkgs = true;
+  home-manager.useUserPackages = true;
+  # mkMerge, not imports, so the home module sits where home.nix always did in import order.
+  home-manager.users.${user} = lib.mkMerge [
+    self.homeModules.default
+    {
+      dotfiles.user.name = user;
+      dotfiles.git.email = lib.mkIf (cfg.git.email != null) cfg.git.email;
+    }
+  ];
+  # A clashing dotfile moves to <name>.backup; an older .backup in the way must be read and deleted.
+  home-manager.backupFileExtension = "backup";
 
   system.primaryUser = user;
   users.users.${user} = {
