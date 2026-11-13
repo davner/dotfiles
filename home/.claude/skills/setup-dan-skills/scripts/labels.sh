@@ -47,6 +47,19 @@ for pair in "${RENAMES[@]}"; do
   echo "renamed $from to $to"
 done
 
+# Deleting a label strips it from everything carrying it, so one in use stays.
+for name in "good first issue" "help wanted" "question" "invalid"; do
+  has "$name" || continue
+  issues="$(gh issue list -R "$repo" --label "$name" --state all --limit 1 --json number --jq length)"
+  prs="$(gh pr list -R "$repo" --label "$name" --state all --limit 1 --json number --jq length)"
+  if [ "$issues" != 0 ] || [ "$prs" != 0 ]; then
+    echo "kept $name: an issue or PR carries it"
+    continue
+  fi
+  gh label delete "$name" -R "$repo" --yes
+  echo "deleted $name"
+done
+
 for entry in "${LABELS[@]}"; do
   IFS='|' read -r name colour description <<<"$entry"
   gh label create "$name" -R "$repo" --color "$colour" --description "$description" --force

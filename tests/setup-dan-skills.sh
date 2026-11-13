@@ -146,6 +146,15 @@ if require jq; then
   eq "a fresh repo: every create is --force" "" \
     "$(labels_calls label create | grep -v -- '--force')"
   contains "a fresh repo: bug is renamed to fix" "$(labels_calls label edit)" "label edit bug -R owner/repo --name fix"
+  eq "a fresh repo: the three overlapping defaults are renamed" "label edit bug -R owner/repo --name fix
+label edit enhancement -R owner/repo --name feat
+label edit documentation -R owner/repo --name docs" "$(labels_calls label edit)"
+  eq "a fresh repo: the four unused defaults are deleted" "label delete good first issue -R owner/repo --yes
+label delete help wanted -R owner/repo --yes
+label delete question -R owner/repo --yes
+label delete invalid -R owner/repo --yes" "$(labels_calls label delete)"
+  eq "a fresh repo: each delete is checked against issues and PRs in every state" "8" \
+    "$(grep -E '^(issue|pr) list .*--state all' <<<"$LABELS_CALLS" | wc -l | tr -d ' ')"
 fi
 # ---- end labels.sh block ----
 
