@@ -4,4 +4,4 @@
 
 ## Consequences
 
-`users.sh add` writes an empty record, so every per-user field must stay optional where it is read. That is why `configuration.nix` defaults `hostPlatform` instead of indexing `cfg.system`: without the default, a fresh Mac sees a module-system stack trace instead of the missing-email error.
+`users.sh add` writes an empty record, so every per-user field must stay optional where it is read. That is why the `dotfiles.system` option in `configuration.nix` has a default, which `nixpkgs.hostPlatform` reads: without it, a fresh Mac sees a module-system stack trace instead of the missing-email error.
