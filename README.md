@@ -159,6 +159,7 @@ flow again at `/grill-with-docs`.
 | Design | [`making-clipart-gifs`](home/.claude/skills/making-clipart-gifs/SKILL.md) | Original 90s 3D clip-art GIFs: render, shrink to 200 px, check against measured specs |
 | Plan | [`to-spec`](home/.claude/skills/to-spec/SKILL.md) | Writes the spec, paste-ready |
 | Plan | [`to-tickets`](home/.claude/skills/to-tickets/SKILL.md) | Splits it into thin tickets with their order, paste-ready |
+| Build | [`autopilot`](home/.claude/skills/autopilot/SKILL.md) | Runs the whole flow, idea or board item to reviewed code, with nobody watching |
 | Build | [`implement`](home/.claude/skills/implement/SKILL.md) | Builds one ticket or a small change |
 | Build | [`implement-spec`](home/.claude/skills/implement-spec/SKILL.md) | Builds a whole spec, tickets in parallel |
 | Build | [`tdd`](home/.claude/skills/tdd/SKILL.md) | Test first, one slice at a time |

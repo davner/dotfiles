@@ -61,7 +61,7 @@ executable tracked file.
 `implement-spec` point at `setup-dan-skills`, and `code-review` runs without it;
 every skill that reads the glossary honors the paths in `docs/agents/domain.md`; `pr` returns only a paste-ready title and body, after proving no AI is credited in the commits or body; `prototype`,
 `code-review`, `implement`, `implement-spec`, `retro` and `setup-dan-skills`
-call `impeccable` for UI work. `setup-dan-skills`, `tailwind-v4`,
+call `impeccable` for UI work. `autopilot`, `setup-dan-skills`, `tailwind-v4`,
 `primereact-v10` and `making-clipart-gifs` are original to this repo.
 
 ## Installing the skills

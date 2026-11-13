@@ -35,9 +35,29 @@ else
   bad "the README skill table has no phantom rows" "in the table but not on disk: $phantom"
 fi
 
-# A headless run reads these skills with nobody there to answer their stop
-# points, so each one must say what to do in place of asking.
-headless_skills="grilling to-tickets to-spec implement-spec code-review domain-modeling"
+# Autopilot opens each skill by its installed path with nobody there to answer,
+# so a name it lists must resolve, and a skill it marks (headless) must say what
+# to do in place of asking. Only first-party names resolve here: the fast run
+# cannot see what the flake installs.
+autopilot="$SKILLS_DIR/autopilot/SKILL.md"
+opens="$(awk '/^## /{f=($0=="## Skills it opens")} f' "$autopilot" 2>/dev/null)"
+# shellcheck disable=SC2016  # the backticks are Markdown, not command substitution
+opened="$(sed -nE 's/^- `([a-z0-9-]+)`.*/\1/p' <<<"$opens")"
+# shellcheck disable=SC2016  # the backticks are Markdown, not command substitution
+headless_skills="$(sed -nE 's/^- `([a-z0-9-]+)` \(headless\).*/\1/p' <<<"$opens")"
+if [ -n "$opened" ] && [ -n "$headless_skills" ]; then
+  ok "autopilot lists the skills it opens"
+else
+  bad "autopilot lists the skills it opens" \
+    "no '- \`name\`' lines, some marked (headless), under '## Skills it opens' in autopilot/SKILL.md"
+fi
+for s in $opened; do
+  if [ -f "$SKILLS_DIR/$s/SKILL.md" ]; then
+    ok "autopilot opens $s, a first-party skill"
+  else
+    bad "autopilot opens $s, a first-party skill" "no home/.claude/skills/$s/SKILL.md"
+  fi
+done
 for s in $headless_skills; do
   if grep -qE '^#+ When headless:' "$SKILLS_DIR/$s/SKILL.md"; then
     ok "$s has a When headless: section"
