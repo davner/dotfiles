@@ -44,3 +44,7 @@ Tickets that touch a user interface are built through `impeccable` and checked o
 9. If a draft PR exists, mark it ready for review. Otherwise, resolve each ticket the way the issue tracker closes work, and report the integration branch.
 
 10. Clean up all **implementer subagent** worktrees.
+
+## When headless:
+
+When the conversation has said the run is headless, nobody will answer. Carry on through every step that would wait on the user, and say in each implementer brief that the run is headless. A choice the user would have made, such as a decision changed mid-build in step 6, goes through the confidence rule in `grilling`'s "When headless:" section (`~/.claude/skills/grilling/SKILL.md`) and into the decision log it names; a park stops the run. Every artefact stays the same, the recap page in step 8 included.
