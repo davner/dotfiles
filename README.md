@@ -47,6 +47,7 @@ with no rebuild. Adding or removing a linked file does need `./rebuild.sh`.
 | `flake.nix`, `configuration.nix`, `home.nix` | Inputs and per-user records; macOS and Homebrew; packages, zsh, and which files get linked |
 | `AGENTS.md` (`CLAUDE.md` links to it) | Notes for agents working on this repo |
 | `docs/adr/` | Why the Nix setup is the way it is, one decision per file |
+| `docs/research/` | Studies behind agent rules, such as when a headless grill parks a decision |
 | `home/AGENTS.md` | Global agent rules, linked to `~/.claude/CLAUDE.md`, Codex and opencode |
 | `home/.claude/skills/` | The skills below, each folder linked into `~/.claude/skills/` |
 | `home/.claude/rules/` | Path-scoped rules, each file linked into `~/.claude/rules/`: reading a TypeScript or Python file asks for that language's skills |

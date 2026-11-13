@@ -46,3 +46,5 @@ When the conversation has said the run is headless, nobody will answer. Put each
 **Research.** Facts still come from subagents: Haiku `Explore` agents for the repo, Sonnet agents for the web and prior art (standard search first, extended only when it comes back thin, about 10 sources each). One round per question. A finding is evidence only when it cites a file and line, a URL or a test that you confirm with one tool call. Research agents count toward the run's agent cap of about 10; voters do not.
 
 **Decision log.** Append every question you settle or park to `.scratch/<feature-slug>/decisions.md` in the main checkout (`dirname "$(git rev-parse --path-format=absolute --git-common-dir)"`): the question, the options, the pick, the step that settled it (the evidence with its citation, the run comparison, or the vote count), and why. Mark a parked question parked.
+
+The evidence behind these checks and cut-offs is in `~/.dotfiles/docs/research/agent-decision-confidence.md`, and the limit on repair attempts in `~/.dotfiles/docs/research/agent-retry-limits.md`. The cut-offs are starting points that no study tested on design decisions.

@@ -37,11 +37,23 @@ fi
 
 # A headless run reads these skills with nobody there to answer their stop
 # points, so each one must say what to do in place of asking.
-for s in grilling; do
+headless_skills="grilling"
+for s in $headless_skills; do
   if grep -qE '^#+ When headless:' "$SKILLS_DIR/$s/SKILL.md"; then
     ok "$s has a When headless: section"
   else
     bad "$s has a When headless: section" "no '## When headless:' heading in $s/SKILL.md"
+  fi
+done
+# The cut-offs in grilling's headless rule rest on these notes; a reader who
+# doubts a number needs the evidence one link away.
+headless="$(sed -n '/^#* *When headless:/,$p' "$SKILLS_DIR/grilling/SKILL.md")"
+for note in agent-decision-confidence agent-retry-limits; do
+  if [ -f "$DIR/docs/research/$note.md" ] && grep -qF "docs/research/$note.md" <<<"$headless"; then
+    ok "grilling's headless section links docs/research/$note.md"
+  else
+    bad "grilling's headless section links docs/research/$note.md" \
+      "the note must exist in the repo and be named in the section"
   fi
 done
 
