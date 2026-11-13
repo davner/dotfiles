@@ -74,3 +74,7 @@ Only offer to create an ADR when all three are true:
 3. **The result of a real trade-off**: there were genuine alternatives and you picked one for specific reasons
 
 If any of the three is missing, skip the ADR. Use the format in [ADR-FORMAT.md](./ADR-FORMAT.md).
+
+## When headless:
+
+When the conversation has said the run is headless, nobody will answer the questions under "During the session". Settle a term that conflicts with the glossary, a vague term, or a claim the code contradicts by the confidence rule in `grilling`'s "When headless:" section (`~/.claude/skills/grilling/SKILL.md`), and log it to the decision log that section names. Update `GLOSSARY.md` with each settled term as usual. Write an ADR that meets all three tests above without offering it, and log it too.
