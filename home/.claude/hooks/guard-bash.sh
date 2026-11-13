@@ -45,10 +45,12 @@ resolve_dir() { # base, word -> absolute directory, or fail when it cannot be kn
 }
 
 # The repo's own config, not the global one, so opting in is a per-repo act.
-push_allowed() { # directory -> success when that repo has opted in to pushes
+opted_in() { # directory, key -> success when that repo has set the key to true
   [[ -n $1 && -d $1 ]] || return 1
-  [[ $(git -C "$1" config --local --get claude.allowPush 2>/dev/null) == true ]]
+  [[ $(git -C "$1" config --local --get "$2" 2>/dev/null) == true ]]
 }
+push_allowed() { opted_in "$1" claude.allowPush; }
+prs_allowed() { opted_in "$1" claude.allowPrs; }
 
 # A cd inside a subshell is undone when it closes, so each one is kept against
 # its scope and a statement sees only its own scope's and its parents'.
@@ -226,10 +228,10 @@ push command to run themselves."
   if [[ $sub == config ]] && ! has_arg '--get|--get-all|get'; then
     shopt -s nocasematch
     for out in ${ARGS[@]+"${ARGS[@]}"}; do
-      [[ $out == *claude.allowpush* ]] || continue
-      reason="claude.allowPush is the user's switch for letting agents push from a
-repo, so an agent never sets or clears it. Ask the user to run the git config
-command themselves."
+      [[ $out == *claude.allowpush* || $out == *claude.allowprs* ]] || continue
+      reason="claude.allowPush and claude.allowPrs are the user's switches for
+letting agents push or open and merge PRs from a repo, so an agent never sets or
+clears them. Ask the user to run the git config command themselves."
     done
     shopt -u nocasematch
   fi
@@ -248,9 +250,15 @@ user to flip it themselves."
   fi
   if { [[ ${CW[0]} == gh && ${CW[1]-} == pr ]] && [[ ${CW[2]-} =~ ^(create|new|merge)$ ]]; } ||
     { [[ ${CW[j]-} == gh-axi && ${CW[j + 1]-} == pr ]] && [[ ${CW[j + 2]-} =~ ^(create|merge)$ ]]; }; then
-    reason="Opening or merging a pull request is the user's call, in every repo.
-Write the PR title and body on a page with a Copy button and hand them over;
-the user opens and merges it themselves."
+    # --repo would act on a repo other than the one whose switch was checked.
+    prdir=$DIR
+    [[ -z $DIR_LOST ]] || prdir=""
+    if ! prs_allowed "$prdir" || [[ " ${CW[*]} " =~ \ (-R|--repo)(=|\ ) ]]; then
+      reason="Opening or merging a pull request is the user's call unless the repo
+has opted in, and this one has not. Write the PR title and body on a page with a
+Copy button and hand them over; the user opens and merges it themselves. The
+user opts a repo in once by running \`git config claude.allowPrs true\` inside it."
+    fi
   fi
 
   if [[ $sub == reset ]] && has_arg '--hard'; then

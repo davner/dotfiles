@@ -194,7 +194,7 @@ see [AGENTS.md](AGENTS.md#installing-the-skills). Third-party license notices ar
 
 | When | Script | Does |
 | --- | --- | --- |
-| Before every shell command | `guard-bash.sh` | Blocks risky git (`add .`, `reset --hard`, `clean -f`, `branch -D`, `checkout .`, force push, plain push unless the repo opted in with `cc-push on`), opening or merging a PR with `gh` or `gh-axi` in any repo, and commit messages that credit an AI or break the one-line shape |
+| Before every shell command | `guard-bash.sh` | Blocks risky git (`add .`, `reset --hard`, `clean -f`, `branch -D`, `checkout .`, force push, plain push unless the repo opted in with `cc-push on`), opening or merging a PR with `gh` or `gh-axi` unless the repo opted in with `git config claude.allowPrs true`, and commit messages that credit an AI or break the one-line shape |
 | Before Skill, Write, Edit, MultiEdit and Bash | `skill-gate.sh` | Blocks a write to a TypeScript file until that agent has loaded `typescript-style-guide`; the rule `~/.claude/rules/typescript.md` asks for the skill as soon as a TypeScript file is read. It misses `touch`, `dd of=`, writes from inside python or node, and `cp a.ts dir` without a trailing slash |
 | After every file write | `comment-audit.sh` | Flags code comments that tell history or refer to the session |
 | Session start | `session-name.sh` | Names the session after its repo |

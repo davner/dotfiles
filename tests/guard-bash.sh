@@ -495,6 +495,8 @@ git pull -r origin main
 git pull --ff-only
 git pull --rebase=merges
 git cherry-pick 1a2b3c4
+cd ~/github/acme/app && git fetch -q && git rebase --onto origin/main 1a2b3c4
+git -C ~/github/acme/app/.claude/worktrees/w diff --quiet 1a2b3c4 origin/main && git -C ~/github/acme/app/.claude/worktrees/w rebase --onto origin/main 1a2b3c4
 nix develop --command ./test.sh
 CASES
 
@@ -573,6 +575,22 @@ eq "push from an opted-in repo is allowed" "0" \
   "$(guard_in "$PUSHES/opted" 'git push origin main')"
 eq "push outside any repo is blocked" "2" "$(guard_in "$PUSHES/norepo" 'git push')"
 eq "push with no cwd in the payload is blocked" "2" "$(guard 'git push')"
+# Opening and merging PRs is a separate switch, judged against the cwd's repo.
+git init -q "$PUSHES/prs" && git -C "$PUSHES/prs" config claude.allowPrs true
+eq "gh pr create from a repo that opted in to PRs is allowed" "0" \
+  "$(guard_in "$PUSHES/prs" 'gh pr create --title "feat: x" --body y')"
+eq "gh pr merge from a repo that opted in to PRs is allowed" "0" \
+  "$(guard_in "$PUSHES/prs" 'gh pr merge 12 --squash')"
+eq "gh pr create from a repo opted in only to pushes is blocked" "2" \
+  "$(guard_in "$PUSHES/opted" 'gh pr create --title "feat: x" --body y')"
+eq "gh pr merge outside any repo is blocked" "2" \
+  "$(guard_in "$PUSHES/norepo" 'gh pr merge 12')"
+eq "gh pr --repo points away from the cwd, so it is blocked" "2" \
+  "$(guard_in "$PUSHES/prs" 'gh pr merge 12 --repo other/repo')"
+eq "cd into a repo without the PR switch, then gh pr create, is blocked" "2" \
+  "$(guard_in "$PUSHES/prs" "cd $PUSHES/closed && gh pr create")"
+eq "an agent cannot set claude.allowPrs" "2" \
+  "$(guard_in "$PUSHES/closed" 'git config claude.allowPrs true')"
 eq "-C names the repo, not the cwd (opted in)" "0" \
   "$(guard_in "$PUSHES/closed" "git -C $PUSHES/opted push")"
 eq "-C names the repo, not the cwd (closed)" "2" \
