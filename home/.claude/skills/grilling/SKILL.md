@@ -43,7 +43,7 @@ When the conversation has said the run is headless, nobody will answer. Put each
 4. Vote: 5 fresh Haiku or Sonnet voters, each given the question, the labelled options and the evidence, never your pick, each returning one label and nothing else. 5 of 5 for your pick: decide. 4 of 5: decide if cheap to undo, else ask 5 more and decide at 9 or 10 of 10. 3 or fewer, or a majority for another option: park. At most 50 voters per run; after that, every undecided question parks.
 5. Your stated confidence only breaks a tie.
 
-**Research.** Facts still come from subagents: Haiku `Explore` agents for the repo, Sonnet agents for the web and prior art (standard search first, extended only when it comes back thin, about 10 sources each). One round per question. A finding is evidence only when it cites a file and line, a URL or a test that you confirm with one tool call. Research agents count toward the run's agent cap of about 10; voters do not.
+**Research.** Facts still come from subagents: Haiku `Explore` agents for the repo, Sonnet agents for the web and prior art (standard search first, extended only when it comes back thin, about 10 sources each). One round per question. A finding is evidence only when it cites a file and line, a URL or a test that you confirm with one tool call. Research agents count toward the run's agent cap; voters do not.
 
 **Decision log.** Append every question you settle or park to `.scratch/<feature-slug>/decisions.md` in the main checkout (`dirname "$(git rev-parse --path-format=absolute --git-common-dir)"`): the question, the options, the pick, the step that settled it (the evidence with its citation, the run comparison, or the vote count), and why. Mark a parked question parked.
 
