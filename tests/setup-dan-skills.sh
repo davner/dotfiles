@@ -155,6 +155,18 @@ label delete question -R owner/repo --yes
 label delete invalid -R owner/repo --yes" "$(labels_calls label delete)"
   eq "a fresh repo: each delete is checked against issues and PRs in every state" "8" \
     "$(grep -E '^(issue|pr) list .*--state all' <<<"$LABELS_CALLS" | wc -l | tr -d ' ')"
+
+  labels_repo "$LABELS_DEFAULTS"
+  echo '[{"number":7}]' >"$LGH/canned/issue-list.json"
+  labels_run
+  eq "a default an issue carries: labels.sh exits 0" "0" "$LABELS_RC"
+  eq "a default an issue carries: it is kept" "" "$(labels_calls label delete)"
+  contains "a default an issue carries: the kept label is reported" "$LABELS_OUT" "kept question: an issue or PR carries it"
+
+  labels_repo "$LABELS_DEFAULTS"
+  echo '[{"number":8}]' >"$LGH/canned/pr-list.json"
+  labels_run
+  eq "a default a PR carries: it is kept" "" "$(labels_calls label delete)"
 fi
 # ---- end labels.sh block ----
 
