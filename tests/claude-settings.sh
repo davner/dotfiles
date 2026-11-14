@@ -70,7 +70,6 @@ Bash(git push -f *)
 Bash(git push * -f)
 Bash(git push * -f *)
 Bash(git push * +*)
-Bash(gh pr merge *)
 Bash(gh repo delete *)
 Read(~/.ssh/**)
 Bash(security find-*)
@@ -114,8 +113,6 @@ deny|git push -f origin main
 deny|git push origin main -f
 deny|git push origin -f main
 deny|git push origin +main
-deny|gh pr merge
-deny|gh pr merge 12 --squash
 deny|gh repo delete davner/x --yes
 deny|security find-generic-password -s claude-gh-token -w
 deny|security find-internet-password -s github.com
@@ -136,6 +133,7 @@ allow|gh pr view 12
 allow|gh pr list
 allow|gh pr checks
 allow|gh pr create --fill
+allow|gh pr merge 12 --squash
 allow|gh repo view
 allow|gh auth status
 allow|security list-keychains

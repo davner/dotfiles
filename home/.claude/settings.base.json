@@ -92,7 +92,6 @@
       "Bash(git push * -f)",
       "Bash(git push * -f *)",
       "Bash(git push * +*)",
-      "Bash(gh pr merge *)",
       "Bash(gh repo delete *)",
       "Read(~/.ssh/**)",
       "Bash(security find-*)",
