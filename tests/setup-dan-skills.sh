@@ -4,119 +4,123 @@ source "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
 
 SDS="$DIR/home/.claude/skills/setup-dan-skills/scripts"
 
-# --- repo settings (ticket 03): fake gh and helpers; ticket 05 merges them ---
-section "repo settings"
-RS="$SDS/repo-settings.sh"
-if [ -x "$RS" ]; then ok "repo-settings.sh is executable"; else bad "repo-settings.sh is executable" "$RS"; fi
-RS_STUB="$WORK/rs-stub"
-mkdir -p "$RS_STUB"
-# Records each call and answers `repo view` the way --jq would leave it. A call
-# containing $RS_GH_FAIL fails with GitHub's kind of error text.
-cat >"$RS_STUB/gh" <<'EOF'
+# The fake gh replays canned answers through jq, as real gh's --jq does.
+require jq || finish
+
+# --- one fake gh for every script ---
+GH="$WORK/gh"
+mkdir -p "$GH/bin" "$GH/repo"
+# A failing call is logged first, so a test can see it was the last one made.
+cat >"$GH/bin/gh" <<'EOF'
 #!/usr/bin/env bash
-printf '%s\n' "$*" >>"$(dirname "$0")/gh-calls"
-if [ -n "${RS_GH_FAIL-}" ] && [[ "$*" == *"$RS_GH_FAIL"* ]]; then
+root="$(dirname "$0")/.."
+args="$*"
+args="${args//$'\n'/ }"
+printf '%s\n' "$args" >>"$root/calls"
+if [ -n "${GH_FAIL-}" ] && [[ $args == *"$GH_FAIL"* ]]; then
   echo "HTTP 403: Upgrade to GitHub Pro or make this repository public to enable this feature." >&2
   exit 1
 fi
-case "$1 $2" in
-  "repo view") echo "davner/demo main" ;;
-  api*) echo '{"url":"https://api.github.com/repos/davner/demo"}' ;;
-esac
+canned="$root/canned/$1-$2"
+[ -f "$canned" ] || canned="$root/canned/$1"
+[ -f "$canned" ] || exit 0
+filter=""
+while [ $# -gt 0 ]; do
+  case "$1" in --jq | -q) filter="$2"; shift 2 ;; *) shift ;; esac
+done
+if [ -n "$filter" ]; then jq -r "$filter" "$canned"; else cat "$canned"; fi
 EOF
-chmod +x "$RS_STUB/gh"
-rs_run() { # args... -> sets RS_OUT, RS_ERR, RS_RC, RS_CALLS, RS_WRITES
-  rm -f "$RS_STUB/gh-calls"
-  RS_RC=0
-  RS_OUT="$(PATH="$RS_STUB:$PATH" "$RS" "$@" 2>"$WORK/rs-stderr" </dev/null)" || RS_RC=$?
-  RS_ERR="$(cat "$WORK/rs-stderr")"
-  RS_CALLS="$(cat "$RS_STUB/gh-calls" 2>/dev/null)"
-  RS_WRITES="$(grep -v '^repo view' "$RS_STUB/gh-calls" 2>/dev/null)"
+chmod +x "$GH/bin/gh"
+
+gh_reset() { # forget every canned answer and call
+  rm -rf "$GH/canned" "$GH/calls"
+  mkdir -p "$GH/canned"
+}
+gh_can() { # subcommand-action, answer -> gh answers that call with it
+  printf '%s\n' "$2" >"$GH/canned/$1"
+}
+gh_run() { # script, args... -> sets OUT, ERR, RC, CALLS; GH_FAIL in the env makes matching calls fail
+  rm -f "$GH/calls"
+  RC=0
+  OUT="$(cd "$GH/repo" && PATH="$GH/bin:$PATH" "$@" 2>"$WORK/gh-stderr" </dev/null)" || RC=$?
+  ERR="$(cat "$WORK/gh-stderr")"
+  CALLS="$(cat "$GH/calls" 2>/dev/null)"
+}
+calls_to() { # subcommand, action -> the logged calls to it, one per line
+  grep "^$1 $2 " <<<"$CALLS"
+}
+called() { # name, pattern -> ok when a logged call matches the extended regex
+  if grep -Eq -- "$2" <<<"$CALLS"; then ok "$1"; else bad "$1" "no gh call matches: $2" "calls: ${CALLS//$'\n'/ | }"; fi
+}
+not_called() { # name, pattern -> ok when no logged call matches the extended regex
+  if grep -Eq -- "$2" <<<"$CALLS"; then bad "$1" "a gh call matches: $2" "calls: ${CALLS//$'\n'/ | }"; else ok "$1"; fi
+}
+executable() { # script name -> ok when the skill can run it by path
+  if [ -x "$SDS/$1" ]; then ok "$1 is executable"; else bad "$1 is executable" "the skill runs it by path"; fi
 }
 
-rs_run --dry-run --check test
-want_exit "a dry run exits 0" 0 "$RS_RC"
-eq "a dry run makes no write call" "" "$RS_WRITES"
-contains "a dry run prints the repo edit" "$RS_OUT" "gh repo edit davner/demo"
-contains "a dry run prints the protection PUT" "$RS_OUT" \
+# --- repo settings ---
+section "repo settings"
+RS="$SDS/repo-settings.sh"
+executable repo-settings.sh
+gh_reset
+gh_can repo-view '{"nameWithOwner":"davner/demo","defaultBranchRef":{"name":"main"}}'
+gh_can api '{"url":"https://api.github.com/repos/davner/demo"}'
+writes() { grep -v '^repo view' <<<"$CALLS"; }
+
+gh_run "$RS" --dry-run --check test
+want_exit "a dry run exits 0" 0 "$RC"
+eq "a dry run makes no write call" "" "$(writes)"
+contains "a dry run prints the repo edit" "$OUT" "gh repo edit davner/demo"
+contains "a dry run prints the protection PUT" "$OUT" \
   "gh api --method PUT repos/davner/demo/branches/main/protection"
-contains "a dry run's PUT names the check" "$RS_OUT" "'required_status_checks[contexts][]=test'"
+contains "a dry run's PUT names the check" "$OUT" "'required_status_checks[contexts][]=test'"
 
 # The printout is what the user approves and may paste, so a check name with a
 # quote in it must come back out of the shell unchanged.
-rs_run --dry-run --check "it's ok"
-put="$(printf '%s\n' "$RS_OUT" | grep -- '--method PUT')"
+gh_run "$RS" --dry-run --check "it's ok"
+put="$(printf '%s\n' "$OUT" | grep -- '--method PUT')"
 replayed="$(eval "set -- ${put#gh }" && printf '%s\n' "$@" | grep contexts)"
 eq "a dry run's printout replays a quoted check name intact" \
   "required_status_checks[contexts][]=it's ok" "$replayed"
 
-rs_run --check test --check 'towncrier check'
-want_exit "a real run exits 0" 0 "$RS_RC"
+gh_run "$RS" --check test --check 'towncrier check'
+want_exit "a real run exits 0" 0 "$RC"
 eq "a real run makes the three writes, in order" "$(
   cat <<'CALLS'
 repo edit davner/demo --enable-auto-merge --delete-branch-on-merge --enable-squash-merge --enable-merge-commit=false --enable-rebase-merge=false
 api --method PATCH repos/davner/demo -f squash_merge_commit_title=PR_TITLE -f squash_merge_commit_message=BLANK
 api --method PUT repos/davner/demo/branches/main/protection -F required_status_checks[strict]=true -f required_status_checks[contexts][]=test -f required_status_checks[contexts][]=towncrier check -F enforce_admins=false -F required_pull_request_reviews[required_approving_review_count]=0 -F restrictions=null -F required_linear_history=true -F allow_force_pushes=false -F allow_deletions=false
 CALLS
-)" "$RS_WRITES"
-eq "a real run keeps GitHub's JSON replies off stdout" "" "$RS_OUT"
+)" "$(writes)"
+eq "a real run keeps GitHub's JSON replies off stdout" "" "$OUT"
 
-rs_run --dry-run
-want_exit "no --check exits 2" 2 "$RS_RC"
-contains "and says why" "$RS_ERR" "auto-merge with no required check merges untested work"
-eq "and calls gh for nothing" "" "$RS_CALLS"
-rs_run --check
-want_exit "--check with no name exits 2" 2 "$RS_RC"
+gh_run "$RS" --dry-run
+want_exit "no --check exits 2" 2 "$RC"
+contains "and says why" "$ERR" "auto-merge with no required check merges untested work"
+eq "and calls gh for nothing" "" "$CALLS"
+gh_run "$RS" --check
+want_exit "--check with no name exits 2" 2 "$RC"
 
-RS_GH_FAIL="--method PATCH" rs_run --check test
-want_exit "a failing gh exits non-zero" 1 "$RS_RC"
-contains "and GitHub's error reaches stderr" "$RS_ERR" "HTTP 403: Upgrade to GitHub Pro"
-eq "and nothing after it runs" "2" "$(printf '%s\n' "$RS_WRITES" | wc -l | tr -d ' ')"
+GH_FAIL="--method PATCH" gh_run "$RS" --check test
+want_exit "a failing gh exits non-zero" 1 "$RC"
+contains "and GitHub's error reaches stderr" "$ERR" "HTTP 403: Upgrade to GitHub Pro"
+eq "and nothing after it runs" "2" "$(writes | wc -l | tr -d ' ')"
 
-RS_GH_FAIL="repo view" rs_run --dry-run --check test
-want_exit "a repo gh cannot read exits non-zero" 1 "$RS_RC"
-eq "and prints no commands" "" "$RS_OUT"
-# --- end repo settings ---
+GH_FAIL="repo view" gh_run "$RS" --dry-run --check test
+want_exit "a repo gh cannot read exits non-zero" 1 "$RC"
+eq "and prints no commands" "" "$OUT"
 
-# ---- labels.sh: fake gh and helpers (ticket 01; ticket 05 merges the helpers) ----
+# --- labels ---
 section "label setup script"
-LABELS="$DIR/home/.claude/skills/setup-dan-skills/scripts/labels.sh"
-LGH="$WORK/labels-gh"
-mkdir -p "$LGH/bin" "$LGH/repo"
-# Logs every call, then replays canned/<subcommand>-<action>.json through --jq as
-# real gh would. GH_FAIL names subcommands that fail, as "label-create".
-cat >"$LGH/bin/gh" <<'EOF'
-#!/usr/bin/env bash
-root="$(dirname "$0")/.."
-printf '%s\n' "$*" >>"$root/calls"
-key="$1-$2"
-case " ${GH_FAIL-} " in *" $key "*) echo "gh: $key failed" >&2; exit 1 ;; esac
-json="$root/canned/$key.json"
-[ -f "$json" ] || exit 0
-filter=""
-while [ $# -gt 0 ]; do
-  case "$1" in --jq | -q) filter="$2"; shift 2 ;; *) shift ;; esac
-done
-if [ -n "$filter" ]; then jq -r "$filter" "$json"; else cat "$json"; fi
-EOF
-chmod +x "$LGH/bin/gh"
-
+LABELS="$SDS/labels.sh"
 LABELS_DEFAULTS='["bug","documentation","duplicate","enhancement","good first issue","help wanted","invalid","question","wontfix"]'
 labels_repo() { # label names as a JSON array -> a fake repo holding those labels, with nothing labelled
-  rm -rf "$LGH/canned" "$LGH/calls"
-  mkdir -p "$LGH/canned"
-  echo '{"nameWithOwner":"owner/repo"}' >"$LGH/canned/repo-view.json"
-  jq '[.[] | {name: .}]' <<<"$1" >"$LGH/canned/label-list.json"
-  echo '[]' >"$LGH/canned/issue-list.json"
-  echo '[]' >"$LGH/canned/pr-list.json"
-}
-labels_run() { # extra env assignments -> sets LABELS_RC, LABELS_OUT, LABELS_CALLS
-  LABELS_RC=0
-  LABELS_OUT="$(cd "$LGH/repo" && env PATH="$LGH/bin:$PATH" "$@" "$LABELS" 2>&1 </dev/null)" || LABELS_RC=$?
-  LABELS_CALLS="$(cat "$LGH/calls" 2>/dev/null)"
-}
-labels_calls() { # gh subcommand and action -> the logged calls to it, one per line
-  grep "^$1 $2 " <<<"$LABELS_CALLS"
+  gh_reset
+  gh_can repo-view '{"nameWithOwner":"owner/repo"}'
+  gh_can label-list "$(jq '[.[] | {name: .}]' <<<"$1")"
+  gh_can issue-list '[]'
+  gh_can pr-list '[]'
 }
 
 LABELS_SET="breaking
@@ -137,164 +141,128 @@ test
 todo
 wontfix"
 
-if require jq; then
-  labels_repo "$LABELS_DEFAULTS"
-  labels_run
-  eq "a fresh repo: labels.sh exits 0" "0" "$LABELS_RC"
-  eq "a fresh repo: every label in the set is created" "$LABELS_SET" \
-    "$(labels_calls label create | awk '{print $3}' | sort)"
-  eq "a fresh repo: every create is --force" "" \
-    "$(labels_calls label create | grep -v -- '--force')"
-  contains "a fresh repo: bug is renamed to fix" "$(labels_calls label edit)" "label edit bug -R owner/repo --name fix"
-  eq "a fresh repo: the three overlapping defaults are renamed" "label edit bug -R owner/repo --name fix
+labels_repo "$LABELS_DEFAULTS"
+gh_run "$LABELS"
+eq "a fresh repo: labels.sh exits 0" "0" "$RC"
+eq "a fresh repo: every label in the set is created" "$LABELS_SET" \
+  "$(calls_to label create | awk '{print $3}' | sort)"
+eq "a fresh repo: every create is --force" "" \
+  "$(calls_to label create | grep -v -- '--force')"
+contains "a fresh repo: bug is renamed to fix" "$(calls_to label edit)" "label edit bug -R owner/repo --name fix"
+eq "a fresh repo: the three overlapping defaults are renamed" "label edit bug -R owner/repo --name fix
 label edit enhancement -R owner/repo --name feat
-label edit documentation -R owner/repo --name docs" "$(labels_calls label edit)"
-  eq "a fresh repo: the four unused defaults are deleted" "label delete good first issue -R owner/repo --yes
+label edit documentation -R owner/repo --name docs" "$(calls_to label edit)"
+eq "a fresh repo: the four unused defaults are deleted" "label delete good first issue -R owner/repo --yes
 label delete help wanted -R owner/repo --yes
 label delete question -R owner/repo --yes
-label delete invalid -R owner/repo --yes" "$(labels_calls label delete)"
-  eq "a fresh repo: each delete is checked against issues and PRs in every state" "8" \
-    "$(grep -cE '^(issue|pr) list .*--state all' <<<"$LABELS_CALLS")"
+label delete invalid -R owner/repo --yes" "$(calls_to label delete)"
+eq "a fresh repo: each delete is checked against issues and PRs in every state" "8" \
+  "$(grep -cE '^(issue|pr) list .*--state all' <<<"$CALLS")"
 
+labels_repo "$LABELS_DEFAULTS"
+gh_can issue-list '[{"number":7}]'
+gh_run "$LABELS"
+eq "a default an issue carries: labels.sh exits 0" "0" "$RC"
+eq "a default an issue carries: it is kept" "" "$(calls_to label delete)"
+contains "a default an issue carries: the kept label is reported" "$OUT" "kept question: an issue or PR carries it"
+
+labels_repo "$LABELS_DEFAULTS"
+gh_can pr-list '[{"number":8}]'
+gh_run "$LABELS"
+eq "a default a PR carries: it is kept" "" "$(calls_to label delete)"
+
+labels_repo "$(jq -R . <<<"$LABELS_SET" | jq -s .)"
+gh_run "$LABELS"
+eq "a re-run: labels.sh exits 0" "0" "$RC"
+eq "a re-run: nothing is renamed" "" "$(calls_to label edit)"
+eq "a re-run: nothing is deleted" "" "$(calls_to label delete)"
+eq "a re-run: the set is written again with --force" "17" \
+  "$(calls_to label create | grep -c -- '--force')"
+
+labels_repo '["bug","fix"]'
+gh_run "$LABELS"
+eq "bug beside an existing fix: bug is not renamed" "" "$(calls_to label edit)"
+contains "bug beside an existing fix: it is reported" "$OUT" "kept bug: fix already exists"
+
+for failing in "repo view" "label list" "label edit" "issue list" "pr list" "label delete" "label create"; do
   labels_repo "$LABELS_DEFAULTS"
-  echo '[{"number":7}]' >"$LGH/canned/issue-list.json"
-  labels_run
-  eq "a default an issue carries: labels.sh exits 0" "0" "$LABELS_RC"
-  eq "a default an issue carries: it is kept" "" "$(labels_calls label delete)"
-  contains "a default an issue carries: the kept label is reported" "$LABELS_OUT" "kept question: an issue or PR carries it"
+  GH_FAIL="$failing" gh_run "$LABELS"
+  want_exit "a failing gh $failing stops labels.sh non-zero" 1 "$RC"
+  eq "a failing gh $failing is the last call made" "$failing" \
+    "$(tail -n 1 <<<"$CALLS" | awk '{print $1, $2}')"
+done
 
-  labels_repo "$LABELS_DEFAULTS"
-  echo '[{"number":8}]' >"$LGH/canned/pr-list.json"
-  labels_run
-  eq "a default a PR carries: it is kept" "" "$(labels_calls label delete)"
-
-  labels_repo "$(jq -R . <<<"$LABELS_SET" | jq -s .)"
-  labels_run
-  eq "a re-run: labels.sh exits 0" "0" "$LABELS_RC"
-  eq "a re-run: nothing is renamed" "" "$(labels_calls label edit)"
-  eq "a re-run: nothing is deleted" "" "$(labels_calls label delete)"
-  eq "a re-run: the set is written again with --force" "17" \
-    "$(labels_calls label create | grep -c -- '--force')"
-
-  labels_repo '["bug","fix"]'
-  labels_run
-  eq "bug beside an existing fix: bug is not renamed" "" "$(labels_calls label edit)"
-  contains "bug beside an existing fix: it is reported" "$LABELS_OUT" "kept bug: fix already exists"
-
-  for failing in repo-view label-list label-edit issue-list pr-list label-delete label-create; do
-    labels_repo "$LABELS_DEFAULTS"
-    labels_run GH_FAIL="$failing"
-    want_exit "a failing gh ${failing/-/ } stops labels.sh non-zero" 1 "$LABELS_RC"
-    eq "a failing gh ${failing/-/ } is the last call made" "${failing/-/ }" \
-      "$(tail -n 1 <<<"$LABELS_CALLS" | awk '{print $1, $2}')"
-  done
-fi
-# ---- end labels.sh block ----
-
-# --- board.sh: fake gh and helpers (ticket 02; ticket 05 merges the fakes) ---
+# --- board ---
 section "setup-dan-skills board"
-BOARD="$DIR/home/.claude/skills/setup-dan-skills/scripts/board.sh"
-BSTUB="$WORK/board-stub"
-BREPO="$WORK/board-repo"
-mkdir -p "$BSTUB" "$BREPO"
-# Replays canned JSON from $BSTUB and records every call, so no test reaches GitHub.
-# The project list is a file the test writes, holding only the titles that exist.
-cat >"$BSTUB/gh" <<'EOF'
-#!/usr/bin/env bash
-d=$(dirname "$0")
-args="$*"
-printf '%s\n' "${args//$'\n'/ }" >>"$d/calls"
-user=me
-if [ "$(cat "$d/fail" 2>/dev/null)" = "$1 $2" ]; then echo "gh: HTTP 502" >&2; exit 1; fi
-case "$1 $2" in
-  "auth status")
-    printf 'github.com\n  - Token scopes: %s\n' "$(cat "$d/scopes")" ;;
-  "repo view") echo "$user/app" ;;
-  "project list")
-    jq -n --arg u "$user" '{projects: [inputs | split("\n")[] | select(. != "") | split("=") |
-      {number: (.[0] | tonumber), title: .[1], url: "https://github.com/users/\($u)/projects/\(.[0])"}],
-      totalCount: 0}' -R -s "$d/projects" ;;
-  "project create")
-    echo '{"number":7,"id":"PVT_t","title":"dan-skills template","url":"https://github.com/users/me/projects/7"}' ;;
-  "project copy")
-    echo '{"number":8,"id":"PVT_b","title":"me/app","url":"https://github.com/users/me/projects/8"}' ;;
-  "project field-list")
-    echo '{"fields":[{"id":"PVTF_title","name":"Title","type":"ProjectV2Field"},{"id":"PVTSSF_status","name":"Status","type":"ProjectV2SingleSelectField","options":[{"id":"a","name":"Todo"},{"id":"b","name":"In Progress"},{"id":"c","name":"Done"}]}],"totalCount":2}' ;;
-  "api graphql") echo '{"data":{}}' ;;
-  *) echo '{}' ;;
-esac
-EOF
-chmod +x "$BSTUB/gh"
-board_run() { # [title of each existing project as number=title]... -> sets B_OUT, B_ERR, B_RC, B_CALLS
-  printf '%s\n' "$@" >"$BSTUB/projects"
-  : >"$BSTUB/calls"
-  B_RC=0
-  B_OUT="$(cd "$BREPO" && PATH="$BSTUB:$PATH" "$BOARD" 2>"$WORK/board-err")" || B_RC=$?
-  B_ERR="$(cat "$WORK/board-err")"
-  B_CALLS="$(cat "$BSTUB/calls")"
+BOARD="$SDS/board.sh"
+gh_reset
+gh_can repo-view '{"nameWithOwner":"me/app"}'
+gh_can project-create '{"number":7,"id":"PVT_t","title":"dan-skills template","url":"https://github.com/users/me/projects/7"}'
+gh_can project-copy '{"number":8,"id":"PVT_b","title":"me/app","url":"https://github.com/users/me/projects/8"}'
+gh_can project-field-list '{"fields":[{"id":"PVTF_title","name":"Title","type":"ProjectV2Field"},{"id":"PVTSSF_status","name":"Status","type":"ProjectV2SingleSelectField","options":[{"id":"a","name":"Todo"},{"id":"b","name":"In Progress"},{"id":"c","name":"Done"}]}],"totalCount":2}'
+gh_can api '{"data":{}}'
+board_scopes() { # scope list as gh prints it -> gh auth status reports those scopes
+  gh_can auth-status "$(printf 'github.com\n  - Token scopes: %s' "$1")"
 }
-board_called() { # name, pattern -> ok when a recorded gh call matches the extended regex
-  if grep -Eq -- "$2" <<<"$B_CALLS"; then ok "$1"; else bad "$1" "no gh call matches: $2" "calls: ${B_CALLS//$'\n'/ | }"; fi
+board_run() { # each existing project as number=title... -> runs board.sh, as gh_run
+  gh_can project-list "$(printf '%s\n' "$@" | jq -R -s '{projects: [split("\n")[] | select(. != "") | split("=") |
+    {number: (.[0] | tonumber), title: .[1], url: "https://github.com/users/me/projects/\(.[0])"}], totalCount: 0}')"
+  gh_run "$BOARD"
 }
-board_not_called() { # name, pattern -> ok when no recorded gh call matches the extended regex
-  if grep -Eq -- "$2" <<<"$B_CALLS"; then bad "$1" "a gh call matches: $2" "calls: ${B_CALLS//$'\n'/ | }"; else ok "$1"; fi
-}
-echo "'gist', 'project', 'read:org', 'repo'" >"$BSTUB/scopes"
+board_scopes "'gist', 'project', 'read:org', 'repo'"
 
 board_run
-want_exit "with no projects, board.sh exits 0" 0 "$B_RC"
-board_called "it creates the template" '^project create .*--title dan-skills template'
-board_called "it copies the template to the repo's title" '^project copy 7 .*--title me/app'
-board_called "it links the board to the repo" '^project link 8 '
-contains "it prints the board number" "$B_OUT" $'\nboard=8\n'
-board_called "it replaces the Status field of the new template" '^api graphql .*fieldId=PVTSSF_status'
-board_called "with Backlog, Ready, In progress, In review, Done in order" \
+want_exit "with no projects, board.sh exits 0" 0 "$RC"
+called "it creates the template" '^project create .*--title dan-skills template'
+called "it copies the template to the repo's title" '^project copy 7 .*--title me/app'
+called "it links the board to the repo" '^project link 8 '
+contains "it prints the board number" "$OUT" $'\nboard=8\n'
+called "it replaces the Status field of the new template" '^api graphql .*fieldId=PVTSSF_status'
+called "with Backlog, Ready, In progress, In review, Done in order" \
   '^api graphql .*updateProjectV2Field.*"Backlog".*"Ready".*"In progress".*"In review".*"Done"'
 # GitHub has templates for organizations only, and copy works on any project.
-board_not_called "it leaves the template unmarked" '^project mark-template'
-contains "it prints the template's workflows page" "$B_OUT" $'\nhttps://github.com/users/me/projects/7/workflows\n'
+not_called "it leaves the template unmarked" '^project mark-template'
+contains "it prints the template's workflows page" "$OUT" $'\nhttps://github.com/users/me/projects/7/workflows\n'
 for wf in "Item closed: set Status to Done" "Pull request merged: set Status to Done" \
   "Auto-close issue: on" "Auto-archive items: Done items after 14 days" "Item added to project: set Status to Backlog"; do
-  contains "it lists the template workflow '$wf'" "$B_OUT" "$wf"
+  contains "it lists the template workflow '$wf'" "$OUT" "$wf"
 done
-contains "it prints the board's workflows page" "$B_OUT" $'\nhttps://github.com/users/me/projects/8/workflows'
-contains "it prints the auto-add filter" "$B_OUT" "is:issue is:open"
+contains "it prints the board's workflows page" "$OUT" $'\nhttps://github.com/users/me/projects/8/workflows'
+contains "it prints the auto-add filter" "$OUT" "is:issue is:open"
 
 board_run "3=dan-skills template" "4=me/other"
-want_exit "with the template and no board, board.sh exits 0" 0 "$B_RC"
-board_not_called "it creates nothing" '^project create'
-board_not_called "it leaves the template's Status alone" '^api graphql'
-board_called "it copies the existing template" '^project copy 3 .*--title me/app'
-board_called "and links the copy" '^project link 8 '
+want_exit "with the template and no board, board.sh exits 0" 0 "$RC"
+not_called "it creates nothing" '^project create'
+not_called "it leaves the template's Status alone" '^api graphql'
+called "it copies the existing template" '^project copy 3 .*--title me/app'
+called "and links the copy" '^project link 8 '
 eq "it prints the numbers, the URL and only the auto-add step" "template=3
 board=8
 url=https://github.com/users/me/projects/8
 
 Board created. Turn on Auto-add to project for me/app with the filter is:issue is:open at:
-https://github.com/users/me/projects/8/workflows" "$B_OUT"
+https://github.com/users/me/projects/8/workflows" "$OUT"
 
 board_run "3=dan-skills template" "5=me/app"
-want_exit "with the template and the board, board.sh exits 0" 0 "$B_RC"
-board_not_called "it creates, copies or links nothing" '^(project (create|copy|link)|api graphql)'
+want_exit "with the template and the board, board.sh exits 0" 0 "$RC"
+not_called "it creates, copies or links nothing" '^(project (create|copy|link)|api graphql)'
 eq "it prints the numbers and the URL, and no manual steps" "template=3
 board=5
-url=https://github.com/users/me/projects/5" "$B_OUT"
+url=https://github.com/users/me/projects/5" "$OUT"
 
-echo "'gist', 'read:org', 'repo'" >"$BSTUB/scopes"
+board_scopes "'gist', 'read:org', 'repo'"
 board_run
-want_exit "without the project scope, board.sh exits 1" 1 "$B_RC"
-contains "and tells the user how to add it" "$B_ERR" "gh auth refresh -s project"
-board_not_called "before touching any project" '^(project|api) '
-echo "'gist', 'project', 'read:org', 'repo'" >"$BSTUB/scopes"
+want_exit "without the project scope, board.sh exits 1" 1 "$RC"
+contains "and tells the user how to add it" "$ERR" "gh auth refresh -s project"
+not_called "before touching any project" '^(project|api) '
+board_scopes "'gist', 'project', 'read:org', 'repo'"
 
 for step in "project list" "project copy" "project link"; do
-  echo "$step" >"$BSTUB/fail"
-  board_run "3=dan-skills template"
-  want_exit "a failing gh $step stops board.sh" 1 "$B_RC"
-  eq "and prints no board line" "" "$(grep '^board=' <<<"$B_OUT")"
+  GH_FAIL="$step" board_run "3=dan-skills template"
+  want_exit "a failing gh $step stops board.sh" 1 "$RC"
+  eq "and prints no board line" "" "$(grep '^board=' <<<"$OUT")"
 done
-rm -f "$BSTUB/fail"
-if [ -x "$BOARD" ]; then ok "board.sh is executable"; else bad "board.sh is executable" "the skill runs it by path"; fi
-# --- end board.sh block ---
+executable board.sh
+executable labels.sh
 
 finish
