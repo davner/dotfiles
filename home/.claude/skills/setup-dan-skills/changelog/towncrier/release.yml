@@ -1,14 +1,10 @@
 name: release
 
-# Builds the changelog from changes/ only at release, so fragments never
-# conflict with each other on the way in.
+# The changelog is built in the release PR, so this workflow writes no commit
+# and branch protection never has to let a bot push.
 on:
-  workflow_dispatch:
-    inputs:
-      version:
-        description: "Version to release, without the leading v (e.g. 1.4.0)"
-        required: true
-        type: string
+  push:
+    branches: [__DEFAULT_BRANCH__]
 
 permissions:
   contents: write
@@ -19,42 +15,66 @@ concurrency:
 
 jobs:
   release:
+    # A cheap prefix test keeps every other push from starting a runner; the
+    # step below checks the full subject.
+    if: "${{ startsWith(github.event.head_commit.message, 'chore(release): v') }}"
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v7
         with:
-          ref: __DEFAULT_BRANCH__
+          persist-credentials: false
 
-      - uses: astral-sh/setup-uv@v10.3.3
-
-      - name: Check the version
+      - name: Read the version from the commit subject
+        id: version
         env:
-          VERSION: ${{ inputs.version }}
+          MESSAGE: ${{ github.event.head_commit.message }}
         run: |
           set -euo pipefail
-          if ! [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+([-+][0-9A-Za-z.-]+)?$ ]]; then
-            echo "::error::version '$VERSION' is not semver without a leading v"
+          subject="${MESSAGE%%$'\n'*}"
+          # A squash merge appends " (#<PR>)" to the PR title.
+          re='^chore\(release\): v([0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?(\+[0-9A-Za-z.-]+)?)( \(#[0-9]+\))?$'
+          if ! [[ "$subject" =~ $re ]]; then
+            echo "::error::'$subject' starts like a release but is not 'chore(release): v<semver>'"
             exit 1
           fi
-          if git ls-remote --exit-code --tags origin "refs/tags/v$VERSION" >/dev/null; then
+          echo "version=${BASH_REMATCH[1]}" >>"$GITHUB_OUTPUT"
+
+      - name: Take this version's section of CHANGELOG.md
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          set -euo pipefail
+          awk -v v="$VERSION" '
+            /^## / { if (found) exit; if ($2 == v) { found = 1; next } }
+            found { lines[++n] = $0 }
+            END {
+              while (n > 0 && lines[n] ~ /^[[:space:]]*$/) n--
+              start = 1
+              while (start <= n && lines[start] ~ /^[[:space:]]*$/) start++
+              for (i = start; i <= n; i++) print lines[i]
+            }
+          ' CHANGELOG.md >"$RUNNER_TEMP/notes.md"
+          if ! [ -s "$RUNNER_TEMP/notes.md" ]; then
+            echo "::error::CHANGELOG.md has no '## $VERSION' section; run towncrier build in the release PR"
+            exit 1
+          fi
+
+      - name: Create the tag and release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.version.outputs.version }}
+          SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          # gh release create reuses an existing tag wherever it points, so a
+          # stale tag would silently publish the wrong commit.
+          if gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/v$VERSION" >/dev/null 2>&1; then
             echo "::error::tag v$VERSION already exists"
             exit 1
           fi
-
-      - name: Build CHANGELOG.md
-        env:
-          VERSION: ${{ inputs.version }}
-        run: uvx towncrier build --yes --version "$VERSION"
-
-      - name: Commit, tag and push
-        env:
-          VERSION: ${{ inputs.version }}
-        run: |
-          set -euo pipefail
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -A CHANGELOG.md changes
-          git commit -m "chore(release): v$VERSION"
-          git tag -a "v$VERSION" -m "v$VERSION"
-          git push --atomic origin HEAD:__DEFAULT_BRANCH__ "v$VERSION"
+          gh release create "v$VERSION" \
+            --repo "$GITHUB_REPOSITORY" \
+            --target "$SHA" \
+            --title "v$VERSION" \
+            --notes-file "$RUNNER_TEMP/notes.md"

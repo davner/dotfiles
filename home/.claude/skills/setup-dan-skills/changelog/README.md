@@ -1,8 +1,8 @@
 # Changelog templates
 
 Files `setup-dan-skills` copies into a GitHub repo when the user accepts a
-changelog. Pick one set: towncrier when the repo ships releases, git-cliff when
-it does not.
+changelog. They are for a repo that ships releases; a repo without releases
+gets no changelog setup.
 
 ## Placeholders
 
@@ -34,16 +34,32 @@ above the first existing entry, so old entries stay below the new ones.
   check name setup passes to `repo-settings.sh` as a required check. It is
   skipped, which GitHub counts as passing, when the PR has the `skip-changelog`
   label.
-- **Release job:** `release` in workflow `release`, run by hand with a
-  `version` input such as `1.4.0`. It builds the changelog, commits
-  `chore(release): v<version>`, tags `v<version>` and pushes both.
+- **Release job:** `release` in workflow `release`, on every push to the
+  default branch. It runs only when the head commit's subject is
+  `chore(release): v<version>`, optionally followed by the ` (#<PR>)` a squash
+  merge appends. It then creates tag and GitHub release `v<version>` at that
+  commit with `gh release create --target`, using that version's section of
+  `CHANGELOG.md` as the notes. It writes no commit, so branch protection never
+  blocks it. It fails when the tag already exists or `CHANGELOG.md` has no
+  section for the version. It is not a PR check, so it is never a required
+  check.
 
-## git-cliff (no releases)
+## Releasing
 
-| Template | Goes to | Placeholders |
-| --- | --- | --- |
-| `git-cliff/cliff.toml` | `cliff.toml` | `__GITHUB_REPO__`, `__DEFAULT_BRANCH__` |
-| `git-cliff/changelog.yml` | `.github/workflows/changelog.yml` | `__DEFAULT_BRANCH__` |
+A release is a PR, so the changelog lands through the same review and
+protection as any change. The agent or the user runs, from an up-to-date
+default branch:
 
-- **Job:** `regenerate` in workflow `changelog`, on every push to the default
-  branch. It is not a PR check, so it is never a required check.
+1. `git switch -c release-v<version>`, with `<version>` semver and no leading
+   `v`, such as `1.4.0`.
+2. `uvx towncrier build --yes --version <version>`. It writes the release into
+   `CHANGELOG.md` and deletes the fragments in `changes/`.
+3. Commit everything that moved, as the branch's one commit:
+   `chore(release): v<version>`.
+4. Open a PR with that same title and the `skip-changelog` label, since a
+   release carries no fragment of its own.
+5. Merge it by squash or rebase, so the default branch's head commit keeps the
+   title as its subject. A merge commit's subject is `Merge pull request ...`,
+   and the release workflow would not run.
+
+The `release` job then tags and publishes `v<version>`.
