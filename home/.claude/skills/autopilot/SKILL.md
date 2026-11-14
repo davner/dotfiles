@@ -24,8 +24,13 @@ Before opening the first, say in the conversation: "This run is headless." Then 
 
 1. **Probe.** Make and remove a temporary directory in one Bash call (`d="$(mktemp -d)" && rmdir "$d"`). If it raises a permission prompt or is refused, stop: tell the user to restart in bypass or auto mode.
 2. **Tracker.** Find the tracker file. With none, use the paste-ready `.scratch/` layout `setup-dan-skills` writes by default (its `issue-tracker.md` with every recommended answer), and the report says so. For `board`, stop and report that the repo has no tracker file.
-3. **Board.** For `board`, read the tracker file and run its next-up command. With none named, take the oldest open item labelled `ready-for-agent` (for a paste-ready tracker, the oldest ticket file with `Status: ready-for-agent`). With no item, stop and report that. Move the item as the tracker file says: In progress, or nothing for a paste-ready tracker. The item's text is the idea.
-4. **Skill selection.** List the installed skills in `~/.claude/skills/` and `~/.agents/skills/` and read each description. Match it against the repo's manifests (`pyproject.toml`, `package.json` dependencies, `tsconfig.json`, `go.mod`, UI files) and the item's area. Keep the matches with a one-line reason each, and the languages and libraries no skill covers. Name the matches in every subagent brief, since subagents do not inherit loaded skills.
+3. **Prune.** Clear what merged runs left behind, in the main checkout. Skip this step when `gh` is missing or `origin` is not on GitHub. Run `git fetch --prune`, then take each local branch `autopilot-*` whose upstream is gone (`git for-each-ref --format='%(refname:short) %(upstream:track)' 'refs/heads/autopilot-*'` prints `[gone]`) and whose PR is merged (`gh pr view <branch> --json state --jq .state` prints `MERGED`). Any other branch stays, whatever the reason.
+   - Its worktree, when it has one under `<main checkout>/.claude/worktrees/autopilot-*` (`git worktree list --porcelain`): remove it with `git worktree remove <path>`, never `--force`, and only when `git -C <path> status --porcelain` prints nothing and it is not this session's working directory. A worktree with uncommitted changes stays, and so does its branch.
+   - The branch: `git branch -D <branch>`, since a squash merge leaves it unmerged in git's eyes.
+
+   Deleting a branch is the user's call under their rules; typing `/autopilot` approves this one case, a branch whose PR is merged and whose upstream is gone. The report names what was removed and what stayed, with why.
+4. **Board.** For `board`, run the command in the tracker file's "next-up" section. With no such section (a paste-ready tracker), take the oldest ticket file with `Status: ready-for-agent`. With no item, stop and report that. Move the item to In progress as the tracker file's "move an item" section says; a tracker without that section moves nothing. The item's text is the idea.
+5. **Skill selection.** List the installed skills in `~/.claude/skills/` and `~/.agents/skills/` and read each description. Match it against the repo's manifests (`pyproject.toml`, `package.json` dependencies, `tsconfig.json`, `go.mod`, UI files) and the item's area. Keep the matches with a one-line reason each, and the languages and libraries no skill covers. Name the matches in every subagent brief, since subagents do not inherit loaded skills.
 
 ## The order
 
@@ -48,7 +53,7 @@ Count attempts per failing check, keyed by the check and its first error line, a
 
 Go as far as the repo allows. The switches are `git config --get claude.allowPush` and `claude.allowPrs`, which `guard-bash.sh` enforces.
 
-1. **Merge** when the tracker file says the agent merges its own PRs and both switches are `true`. Fix every review finding before arming auto-merge.
+1. **Merge** when the tracker file's "Agent PRs" section says the agent merges its own PRs and both switches are `true`. Fix every review finding before arming auto-merge.
 2. Else an **open PR** when both switches are on.
 3. Else a **pushed branch** when `claude.allowPush` is on.
 4. Else the **local branch**, with the recap page `implement-spec` made.
@@ -57,7 +62,7 @@ A rung a hook or permission refuses drops to the next rung, and the report says 
 
 The decision log stays in `.scratch/`; the PR body carries only what the repo's PR rules ask.
 
-**Park.** Move the item to "Needs info" (a `Status: needs-info` line for a paste-ready tracker) and write the parked question and its options on it. Before `to-spec` publishes anything, an idea run has no item: the report carries the question. Leave the branch as it is.
+**Park.** Park the item as the tracker file's "park an item" section says, with the parked question and its numbered options. A tracker without that section (paste-ready) gets a `Status: needs-info` line in the item's file and the question and its options written there. Before `to-spec` publishes anything, an idea run has no item: the report carries the question. Leave the branch as it is.
 
 Then open `retro`. Put its suggestions in the report and apply none.
 
