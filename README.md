@@ -62,10 +62,18 @@ with no rebuild. Adding or removing a linked file does need `./rebuild.sh`.
 ### Workflow
 
 Run `/setup-dan-skills` once in each repo. It asks five things (whether the
-repo is shared with a team; tracker: Shortcut or Jira; where specs and tickets
-go; glossary path; ADR folder) and saves the answers, so the other skills never
-ask again. In a shared repo the glossary and ADRs are committed for everyone,
-while the tracker file stays in `~/.claude/repos/<repo>/` and out of the repo.
+repo is shared with a team; tracker: GitHub, Shortcut or Jira; where specs and
+tickets go; glossary path; ADR folder) and saves the answers, so the other
+skills never ask again. In a shared repo the glossary and ADRs are committed for
+everyone, while the tracker file stays in `~/.claude/repos/<repo>/` and out of
+the repo.
+
+GitHub is offered only for a repo nobody else commits to. Its scripts set up
+the labels and a board copied from a template board, and setup asks three more
+things: whether agents open PRs, whether they merge their own, and whether the
+repo ships releases. A repo that ships releases gets towncrier, which builds the
+changelog from one small file per PR, released through a PR; any other repo
+gets no changelog.
 
 Then, for a piece of work:
 
@@ -122,7 +130,8 @@ flowchart TD
    scope. The tickets say how to get there: thin slices that each fit one fresh
    conversation and name what blocks them. Both open a page with a Copy button per
    item, and you paste them into Shortcut or Jira (the spec as the epic, the
-   tickets as its stories). A conversation here means one context window, not a day of work: past roughly 150k tokens the model reasons less sharply, which is why each ticket is sized to fit a fresh one. Work that fits in one conversation skips this step; otherwise the two always go together, since a spec exists to be split into tickets.
+   tickets as its stories). With a GitHub tracker, `/to-tickets` files one
+   issue per PR on the board instead, and the spec stays local. A conversation here means one context window, not a day of work: past roughly 150k tokens the model reasons less sharply, which is why each ticket is sized to fit a fresh one. Work that fits in one conversation skips this step; otherwise the two always go together, since a spec exists to be split into tickets.
 4. Build. For tickets, either run `/implement` on one ticket at a time,
    blockers first, clearing the context between tickets, or run
    `/implement-spec` to build the whole spec in one go, with ready tickets in
@@ -148,7 +157,7 @@ flow again at `/grill-with-docs`.
 
 | Stage | Skill | What it does |
 | --- | --- | --- |
-| Setup | [`setup-dan-skills`](home/.claude/skills/setup-dan-skills/SKILL.md) | Configures a repo once: tracker and where docs go |
+| Setup | [`setup-dan-skills`](home/.claude/skills/setup-dan-skills/SKILL.md) | Configures a repo once: tracker (GitHub, Shortcut or Jira) and where docs go |
 | Align | [`grill-me`](home/.claude/skills/grill-me/SKILL.md) | Interviews you until a plan has no open questions |
 | Align | [`grill-with-docs`](home/.claude/skills/grill-with-docs/SKILL.md) | The same, recording the glossary and ADRs as it goes |
 | Align | [`grilling`](home/.claude/skills/grilling/SKILL.md) | The interview engine behind both |
@@ -158,7 +167,7 @@ flow again at `/grill-with-docs`.
 | Design | [`improve-codebase-architecture`](home/.claude/skills/improve-codebase-architecture/SKILL.md) | Finds modules worth simplifying, as a visual report |
 | Design | [`making-clipart-gifs`](home/.claude/skills/making-clipart-gifs/SKILL.md) | Original 90s 3D clip-art GIFs: render, shrink to 200 px, check against measured specs |
 | Plan | [`to-spec`](home/.claude/skills/to-spec/SKILL.md) | Writes the spec, paste-ready |
-| Plan | [`to-tickets`](home/.claude/skills/to-tickets/SKILL.md) | Splits it into thin tickets with their order, paste-ready |
+| Plan | [`to-tickets`](home/.claude/skills/to-tickets/SKILL.md) | Splits it into thin tickets with their order, paste-ready or filed as GitHub issues |
 | Build | [`autopilot`](home/.claude/skills/autopilot/SKILL.md) | Runs the whole flow, idea or board item to reviewed code, with nobody watching |
 | Build | [`implement`](home/.claude/skills/implement/SKILL.md) | Builds one ticket or a small change |
 | Build | [`implement-spec`](home/.claude/skills/implement-spec/SKILL.md) | Builds a whole spec, tickets in parallel |
