@@ -9,6 +9,7 @@ machine's configuration, not a package anyone installs a version of.
 
 ## 2026-11-14
 
+- **Fixed** implement-spec: Check the tip instead of each commit via rebase ([`921c1c6`](https://github.com/davner/dotfiles/commit/921c1c66ae57cfe9474abdff35f14f3b4101066d))
 - **Fixed** tests: Clear GIT_DIR so a run from rebase --exec stays hermetic ([`ecec78a`](https://github.com/davner/dotfiles/commit/ecec78ab054f3ec94d62846aa8fba304a524fefd))
 - **Fixed** implement-spec: Clear GIT_DIR in the per-commit check ([`23700ea`](https://github.com/davner/dotfiles/commit/23700eac705575d97f381da5a131d2be8ccbf84a))
 - **Added** Add preview-docs.sh to screenshot docs as GitHub renders them ([`61d087a`](https://github.com/davner/dotfiles/commit/61d087a409b7d93705e943ea86c02bcd0a702d11))
