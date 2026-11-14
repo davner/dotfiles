@@ -37,6 +37,14 @@ fi
 # blocks that CI would otherwise only fail on inside the runner.
 if command -v actionlint >/dev/null 2>&1; then
   if err="$(cd "$DIR" && actionlint 2>&1)"; then ok "actionlint"; else bad "actionlint" "$err"; fi
+  # A skill can ship workflow templates that a repo copies in, and actionlint
+  # alone reads only .github/workflows.
+  templates=()
+  while IFS= read -r f; do templates+=("$f"); done < <(cd "$DIR" &&
+    grep -rlE --include='*.yml' --include='*.yaml' '^jobs:' home/.claude/skills 2>/dev/null | sort)
+  for t in ${templates[@]+"${templates[@]}"}; do
+    if err="$(cd "$DIR" && actionlint "$t" 2>&1)"; then ok "actionlint $t"; else bad "actionlint $t" "$err"; fi
+  done
 else
   skip "actionlint (nix develop --command ./test.sh installs it)"
 fi
