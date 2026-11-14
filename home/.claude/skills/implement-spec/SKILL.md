@@ -49,7 +49,7 @@ Tickets that touch a user interface are built through `impeccable` and checked o
 
 9. If a draft PR exists, mark it ready for review. Otherwise, resolve each ticket as the tracker file's "close" or "resolve" section says, and report the integration branch.
 
-10. Clean up every **implementer subagent** worktree with `git worktree remove <path>`, then delete its branch with `git branch -d <helper>`, which succeeds once the integration branch holds the branch's commits.
+10. Clean up every **implementer subagent** worktree with `git worktree remove <path>`, then, from the integration worktree, delete its branch with `git branch -d <helper>`, which succeeds once the integration branch holds the branch's commits.
 
 ## When headless:
 
