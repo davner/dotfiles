@@ -3,6 +3,9 @@
 # so state reaches a file only through what this defines.
 # shellcheck disable=SC2034  # the fixtures here are read by the files that source this
 set -uo pipefail # deliberately no -e: every check runs, then the count decides
+# Run from `git rebase --exec` or a git hook, these point every fixture git
+# command at the caller's repo instead of the fixture's.
+unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE GIT_COMMON_DIR GIT_OBJECT_DIRECTORY
 
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)"
 FAST="${TEST_FAST-}"
