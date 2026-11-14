@@ -26,11 +26,11 @@ local_run
 eq "local-skills.sh exits 0" "0" "$LOCAL_RC"
 eq "a missing impeccable is installed from ~, globally, without hooks" \
   "$LHOME|-y impeccable install --global -y --no-hooks" "$(cat "$LSTUB/npx-calls")"
-# Work-only: the private layer links the vault skills.
+# A consumer flake links the vault skills.
 if [ -e "$LHOME/.claude/skills/vault-a" ]; then
-  bad "a vault skill is left to the work layer" "the core linked it"
+  bad "a vault skill is left to the consumer flake" "the core linked it"
 else
-  ok "a vault skill is left to the work layer"
+  ok "a vault skill is left to the consumer flake"
 fi
 
 local_run

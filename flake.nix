@@ -44,8 +44,8 @@
     }:
     let
       # Every macOS username this repo can build for. This is an attrset, not a
-      # single value, so one checkout serves the work machine and the personal
-      # machine at once - switching between them is a matter of which entry
+      # single value, so one checkout serves several Macs
+      # at once - switching between them is a matter of which entry
       # gets built, not an edit to this file that has to be undone later.
       # bootstrap.sh and rebuild.sh pick the entry matching whoever runs them.
       #
@@ -72,7 +72,7 @@
 
       # darwin-rebuild splits its flake attribute on ".", so a username
       # containing a dot cannot be an attribute name: `#darwinConfigurations
-      # .dan.avner.system` would be read as four path segments. Dots become
+      # .first.last.system` would be read as four path segments. Dots become
       # dashes, and both scripts apply the same substitution when they choose
       # which configuration to build.
       attrFor = user: builtins.replaceStrings [ "." ] [ "-" ] user;
@@ -164,7 +164,7 @@
       };
       homeModules.default = coreModule "homeModules.default" ./home.nix;
 
-      # One configuration per username, e.g. `#danavner` and `#dan-avner`.
+      # One configuration per username, e.g. `#danavner` and `#dna`.
       darwinConfigurations = builtins.listToAttrs (
         map (user: {
           name = attrFor user;

@@ -132,7 +132,7 @@ fixture_copy() { # sets $COPY, a writable copy of flake.nix
   cp "$DIR/flake.nix" "$COPY"
   chmod 644 "$COPY"
 }
-# The path a private layer takes: a flake of its own that imports the core's
+# The path a consumer flake takes: a flake of its own that imports the core's
 # modules, with the core overridden to this working tree.
 CONSUMER_USER="fixture.user"
 fixture_consumer() { # Nix module body -> sets $CONSUMER, a flake importing both core modules

@@ -21,7 +21,7 @@ if require jq; then
     bad "settings.base.json claims none of model, effortLevel, theme" \
       "these would be reverted on every rebuild: $volatile"
   fi
-  # Work-only: the private layer adds the obsidian plugin through a settings fragment.
+  # A consumer flake adds the obsidian plugin through a settings fragment.
   if jq -e '(.extraKnownMarketplaces // {} | has("obsidian-skills"))
       or (.enabledPlugins // {} | has("obsidian@obsidian-skills"))' "$BASE" >/dev/null 2>&1; then
     bad "settings.base.json declares no obsidian plugin" \

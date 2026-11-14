@@ -39,8 +39,6 @@ Each folder under [`home/.claude/skills/`](../home/.claude/skills/) is linked in
 | Stack | [`primereact-v10`](../home/.claude/skills/primereact-v10/SKILL.md) | PrimeReact v10 reference |
 | Stack | [`tailwind-v4`](../home/.claude/skills/tailwind-v4/SKILL.md) | Tailwind CSS v4 reference |
 
-`vault-*` skills may also sit in `~/.claude/skills/` on a work Mac. They come from the private work layer, `~/.dotfiles-work`, and its own rebuild, so they are not listed here.
-
 ## Third-party skills
 
 These are pinned in `flake.lock`, linked into both `~/.claude/skills/` and `~/.agents/skills/`, and bumped by the weekly update PR ([ADR 0009](adr/0009-third-party-skills-are-pinned-flake-inputs.md)).

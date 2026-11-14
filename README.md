@@ -55,13 +55,7 @@ once. Adding or removing a linked file needs `./rebuild.sh`.
 
 `flake.nix` maps each macOS username to what differs per machine: the git
 address and the platform. `./users.sh list` prints them, and `./bootstrap.sh`
-offers to add a missing one.
-
-| macOS username | Flake attribute |
-| --- | --- |
-| `danavner` | `#danavner` |
-| `dan.avner` | `#dan-avner` |
-| `dna` | `#dna` (the Mac mini home server) |
+offers to add a missing one. Each username builds as `#<username>`.
 
 Dots become dashes because `darwin-rebuild` splits `--flake …#attr` on `.`
 ([ADR 0005](docs/adr/0005-dots-become-dashes-in-flake-attributes.md)).
