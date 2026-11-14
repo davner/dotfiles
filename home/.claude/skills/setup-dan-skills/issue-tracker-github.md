@@ -27,31 +27,25 @@ Their colours and descriptions live in `setup-dan-skills/scripts/labels.sh`; re-
 - Tickets are one file per ticket at `<scratch>/<feature-slug>/issues/<NN>-<slug>.md`, numbered from `01`, never a single combined tickets file
 - The TODO list is the open issues labelled `todo`
 
+## Filing an issue
+
+Every issue goes onto the board with its labels and a starting Status, in three calls:
+
+```sh
+url=$(gh issue create --title "<title>" --label <label> [--label <label>...] --body-file <body.md>)
+gh project item-add <number> --owner <owner> --url "$url"
+gh project item-edit <number> --owner <owner> --url "$url" --field Status --value <Status>
+```
+
 ## When a skill says "publish to the issue tracker"
 
-1. Write the spec or ticket files under `<scratch>/<feature-slug>/`, creating the directory if needed. A ticket's blocking edges are a `Blocked by:` line naming ticket numbers and titles; a triage label is a `Status:` line near the top of the file. The spec is never filed.
-2. Once the tickets are approved, file one issue per PR group, in PR order so an earlier issue's number exists for a later one's body:
-
-   ```sh
-   url=$(gh issue create --title "<PR title>" --label <kind> --label ready-for-agent --body-file <body.md>)
-   gh project item-add <number> --owner <owner> --url "$url"
-   gh project item-edit <number> --owner <owner> --url "$url" --field Status --value Ready
-   ```
-
-   The body names the group's ticket files and spells out `Blocked by #N` as text.
+1. Write the spec or ticket files under `<scratch>/<feature-slug>/`, creating the directory if needed. A ticket's blocking edges are a `Blocked by:` line naming ticket numbers and titles. The spec is never filed, and triage lives on the issues as labels.
+2. Once the tickets are approved, file one issue per PR group as "Filing an issue" says, titled with the PR title, labelled with its kind and `ready-for-agent`, in Status Ready. File them in PR order, so an earlier issue's number exists for a later one's body. The body names the group's ticket files and spells out `Blocked by #N` as text.
 3. Write `Tracker: #N` near the top of each ticket file in that group.
 
 ## When a skill says "add to the TODO list"
 
-Work that surfaces mid-session but belongs to no current spec becomes an issue labelled `todo`, in Backlog:
-
-```sh
-url=$(gh issue create --title "<short title>" --label todo --body-file <body.md>)
-gh project item-add <number> --owner <owner> --url "$url"
-gh project item-edit <number> --owner <owner> --url "$url" --field Status --value Backlog
-```
-
-The body carries what a fresh session needs to pick it up:
+Work that surfaces mid-session but belongs to no current spec becomes an issue as "Filing an issue" says, labelled `todo`, in Status Backlog. The body carries what a fresh session needs to pick it up:
 
 ```markdown
 - From: <the session or spec it came out of>
