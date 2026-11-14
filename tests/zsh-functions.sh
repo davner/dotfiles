@@ -76,6 +76,7 @@ if [ -z "$FLOW_MISSING" ]; then
 else
   bad "every skill cc-flow names exists" "no such skill:$FLOW_MISSING"
 fi
+contains "cc-flow lists autopilot" "$FLOW_OUT" "/autopilot"
 # Piped output is what `cc-flow | less` sees; escape codes there print as junk.
 case "$FLOW_OUT" in
   *$'\e'*) bad "cc-flow prints no color into a pipe" "found an escape code" ;;

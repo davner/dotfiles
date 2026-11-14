@@ -65,6 +65,7 @@ cc-flow() {
   printf "$row"  7 Learn   /retro             "Same session, before you clear it"
   printf "\n ${b}Shortcuts${r}\n"
   printf "  %-21s ${c}%-19s${r} %s\n" \
+    "Nobody watching"     /autopilot        "Runs steps 1-7 itself: idea or board item" \
     "Small, clear change" /implement        "Skip 1-3, build it right away" \
     "A bug"               /diagnosing-bugs  "Reproduce, fix, then /code-review" \
     "Context too full"    /handoff          "Summary to start a fresh session"
