@@ -34,6 +34,10 @@ the thing it names; revert one only with the user's explicit word.
 
 ## Rules without an ADR
 
+- The human docs are `README.md` and the pages `docs/README.md` indexes. A
+  package, brew or cask needs a row in `docs/installed.md`, and a new page
+  under `docs/` a line in `docs/README.md`; `tests/docs.sh` checks both, and
+  that every relative link resolves.
 - Never commit `.no-mistakes/` validation evidence to this public repo. It is
   gitignored; if a validation pipeline stages evidence into a branch, drop it
   before merging.
@@ -47,7 +51,7 @@ directory-level link would displace them. `home.nix` discovers the folders, so
 adding a skill is adding its folder - then `git add` it before a rebuild, since
 the flake sees only tracked files and skips an untracked folder silently.
 Full-mode `test.sh` fails on any skill folder the evaluated config does not
-link.
+link, and every run fails on a folder without a row in `docs/claude-code.md`.
 
 Rules (`home/.claude/rules/*.md`) and hooks (every file in
 `home/.claude/hooks/`) are discovered the same way and linked one file at a
@@ -68,7 +72,7 @@ call `impeccable` for UI work. `autopilot`, `setup-dan-skills`, `tailwind-v4`,
 
 ## Installing the skills
 
-`home/AGENTS.md` points here, so keep this heading's name stable.
+`home/AGENTS.md`, `README.md` and `docs/` link here, so keep this heading's name stable.
 
 Third-party skills come from the flake. Each source repo is a `flake = false`
 input in `flake.nix`, and the `thirdPartySkills` attrset in `home.nix` maps a

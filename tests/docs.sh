@@ -84,4 +84,18 @@ else
   bad "every relative link in README.md and docs/ resolves" "${broken//$'\n'/ | }"
 fi
 
+section "docs index"
+# GitHub shows docs/README.md under the folder listing, so a page it leaves out
+# is one nobody browsing finds.
+unindexed=""
+for p in "${pages[@]}"; do
+  case "$p" in README.md | docs/README.md) continue ;; esac
+  grep -qF "](${p#docs/})" "$DIR/docs/README.md" || unindexed+="$p "
+done
+if [ -z "$unindexed" ]; then
+  ok "docs/README.md links every page under docs/"
+else
+  bad "docs/README.md links every page under docs/" "not linked: $unindexed"
+fi
+
 finish
