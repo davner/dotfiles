@@ -130,7 +130,7 @@ main() {
   fi
   local seen=" " name
   for f in "${files[@]}"; do
-    [ -f "$f" ] || die 2 "no such file: $f"
+    [ -f "$f" ] || die 2 "not a file: $f"
     name="$(basename "$f" .md)"
     case "$seen" in
       *" $name "*) die 2 "two files would both write $name-light.png; preview them in separate runs" ;;
