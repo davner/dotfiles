@@ -9,6 +9,7 @@ machine's configuration, not a package anyone installs a version of.
 
 ## 2026-11-14
 
+- **Docs** Remove mentions of the work setup ([`57b760e`](https://github.com/davner/dotfiles/commit/57b760ed38e657345d59a3933404e528d76fe794))
 - **Fixed** implement-spec: Check the tip instead of each commit via rebase ([`921c1c6`](https://github.com/davner/dotfiles/commit/921c1c66ae57cfe9474abdff35f14f3b4101066d))
 - **Fixed** tests: Clear GIT_DIR so a run from rebase --exec stays hermetic ([`ecec78a`](https://github.com/davner/dotfiles/commit/ecec78ab054f3ec94d62846aa8fba304a524fefd))
 - **Fixed** implement-spec: Clear GIT_DIR in the per-commit check ([`23700ea`](https://github.com/davner/dotfiles/commit/23700eac705575d97f381da5a131d2be8ccbf84a))
