@@ -1,7 +1,7 @@
 # The Claude workflow
 
 From an idea to merged work, one skill per step, with you at the keyboard or
-with `/autopilot` running it alone. In a shell, `cc-flow` prints this page as a
+with `/autopilot` running it alone. In a shell, `cc-flow` prints the steps as a
 short table.
 
 ## Once per repo

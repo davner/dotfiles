@@ -8,6 +8,9 @@ The settings that tell Claude Code when to run them are merged from [`settings.b
 
 Each folder under [`home/.claude/skills/`](../home/.claude/skills/) is linked into `~/.claude/skills/` on its own. [The Claude workflow](workflow.md) shows which one to run at each step. `./test.sh` fails when a folder has no row here, or a row has no folder.
 
+> [!IMPORTANT]
+> `git add` a new skill folder before `./rebuild.sh`. The flake sees only tracked files, so an untracked folder is skipped without a word.
+
 | Stage | Skill | What it does |
 | --- | --- | --- |
 | Setup | [`setup-dan-skills`](../home/.claude/skills/setup-dan-skills/SKILL.md) | Configures a repo once: tracker (GitHub, Shortcut or Jira) and where docs go |
