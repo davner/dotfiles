@@ -31,7 +31,7 @@ Break the work into **tracer bullet** tickets.
 - Each slice cuts a narrow but COMPLETE path through every layer (schema, API, UI, tests): vertical, NOT a horizontal slice of one layer
 - A completed slice is demoable or verifiable on its own
 - Each slice is sized to fit in a single fresh context window
-- Any prefactoring should be done first
+- Any prefactoring should be done first, including a new file several parallel tickets would each add to (a test file, a fixture): one first ticket creates it with a marked section per ticket
 
 </vertical-slice-rules>
 
