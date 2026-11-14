@@ -17,22 +17,22 @@ if [ -z "$mismatched" ]; then
 else
   bad "every skill's name matches its folder" "$mismatched"
 fi
-# The README table is how a human learns a skill exists, and nothing else
-# notices when it stops matching what is on disk.
-in_readme="$(sed -n '/^### Skills$/,/^### /p' "$DIR/README.md" |
+# The table on the Claude page is how a human learns a skill exists, and
+# nothing else notices when it stops matching what is on disk.
+in_page="$(sed -n '/^## Skills$/,/^## /p' "$DIR/docs/claude-code.md" 2>/dev/null |
   grep -oE 'home/\.claude/skills/[a-z0-9-]+/SKILL\.md' |
   sed -E 's|home/\.claude/skills/([^/]+)/SKILL\.md|\1|' | sort -u)"
-missing="$(comm -23 <(echo "$on_disk") <(echo "$in_readme") | tr '\n' ' ')"
-phantom="$(comm -13 <(echo "$on_disk") <(echo "$in_readme") | tr '\n' ' ')"
+missing="$(comm -23 <(echo "$on_disk") <(echo "$in_page") | tr '\n' ' ')"
+phantom="$(comm -13 <(echo "$on_disk") <(echo "$in_page") | tr '\n' ' ')"
 if [ -z "${missing// /}" ]; then
-  ok "README documents every skill"
+  ok "docs/claude-code.md documents every skill"
 else
-  bad "README documents every skill" "on disk but not in the table: $missing"
+  bad "docs/claude-code.md documents every skill" "on disk but not in the table: $missing"
 fi
 if [ -z "${phantom// /}" ]; then
-  ok "the README skill table has no phantom rows"
+  ok "the docs/claude-code.md skill table has no phantom rows"
 else
-  bad "the README skill table has no phantom rows" "in the table but not on disk: $phantom"
+  bad "the docs/claude-code.md skill table has no phantom rows" "in the table but not on disk: $phantom"
 fi
 
 # Autopilot opens each skill by its installed path with nobody there to answer,
