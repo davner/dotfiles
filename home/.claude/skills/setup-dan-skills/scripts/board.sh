@@ -1,4 +1,10 @@
 #!/usr/bin/env bash
+# Gives the GitHub repo in the working directory a project board, copied from
+# the user's "dan-skills template" project, creating the template first if missing.
+# Safe to re-run: an existing template or board is reused, never changed.
+# Prints template=, board= and url= lines, then any manual steps on GitHub.
+
+# usage: board.sh
 set -euo pipefail
 
 TEMPLATE_TITLE="dan-skills template"
