@@ -35,9 +35,10 @@ cc-push() {
     echo "claude.allowPush=$want in $(git rev-parse --show-toplevel)"
 }
 
-# The ticket workflow from the README as a table, for when you forget the next
-# step. Plain printf so it costs no tokens. Every /name in it is checked against
-# home/.claude/skills by test.sh, so a renamed skill fails a test here too.
+# The ticket workflow from docs/workflow.md as a table, for when you forget
+# the next step. Plain printf so it costs no tokens. Every /name in it is
+# checked against home/.claude/skills by test.sh, so a renamed skill fails a
+# test here too.
 cc-flow() {
   local b= d= c= r=
   # Color only on a terminal, so `cc-flow | less` or a pipe gets clean text.
@@ -46,7 +47,7 @@ cc-flow() {
   fi
   local row="  %-3s %-8s ${c}%-19s${r} %s\n"
   local note="  %-3s %-8s %-19s ${d}%s${r}\n"
-  printf "\n ${b}Ticket workflow${r}  ${d}(full version: README.md, Workflow)${r}\n\n"
+  printf "\n ${b}Ticket workflow${r}  ${d}(full version: docs/workflow.md)${r}\n\n"
   printf "${b}  %-3s %-8s %-19s %s${r}\n" "#" "Stage" "Run" "What it does"
   printf "  ${d}%s${r}\n" "--- -------- ------------------- ------------------------------------------"
   printf "$row"  0 Setup   /setup-dan-skills  "Once per repo: tracker and where docs go"
@@ -65,7 +66,7 @@ cc-flow() {
   printf "$row"  7 Learn   /retro             "Same session, before you clear it"
   printf "\n ${b}Shortcuts${r}\n"
   printf "  %-21s ${c}%-19s${r} %s\n" \
-    "Nobody watching"     /autopilot        "Runs steps 1-7 itself: idea or board item" \
+    "Nobody watching"     /autopilot        "Idea or board item to reviewed code, alone" \
     "Small, clear change" /implement        "Skip 1-3, build it right away" \
     "A bug"               /diagnosing-bugs  "Reproduce, fix, then /code-review" \
     "Context too full"    /handoff          "Summary to start a fresh session"

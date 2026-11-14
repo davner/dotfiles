@@ -68,7 +68,9 @@ fi
 # renamed or removed while the table still tells you to type its old name.
 FLOW_OUT="$(zsh -c "source '$FN'; cc-flow" 2>&1)"
 FLOW_MISSING=""
-for name in $(printf '%s\n' "$FLOW_OUT" | grep -oE '/[a-z][a-z-]+' | sort -u); do
+# A skill name follows a space or starts the line; a path like
+# docs/workflow.md would otherwise read as the skill /workflow.
+for name in $(printf '%s\n' "$FLOW_OUT" | grep -oE '(^|[[:space:]])/[a-z][a-z-]+' | sed 's/^[[:space:]]*//' | sort -u); do
   [ -f "$DIR/home/.claude/skills${name}/SKILL.md" ] || FLOW_MISSING="$FLOW_MISSING $name"
 done
 if [ -z "$FLOW_MISSING" ]; then
@@ -77,6 +79,14 @@ else
   bad "every skill cc-flow names exists" "no such skill:$FLOW_MISSING"
 fi
 contains "cc-flow lists autopilot" "$FLOW_OUT" "/autopilot"
+# The pointer is how a forgotten step gets looked up, so it must name a page
+# that exists.
+if [[ $FLOW_OUT == *docs/workflow.md* && -f "$DIR/docs/workflow.md" ]]; then
+  ok "cc-flow points at docs/workflow.md, which exists"
+else
+  bad "cc-flow points at docs/workflow.md, which exists" \
+    "named: $(printf '%s\n' "$FLOW_OUT" | grep -o 'full version: [^)]*')"
+fi
 # Piped output is what `cc-flow | less` sees; escape codes there print as junk.
 case "$FLOW_OUT" in
   *$'\e'*) bad "cc-flow prints no color into a pipe" "found an escape code" ;;
