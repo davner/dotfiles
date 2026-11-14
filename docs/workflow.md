@@ -16,8 +16,9 @@ whether the repo ships releases.
 In a shared repo the glossary and ADRs are committed for everyone, and the
 tracker file stays in `~/.claude/repos/<repo>/`, out of the repo. GitHub is
 offered only for a repo nobody else commits to. Its scripts set up the labels
-and a board, and a repo that ships releases gets towncrier, which builds the
-changelog from one small file per PR.
+and a board copied from a template board. A repo that ships releases gets
+towncrier, which builds the changelog from one small file per PR and releases
+through a PR. Any other repo gets no changelog.
 
 ## The flow
 
@@ -55,9 +56,10 @@ flowchart TD
    `/to-spec` writes where you are going: the problem, the solution, user
    stories, decisions, and what is out of scope. `/to-tickets` cuts it into
    thin slices, each with its blockers and its first failing test, grouped into
-   the fewest PRs. Both save locally, and the tracker file says what gets filed
-   where. Keep steps 1 to 3 in one conversation and clear it only after
-   `/to-tickets`.
+   the fewest PRs. Both save locally. With a GitHub tracker, one issue per PR
+   goes on the board. With Shortcut or Jira, you get one ticket per PR on a
+   page with Copy buttons when the work is done, and you file them. Keep steps
+   1 to 3 in one conversation and clear it only after `/to-tickets`.
 4. **Build.** `/implement` takes one ticket per fresh conversation, blockers
    first. `/implement-spec` builds the whole spec on one integration branch,
    with ready tickets in parallel. Every path writes the tests first (`tdd`).

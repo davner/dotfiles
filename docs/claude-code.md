@@ -6,7 +6,7 @@ The settings that tell Claude Code when to run them are merged from [`settings.b
 
 ## Skills
 
-Each folder under [`home/.claude/skills/`](../home/.claude/skills/) is linked into `~/.claude/skills/` on its own. `./test.sh` fails when a folder has no row here, or a row has no folder.
+Each folder under [`home/.claude/skills/`](../home/.claude/skills/) is linked into `~/.claude/skills/` on its own. [The Claude workflow](workflow.md) shows which one to run at each step. `./test.sh` fails when a folder has no row here, or a row has no folder.
 
 | Stage | Skill | What it does |
 | --- | --- | --- |
@@ -36,7 +36,7 @@ Each folder under [`home/.claude/skills/`](../home/.claude/skills/) is linked in
 | Stack | [`primereact-v10`](../home/.claude/skills/primereact-v10/SKILL.md) | PrimeReact v10 reference |
 | Stack | [`tailwind-v4`](../home/.claude/skills/tailwind-v4/SKILL.md) | Tailwind CSS v4 reference |
 
-`vault-*` skills and `synced` may also sit in `~/.claude/skills/` on a work Mac. They come from the private work layer, `~/.dotfiles-work`, and its own rebuild, so they are not listed here.
+`vault-*` skills may also sit in `~/.claude/skills/` on a work Mac. They come from the private work layer, `~/.dotfiles-work`, and its own rebuild, so they are not listed here.
 
 ## Third-party skills
 
