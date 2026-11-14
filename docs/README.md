@@ -63,6 +63,7 @@ each with a light and a dark version.
 | `home/json-merge.sh` | Run by every rebuild, not linked: merges a base JSON file into a live one an app also writes, for Claude's and VS Code's settings |
 | `home/.config/zsh/functions.zsh` | Shell functions: `cc`, `cc-push` and `cc-flow` |
 | `tests/` | The test suite, one file per module |
+| `preview-docs.sh` | Screenshots Markdown as GitHub renders it, light and dark, to check a docs change before pushing |
 
 ## Tests and CI
 

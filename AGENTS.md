@@ -37,6 +37,8 @@ the thing it names; revert one only with the user's explicit word.
 - The human docs are `README.md` and the pages `docs/README.md` indexes. A
   package, brew or cask needs a row in `docs/installed.md`, and a new page
   under `docs/` a line in `docs/README.md`; `tests/docs.sh` checks both.
+  Check how a changed page looks with `./preview-docs.sh FILE.md` and read the
+  light and dark PNGs it prints.
 - Never commit `.no-mistakes/` validation evidence to this public repo. It is
   gitignored; if a validation pipeline stages evidence into a branch, drop it
   before merging.
