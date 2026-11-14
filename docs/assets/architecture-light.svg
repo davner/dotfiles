@@ -1,0 +1,65 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-2 0 884 584" width="884" height="584" role="img" aria-labelledby="title desc">
+  <title id="title">How it fits together</title>
+  <desc id="desc">flake.nix, configuration.nix, home.nix and home/ feed nix-darwin and home-manager. nix-darwin writes macOS defaults and Homebrew apps and runs home-manager, which installs packages, the shell and git, and links files into $HOME and ~/.claude: skills, hooks, rules, settings.json and CLAUDE.md.</desc>
+  <style>
+    .sans { font-family: -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, Helvetica, Arial, sans-serif; }
+    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, &quot;Liberation Mono&quot;, monospace; }
+    .t { fill: #1d1d1f; }
+    .m { fill: #6e6e73; }
+    .a { fill: #0071e3; }
+  </style>
+  <defs><marker id="h" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="8" markerHeight="8" markerUnits="userSpaceOnUse" orient="auto"><path d="M1 1 L7 4 L1 7" fill="none" stroke="#a1a1a6" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker><marker id="ha" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="8" markerHeight="8" markerUnits="userSpaceOnUse" orient="auto"><path d="M1 1 L7 4 L1 7" fill="none" stroke="#0071e3" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker></defs>
+  <text x="2" y="22" class="sans m" font-size="13" font-weight="600">This repo</text>
+  <text x="322" y="22" class="sans m" font-size="13" font-weight="600">Applied by</text>
+  <text x="642" y="22" class="sans m" font-size="13" font-weight="600">Lands on the Mac</text>
+  <rect x="0" y="44" width="240" height="472" rx="12" fill="#f5f5f7" stroke="#d2d2d7" stroke-width="1"/>
+  <text x="20" y="99" class="mono t" font-size="14" font-weight="400">flake.nix</text>
+  <text x="20" y="119" class="sans m" font-size="13">Inputs, one config per user</text>
+  <text x="20" y="217" class="mono t" font-size="14" font-weight="400">configuration.nix</text>
+  <text x="20" y="237" class="sans m" font-size="13">macOS defaults, Homebrew</text>
+  <line x1="20" y1="162" x2="220" y2="162" stroke="#d2d2d7" stroke-width="1"/>
+  <text x="20" y="335" class="mono t" font-size="14" font-weight="400">home.nix</text>
+  <text x="20" y="355" class="sans m" font-size="13">Packages, shell, what links</text>
+  <line x1="20" y1="280" x2="220" y2="280" stroke="#d2d2d7" stroke-width="1"/>
+  <text x="20" y="453" class="mono t" font-size="14" font-weight="400">home/</text>
+  <text x="20" y="473" class="sans m" font-size="13">Dotfiles, skills, hooks, rules</text>
+  <line x1="20" y1="398" x2="220" y2="398" stroke="#d2d2d7" stroke-width="1"/>
+  <rect x="320" y="44" width="240" height="200" rx="12" fill="#f5f5f7" stroke="#d2d2d7" stroke-width="1"/>
+  <text x="340" y="80" class="sans t" font-size="17" font-weight="600">nix-darwin</text>
+  <text x="340" y="118" class="sans t" font-size="14" font-weight="500">macOS defaults</text>
+  <text x="340" y="138" class="sans m" font-size="13">Dock, Finder, keys, trackpad</text>
+  <text x="340" y="176" class="sans t" font-size="14" font-weight="500">Homebrew</text>
+  <text x="340" y="196" class="sans m" font-size="13">WezTerm, Claude Code, openmotif</text>
+  <rect x="320" y="276" width="240" height="240" rx="12" fill="#f5f5f7" stroke="#d2d2d7" stroke-width="1"/>
+  <text x="340" y="312" class="sans t" font-size="17" font-weight="600">home-manager</text>
+  <text x="340" y="350" class="sans t" font-size="14" font-weight="500">Packages</text>
+  <text x="340" y="370" class="sans m" font-size="13">ripgrep, fd, fzf, neovim, uv, …</text>
+  <text x="340" y="406" class="sans t" font-size="14" font-weight="500">Shell and git</text>
+  <text x="340" y="426" class="sans m" font-size="13">zsh, starship, direnv, git, gh</text>
+  <text x="340" y="462" class="sans t" font-size="14" font-weight="500">Links and merges</text>
+  <text x="340" y="482" class="sans m" font-size="13">Live links into home/, settings</text>
+  <path d="M360 245 V273" fill="none" stroke="#a1a1a6" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#h)"/>
+  <text x="372" y="264" class="sans m" font-size="12">runs it as a module</text>
+  <rect x="640" y="44" width="240" height="200" rx="12" fill="#f5f5f7" stroke="#d2d2d7" stroke-width="1"/>
+  <text x="660" y="80" class="sans t" font-size="17" font-weight="600">macOS</text>
+  <text x="660" y="118" class="sans t" font-size="14" font-weight="500">System settings</text>
+  <text x="660" y="138" class="sans m" font-size="13">Written on every switch</text>
+  <text x="660" y="176" class="sans t" font-size="14" font-weight="500">Homebrew apps</text>
+  <text x="660" y="196" class="sans m" font-size="13">Upgraded, the rest zapped</text>
+  <rect x="640" y="276" width="240" height="112" rx="12" fill="#f5f5f7" stroke="#d2d2d7" stroke-width="1"/>
+  <text x="660" y="312" class="mono t" font-size="16" font-weight="600">$HOME</text>
+  <text x="660" y="342" class="sans m" font-size="13">zsh, WezTerm and yt-dlp config</text>
+  <text x="660" y="362" class="sans m" font-size="13">VS Code settings, CLI tools</text>
+  <rect x="640" y="404" width="240" height="112" rx="12" fill="#eef5fd" stroke="#0071e3" stroke-width="1"/>
+  <text x="660" y="440" class="mono a" font-size="16" font-weight="600">~/.claude</text>
+  <text x="660" y="470" class="sans t" font-size="13">Skills, hooks, rules</text>
+  <text x="660" y="490" class="sans m" font-size="13">settings.json, CLAUDE.md</text>
+  <path d="M241 103 H317" fill="none" stroke="#a1a1a6" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#h)"/>
+  <path d="M241 221 H270 Q280 221 280 211 V186 Q280 176 290 176 H317" fill="none" stroke="#a1a1a6" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#h)"/>
+  <path d="M241 339 H270 Q280 339 280 349 V362 Q280 372 290 372 H317" fill="none" stroke="#a1a1a6" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#h)"/>
+  <path d="M241 457 H270 Q280 457 280 447 V430 Q280 420 290 420 H317" fill="none" stroke="#a1a1a6" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#h)"/>
+  <path d="M561 144 H637" fill="none" stroke="#a1a1a6" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#h)"/>
+  <path d="M561 360 H590 Q600 360 600 350 V342 Q600 332 610 332 H637" fill="none" stroke="#a1a1a6" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#h)"/>
+  <path d="M561 428 H590 Q600 428 600 438 V450 Q600 460 610 460 H637" fill="none" stroke="#0071e3" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#ha)"/>
+  <text x="2" y="566" class="sans m" font-size="13"><tspan class="mono t">./rebuild.sh</tspan> switches to the flake: nix-darwin sets up the Mac, then home-manager sets up your home folder.</text>
+</svg>
