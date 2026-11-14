@@ -35,7 +35,7 @@ Before opening the first, say in the conversation: "This run is headless." Then 
 ## The order
 
 1. Grill: `grill-with-docs` when the repo has domain docs (a glossary, an ADR folder, or a tracker or domain file that names them), else `grill-me`.
-2. `to-spec`, then `to-tickets`. `.scratch/` paths resolve to the main checkout: `dirname "$(git rev-parse --path-format=absolute --git-common-dir)"`.
+2. `to-spec`, then `to-tickets`, told in a board run which item the run took, for the tracker file's publish section to reuse. `.scratch/` paths resolve to the main checkout: `dirname "$(git rev-parse --path-format=absolute --git-common-dir)"`.
 3. **Integration worktree.** Now the feature slug is known. `git fetch origin`, then `git worktree add -b autopilot-<feature-slug> <main checkout>/.claude/worktrees/autopilot-<feature-slug> origin/main`, with the main checkout's absolute path. When `git check-ignore -q .claude/worktrees/x` fails, add `.claude/worktrees/` to the main checkout's `.git/info/exclude` (`git rev-parse --git-path info/exclude`).
 4. `implement-spec` in that worktree, told that `autopilot-<feature-slug>` is its integration branch. Its step 7 is the run's one code review, given the run's spec path.
 
@@ -62,7 +62,7 @@ A rung a hook or permission refuses drops to the next rung, and the report says 
 
 The decision log stays in `.scratch/`; the PR body carries only what the repo's PR rules ask.
 
-**Park.** Park the item as the tracker file's "park an item" section says, with the parked question and its numbered options. Before `to-spec` publishes anything, an idea run has no item: the report carries the question. Leave the branch as it is.
+**Park.** Park the run's item, in a board run the one Board took, as the tracker file's "park an item" section says, with the parked question and its numbered options. Before `to-spec` publishes anything, an idea run has no item: the report carries the question. Leave the branch as it is.
 
 Then open `retro`. Put its suggestions in the report and apply none.
 

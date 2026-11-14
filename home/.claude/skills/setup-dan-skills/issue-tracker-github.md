@@ -41,6 +41,8 @@ gh project item-edit <number> --owner <owner> --url "$url" --field Status --valu
 
 1. Write the spec or ticket files under `<scratch>/<feature-slug>/`, creating the directory if needed. A ticket's blocking edges are a `Blocked by:` line naming ticket numbers and titles. The spec is never filed, and triage lives on the issues as labels.
 2. Once the tickets are approved, file one issue per PR group as "Filing an issue" says, titled with the PR title, labelled with its kind and `ready-for-agent`, in Status Ready. File them in PR order, so an earlier issue's number exists for a later one's body. The body names the group's ticket files and spells out `Blocked by #N` as text.
+
+   When the work came from a board issue `#N`, the first PR group reuses it instead of filing a new one: `gh issue edit N --body-file <body.md>`, keeping its labels and Status. Only the other groups are filed.
 3. Write `Tracker: #N` near the top of each ticket file in that group, and tell the user the issue numbers.
 4. The recap page lists each PR's issue `#N`: nothing is left for the user to file.
 
