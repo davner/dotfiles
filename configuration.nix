@@ -69,7 +69,7 @@ in
       NSAutomaticCapitalizationEnabled = true;
       NSAutomaticDashSubstitutionEnabled = false;
       NSWindowShouldDragOnGesture = true; # allow dragging windows with trackpad
-      "com.apple.swipescrolldirection" = false; # natural scrolling
+      "com.apple.swipescrolldirection" = false; # natural scrolling off
       AppleWindowTabbingMode = "always"; # prefer tabs over new windows
     };
     WindowManager.AutoHide = true;
