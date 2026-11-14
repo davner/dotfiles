@@ -53,10 +53,11 @@ Count attempts per failing check, keyed by the check and its first error line, a
 
 Go as far as the repo allows. The switches are `git config --get claude.allowPush` and `claude.allowPrs`, which `guard-bash.sh` enforces.
 
-1. **Merge** when the tracker file's "Agent PRs" section says the agent merges its own PRs and both switches are `true`. Fix every review finding before arming auto-merge.
-2. Else an **open PR** when both switches are on.
-3. Else a **pushed branch** when `claude.allowPush` is on.
-4. Else the **local branch**, with the recap page `implement-spec` made.
+1. **Push to main** when the tracker file's "Agent PRs" section says the agent pushes to main and `claude.allowPush` is `true`. From the integration worktree, `git fetch origin`, then `git push origin <integration branch>:main`, which git refuses unless it fast-forwards `main`. When it refuses because `origin/main` moved, `git rebase origin/main`, rerun the full check suite, and push again.
+2. Else **merge** when the tracker file's "Agent PRs" section says the agent merges its own PRs and both switches are `true`. Fix every review finding before arming auto-merge.
+3. Else an **open PR** when both switches are on.
+4. Else a **pushed branch** when `claude.allowPush` is on.
+5. Else the **local branch**, with the recap page `implement-spec` made.
 
 A rung a hook or permission refuses drops to the next rung, and the report says which was refused.
 

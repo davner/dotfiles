@@ -35,7 +35,7 @@ flowchart TD
     plan --> build["/implement-spec<br/>or /implement<br/>per ticket"]
     impl --> review["code-review"]
     build --> review
-    review --> ship["merge, PR, pushed branch<br/>or local branch"]
+    review --> ship["push to main, merge, PR,<br/>pushed branch or local branch"]
     ship --> retro["/retro"]
 ```
 
@@ -97,11 +97,13 @@ It always writes a spec and tickets, and builds them with `/implement-spec` on
 a branch named `autopilot-<feature>` in its own worktree. Then it goes as far
 as the repo's switches allow:
 
-1. Merge, when the tracker file says agents merge their own PRs and both
+1. A fast-forward push straight to `main`, when the tracker file says agents
+   push to main and `claude.allowPush` is `true`.
+2. Merge, when the tracker file says agents merge their own PRs and both
    switches are on.
-2. An open PR, when `claude.allowPush` and `claude.allowPrs` are both `true`.
-3. A pushed branch, when only `claude.allowPush` is on. `cc-push` flips it.
-4. The local branch, with a recap page, otherwise.
+3. An open PR, when `claude.allowPush` and `claude.allowPrs` are both `true`.
+4. A pushed branch, when only `claude.allowPush` is on. `cc-push` flips it.
+5. The local branch, with a recap page, otherwise.
 
 Last, it runs `/retro` and puts the suggestions in its report without applying
 any.

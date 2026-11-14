@@ -57,4 +57,6 @@ The oldest ticket file under `.scratch/*/issues/` with `Status: ready-for-agent`
 
 ## Agent PRs
 
-None: the user opens PRs. A PR body's first line names its ticket, `Shortcut: sc-1234`, a link when the tracker URL is known.
+The agent pushes its finished work straight to `main`, with no PR: fast-forward only, after the full check suite passes. It still hands over one paste-ready ticket per PR-sized group, as "publish to the issue tracker" says.
+
+When the user opens a PR, its body's first line names its ticket, `Shortcut: sc-1234`, a link when the tracker URL is known.
