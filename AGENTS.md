@@ -60,8 +60,7 @@ executable tracked file.
 
 `to-spec`, `to-tickets` and
 `implement-spec` point at `setup-dan-skills`, and `code-review` runs without it;
-`setup-dan-skills` offers GitHub as a tracker only for an unshared repo, and
-`tests/setup-dan-skills.sh` drives its `scripts/` against a fake `gh`;
+`setup-dan-skills` offers GitHub as a tracker only for an unshared repo;
 every skill that reads the glossary honors the paths in `docs/agents/domain.md`; `pr` returns only a paste-ready title and body, after proving no AI is credited in the commits or body; `prototype`,
 `code-review`, `implement`, `implement-spec`, `retro` and `setup-dan-skills`
 call `impeccable` for UI work. `autopilot`, `setup-dan-skills`, `tailwind-v4`,

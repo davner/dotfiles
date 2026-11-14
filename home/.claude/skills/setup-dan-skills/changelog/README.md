@@ -22,8 +22,8 @@ Setup replaces every occurrence before writing the file.
 | `towncrier/release.yml` | `.github/workflows/release.yml` | `__DEFAULT_BRANCH__` |
 
 Setup also creates an empty `changes/.gitkeep`, so the fragment folder exists
-before the first fragment. A fragment is `changes/<issue#>.<type>.md`, with type
-one of `breaking`, `feat`, `fix`, `perf`, `docs`, `chore`.
+before the first fragment. A fragment is `changes/<issue#>.<type>.md`, its type
+one of the `[[tool.towncrier.type]]` directories in `towncrier/towncrier.toml`.
 
 `CHANGELOG.md` needs the line `<!-- towncrier release notes start -->`; each
 release is written below it. With no `CHANGELOG.md`, setup writes

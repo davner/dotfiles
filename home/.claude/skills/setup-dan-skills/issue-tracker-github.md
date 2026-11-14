@@ -105,15 +105,9 @@ Set `Status: done` in the ticket file. The issue closes when its PR merges, thro
 - Agents open PRs: <yes | no>. A PR's body starts with `Closes #N`; move the issue to In review when it opens.
 - Agents merge their own PRs once CI passes: <yes: `gh pr merge --auto --squash` after every review finding is fixed | no: the user merges | no: the repo has no CI, and auto-merge needs it>. A merge squashes to the PR title, so the title is the Conventional Commit subject.
 <Releases, when the repo ships them:>
-- Each PR adds a changelog fragment `changes/<issue#>.<type>.md`, type one of `breaking`, `feat`, `fix`, `perf`, `docs`, `chore`, or carries the `skip-changelog` label.
+- Each PR adds a changelog fragment `changes/<issue#>.<type>.md`, its type one of the `[[tool.towncrier.type]]` directories in `towncrier.toml`, or carries the `skip-changelog` label.
 
 ### Releasing
 
-When asked to release version `<version>`:
-
-1. `git fetch origin`, then branch `release-v<version>` from the default branch.
-2. Run `uvx towncrier build --yes --version <version>` and commit the result as `chore(release): v<version>`, the branch's one commit.
-3. Open a PR with that title, labelled `skip-changelog`; when agents open no PRs, hand the branch to the user.
-
-Once it merges, the release workflow creates the tag and GitHub release `v<version>`. Nothing is pushed to the default branch by hand.
+When asked to release a version, follow "Releasing" in `~/.claude/skills/setup-dan-skills/changelog/README.md`. When agents open no PRs, stop at its PR step and hand the branch to the user.
 <end Releases>
