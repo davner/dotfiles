@@ -17,7 +17,7 @@ Every `gh project` command below takes `<number> --owner <owner>`.
 - Kind, the Conventional Commit type of the PR that closes it: `feat`, `fix`, `docs`, `refactor`, `perf`, `test`, `chore`.
 - Other: `todo` (a TODO item), `breaking`, `dependencies`, `skip-changelog` (a PR that needs no changelog fragment), `duplicate`.
 
-The set and its colours live in `setup-dan-skills/scripts/labels.sh`; re-run it to restore them.
+Their colours and descriptions live in `setup-dan-skills/scripts/labels.sh`; re-run it to restore the set.
 
 ## Locations
 

@@ -5,7 +5,8 @@
 # usage: labels.sh
 set -euo pipefail
 
-# name|colour|description. The only copy of the set; the tracker file names the families.
+# name|colour|description. issue-tracker-github.md lists the same names for the agents
+# that apply them, so a label added or renamed here changes there too.
 LABELS=(
   "needs-triage|ededed|Waiting for the maintainer to evaluate"
   "needs-info|d876e3|Waiting on the reporter for more information"

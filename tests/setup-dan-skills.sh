@@ -184,6 +184,12 @@ gh_run "$LABELS"
 eq "bug beside an existing fix: bug is not renamed" "" "$(calls_to label edit)"
 contains "bug beside an existing fix: it is reported" "$OUT" "kept bug: fix already exists"
 
+missing=""
+while read -r name; do
+  grep -Fq -- "\`$name\`" "$SDS/../issue-tracker-github.md" || missing+=" $name"
+done <<<"$LABELS_SET"
+eq "the GitHub tracker template names every label in the set" "" "$missing"
+
 for failing in "repo view" "label list" "label edit" "issue list" "pr list" "label delete" "label create"; do
   labels_repo "$LABELS_DEFAULTS"
   GH_FAIL="$failing" gh_run "$LABELS"
