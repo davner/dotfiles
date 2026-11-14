@@ -31,8 +31,8 @@ Before opening the first, say in the conversation: "This run is headless." Then 
 
 1. Grill: `grill-with-docs` when the repo has domain docs (a glossary, an ADR folder, or a tracker or domain file that names them), else `grill-me`.
 2. `to-spec`, then `to-tickets`. `.scratch/` paths resolve to the main checkout: `dirname "$(git rev-parse --path-format=absolute --git-common-dir)"`.
-3. **Integration worktree.** Now the feature slug is known. `git fetch origin`, then `git worktree add -b autopilot/<feature-slug> <main checkout>/.claude/worktrees/autopilot-<feature-slug> origin/main`, with the main checkout's absolute path. When `git check-ignore -q .claude/worktrees/x` fails, add `.claude/worktrees/` to the main checkout's `.git/info/exclude` (`git rev-parse --git-path info/exclude`).
-4. `implement-spec` in that worktree, told that `autopilot/<feature-slug>` is its integration branch. Its step 7 is the run's one code review, given the run's spec path.
+3. **Integration worktree.** Now the feature slug is known. `git fetch origin`, then `git worktree add -b autopilot-<feature-slug> <main checkout>/.claude/worktrees/autopilot-<feature-slug> origin/main`, with the main checkout's absolute path. When `git check-ignore -q .claude/worktrees/x` fails, add `.claude/worktrees/` to the main checkout's `.git/info/exclude` (`git rev-parse --git-path info/exclude`).
+4. `implement-spec` in that worktree, told that `autopilot-<feature-slug>` is its integration branch. Its step 7 is the run's one code review, given the run's spec path.
 
 A park at any step ends the run at **Park** below.
 
