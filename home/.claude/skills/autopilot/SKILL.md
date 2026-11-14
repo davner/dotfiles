@@ -24,9 +24,13 @@ Before opening the first, say in the conversation: "This run is headless." Then 
 
 1. **Probe.** Make and remove a temporary directory in one Bash call (`d="$(mktemp -d)" && rmdir "$d"`). If it raises a permission prompt or is refused, stop: tell the user to restart in bypass or auto mode.
 2. **Tracker.** Find the tracker file. With none, use the paste-ready `.scratch/` layout `setup-dan-skills` writes by default (its `issue-tracker.md` with every recommended answer), and the report says so. For `board`, stop and report that the repo has no tracker file.
-3. **Prune.** Clear what merged runs left behind, in the main checkout. Skip this step when `gh` is missing or `origin` is not on GitHub. Run `git fetch --prune`, then take each local branch `autopilot-*` whose upstream is gone (`git for-each-ref --format='%(refname:short) %(upstream:track)' 'refs/heads/autopilot-*'` prints `[gone]`) and whose PR is merged (`gh pr view <branch> --json state --jq .state` prints `MERGED`). Any other branch stays, whatever the reason.
+3. **Prune.** Clear what merged runs left behind, in the main checkout. Skip this step when the repo has no `origin`. Run `git fetch --prune`, then take each local branch `autopilot-*` that has landed, in either of two ways:
+   - **Pushed to main**: its tip is on `origin/main` (`git merge-base --is-ancestor <branch> origin/main` exits 0) and it has moved since it was created (`git reflog show --format=%H <branch>` lists more than one line). A run that has not committed yet also sits on `origin/main`, and keeps its branch by this second test.
+   - **PR merged**, when `gh` is installed and `origin` is on GitHub: its upstream is gone (`git for-each-ref --format='%(refname:short) %(upstream:track)' 'refs/heads/autopilot-*'` prints `[gone]`) and its PR is merged (`gh pr view <branch> --json state --jq .state` prints `MERGED`).
+
+   Any other branch stays, whatever the reason. For each landed branch:
    - Its worktree, when it has one under `<main checkout>/.claude/worktrees/autopilot-*` (`git worktree list --porcelain`): remove it with `git worktree remove <path>`, never `--force`, and only when `git -C <path> status --porcelain` prints nothing and it is not this session's working directory. A worktree with uncommitted changes stays, and so does its branch.
-   - The branch: `git branch -d <branch>`. When it refuses, as it does for a squash-merged branch git sees as unmerged, the branch stays and the report lists it for the user to delete.
+   - The branch: `git branch -d <branch>`. A branch pushed to main first gets `git branch --set-upstream-to=origin/main <branch>`, since `-d` accepts a branch merged into its upstream and the main checkout's `HEAD` may lag `origin/main`. When it refuses, as it does for a squash-merged branch git sees as unmerged, the branch stays and the report lists it for the user to delete.
 
    The report names what was removed and what stayed, with why.
 4. **Board.** For `board`, take the item the tracker file's "next-up" section names. With no item, stop and report that. Move the item to In progress as the tracker file's "move an item" section says. The item's text is the idea.
