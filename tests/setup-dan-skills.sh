@@ -262,6 +262,19 @@ for step in "project list" "project copy" "project link"; do
   want_exit "a failing gh $step stops board.sh" 1 "$RC"
   eq "and prints no board line" "" "$(grep '^board=' <<<"$OUT")"
 done
+
+GH_FAIL="api graphql" board_run
+want_exit "a failing gh api graphql stops board.sh" 1 "$RC"
+eq "a failing gh api graphql is the last call made" "api graphql" \
+  "$(tail -n 1 <<<"$CALLS" | awk '{print $1, $2}')"
+eq "and prints no board line" "" "$(grep '^board=' <<<"$OUT")"
+
+gh_can project-field-list '{"fields":[{"id":"PVTF_title","name":"Title","type":"ProjectV2Field"}],"totalCount":1}'
+board_run
+want_exit "a new template with no Status field stops board.sh" 1 "$RC"
+contains "and names the missing field" "$ERR" "has no Status field"
+not_called "before replacing any field or copying" '^(api graphql|project copy)'
+eq "and prints no board line" "" "$(grep '^board=' <<<"$OUT")"
 executable board.sh
 executable labels.sh
 
