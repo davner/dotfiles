@@ -11,7 +11,7 @@
 - Prefer a maintained library to hand-rolling, and hand-rolling to an abandoned one. For one-off operational work, take the direct path.
 - A change is done when no doc in the repo still describes the old behavior.
 - Before anything that spawns many subagents, explain the cost and get approval.
-- The shell is zsh: an unquoted variable stays one word, and an unquoted glob that matches no file stops the command. Keep a command with arguments in a function or an array, never in a string variable, and quote every glob meant for the program (`grep --include='*.py'`).
+- The shell is zsh: an unquoted variable stays one word, and an unquoted glob that matches no file stops the command, and so does a word starting with `=`, which zsh reads as a command lookup (`echo '==='`). Keep a command with arguments in a function or an array, never in a string variable, and quote every glob meant for the program (`grep --include='*.py'`).
 - YouTube links and YouTube research go through `yt-dlp`. Read a video's captions with `yt-dlp --skip-download --write-auto-subs --sub-langs en-orig --sub-format vtt -P <scratchpad> -o '%(id)s' <url>`, and when that writes no file, run it again with `--sub-langs en`; find videos with `yt-dlp --flat-playlist --print '%(title)s | %(url)s' 'ytsearch10:<query>'`. Ask for one language at a time: on a video that lists `en-orig`, `en` is a machine translation, and YouTube answers translations with HTTP 429.
 
 ## Writing
