@@ -37,7 +37,7 @@ Tickets that touch a user interface are built through `impeccable` and checked o
    - its files share no path with the commits that landed since its old base (`git diff --name-only <old base> <helper>` against `git diff --name-only <old base> <tip>`): rebase it yourself in its worktree, `git -C <helper worktree> rebase --onto <tip> <old base>`, then `git merge --ff-only <helper>`;
    - a path overlaps: send it back to its implementer to rebase onto the tip and re-run its checks; the implementer resolves its own conflicts.
 
-   Run the checks on every commit that comes over, not only on the tip: on the integration branch, `git rebase --exec 'env -u GIT_DIR <check command>' <old tip>`. The commits already sit in a line, so it keeps every commit ID and stops at the first failing commit; `git rebase --abort` then returns to the tip. In a worktree git hands the command `GIT_DIR`, and `env -u` clears it so a check that runs git in its own temp repo writes there, not into this one.
+   Run the full checks on the integration tip after each fast-forward, and stop at the first failure.
 
 6. If this changes the **frontier** of available tickets, kick off more **implementer subagents** to work on the new tickets. This allows for maximum concurrency.
 
