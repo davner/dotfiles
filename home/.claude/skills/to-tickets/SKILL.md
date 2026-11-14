@@ -70,10 +70,11 @@ Iterate until the user approves the breakdown.
 
 ### 5. Save the tickets
 
-Save the approved tickets the way the tracker file describes: the tracker is paste-ready, so nothing is created in Shortcut or Jira.
+Save the approved tickets the way the tracker file's "publish to the issue tracker" section describes.
 
 - Write one file per ticket under `<specs folder>/<feature-slug>/issues/<NN>-<slug>.md`, numbered from `01` in dependency order (blockers first), using the per-ticket file template below: one ticket per file, never a single combined file. Each file's "Blocked by" lists the numbers and titles it depends on.
-- Tell the user the files are the agent's work plan and nothing needs filing yet: the paste-ready tickets, one per PR in the issue-template shape, arrive on the recap page when the work is done (`/implement-spec` step 8).
+- When that section files issues itself (a GitHub tracker), file one per PR group as it says, each body in the issue-template shape, and write `Tracker: #N` into every ticket file of that group. Tell the user the issue numbers.
+- When it leaves filing to the user (a paste-ready tracker), nothing is created in Shortcut or Jira. Tell the user the files are the agent's work plan and nothing needs filing yet: the paste-ready tickets, one per PR in the issue-template shape, arrive on the recap page when the work is done (`/implement-spec` step 8).
 
 Work the **frontier**: any ticket whose blockers are all done. For a purely linear chain that means top to bottom.
 
@@ -100,7 +101,7 @@ Do NOT close or modify any parent issue.
 
 <issue-template>
 
-One per PR, filled in when the work is done.
+One per PR: filed in step 5 when the tracker files issues, else filled in when the work is done.
 
 ## Parent
 
