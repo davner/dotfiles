@@ -33,7 +33,11 @@ Tickets that touch a user interface are built through `impeccable` and checked o
    - calls the Skill tool with `tdd` to build the ticket, starting from the ticket's **First red test**. Every behaviour is its own red → green slice, and the report pastes the red run of each one (a ticket whose First red test is `none` names the existing check it kept green instead);
    - leaves linear commits on its own branch and reports done. Integrating is the orchestrator's job.
 
-5. Once an **implementer subagent** completes, check its report has a red run for every behaviour it added; send back any slice that lacks one to be redone red-first. Then bring its commits onto the integration branch yourself with `git merge --ff-only`. When its branch no longer sits on the integration tip, send it back to its implementer to rebase onto the tip and re-run its checks, naming the old base and the target by commit ID, since a branch name can move; the implementer resolves its own conflicts. History stays linear. Run the checks on every commit that comes over, stopping at the first failure, not only on the tip.
+5. Once an **implementer subagent** completes, check its report has a red run for every behaviour it added; send back any slice that lacks one to be redone red-first. Then bring its commits onto the integration branch yourself with `git merge --ff-only <helper>`, keeping history linear. Name the old base (`git merge-base <tip> <helper>`) and the tip by commit ID, since a branch name can move. When its branch no longer sits on the integration tip:
+   - its files share no path with the commits that landed since its old base (`git diff --name-only <old base> <helper>` against `git diff --name-only <old base> <tip>`): rebase it yourself in its worktree, `git -C <helper worktree> rebase --onto <tip> <old base>`, then `git merge --ff-only <helper>`;
+   - a path overlaps: send it back to its implementer to rebase onto the tip and re-run its checks; the implementer resolves its own conflicts.
+
+   Run the checks on every commit that comes over, stopping at the first failure, not only on the tip.
 
 6. If this changes the **frontier** of available tickets, kick off more **implementer subagents** to work on the new tickets. This allows for maximum concurrency.
 
@@ -45,7 +49,7 @@ Tickets that touch a user interface are built through `impeccable` and checked o
 
 9. If a draft PR exists, mark it ready for review. Otherwise, resolve each ticket as the tracker file's "close" or "resolve" section says, and report the integration branch.
 
-10. Clean up all **implementer subagent** worktrees.
+10. Clean up every **implementer subagent** worktree with `git worktree remove <path>`, then delete its branch with `git branch -d <helper>`, which succeeds once the integration branch holds the branch's commits.
 
 ## When headless:
 
