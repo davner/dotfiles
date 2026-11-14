@@ -18,7 +18,7 @@ When the work settles how a user interface should look, carry the confirmed `imp
 
 Check with the user that these seams match their expectations.
 
-3. Write the spec using the template below and save it where the tracker file puts specs, with the `ready-for-agent` triage label - no need for additional triage. Close by telling the user the spec is the reference the agents build from, not a ticket to file: the tickets to file arrive one per PR on the recap page when the work is done.
+3. Write the spec using the template below and save it where the tracker file puts specs, with the `ready-for-agent` triage label - no need for additional triage. Close by telling the user the spec is the reference the agents build from, not a ticket to file, and what gets filed, and when, as the tracker file's "publish to the issue tracker" section says.
 
 <spec-template>
 

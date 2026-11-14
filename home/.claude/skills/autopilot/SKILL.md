@@ -29,7 +29,7 @@ Before opening the first, say in the conversation: "This run is headless." Then 
    - The branch: `git branch -d <branch>`. When it refuses, as it does for a squash-merged branch git sees as unmerged, the branch stays and the report lists it for the user to delete.
 
    The report names what was removed and what stayed, with why.
-4. **Board.** For `board`, run the command in the tracker file's "next-up" section. With no such section (a paste-ready tracker), take the oldest ticket file with `Status: ready-for-agent`. With no item, stop and report that. Move the item to In progress as the tracker file's "move an item" section says; a tracker without that section moves nothing. The item's text is the idea.
+4. **Board.** For `board`, take the item the tracker file's "next-up" section names. With no item, stop and report that. Move the item to In progress as the tracker file's "move an item" section says. The item's text is the idea.
 5. **Skill selection.** List the installed skills in `~/.claude/skills/` and `~/.agents/skills/` and read each description. Match it against the repo's manifests (`pyproject.toml`, `package.json` dependencies, `tsconfig.json`, `go.mod`, UI files) and the item's area. Keep the matches with a one-line reason each, and the languages and libraries no skill covers. Name the matches in every subagent brief, since subagents do not inherit loaded skills.
 
 ## The order
@@ -62,7 +62,7 @@ A rung a hook or permission refuses drops to the next rung, and the report says 
 
 The decision log stays in `.scratch/`; the PR body carries only what the repo's PR rules ask.
 
-**Park.** Park the item as the tracker file's "park an item" section says, with the parked question and its numbered options. A tracker without that section (paste-ready) gets a `Status: needs-info` line in the item's file and the question and its options written there. Before `to-spec` publishes anything, an idea run has no item: the report carries the question. Leave the branch as it is.
+**Park.** Park the item as the tracker file's "park an item" section says, with the parked question and its numbered options. Before `to-spec` publishes anything, an idea run has no item: the report carries the question. Leave the branch as it is.
 
 Then open `retro`. Put its suggestions in the report and apply none.
 

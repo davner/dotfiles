@@ -24,9 +24,9 @@ Tickets that touch a user interface are built through `impeccable` and checked o
 
 2. (optional) Use an **exploration subagent** to conduct any exploration required by the tickets - relevant codebase files or external documentation. Ensure the exploration subagent can save files - it should save its markdown notes in a directory outside the repo, accessible by all future subagents. This lets **implementer subagents** focus on implementation rather than exploration.
 
-3. Create the integration branch. When the tickets group into several PRs, each PR gets its own integration branch, **stacked**: the next one starts from the previous one's tip, and once the lower PR merges, its successor moves onto main by `git rebase --onto` with the old base named by commit ID. Every step below then runs per PR, code review included. If the issue tracker closes work through PRs, or the user asks for one, open a draft PR once the first ticket lands in step 5 (a branch with no commits ahead of main can't open one), marked as closing the spec and tickets: its body opens with the line the tracker file's "Agent PRs" section gives, when it has one.
+3. Create the integration branch. When the tickets group into several PRs, each PR gets its own integration branch, **stacked**: the next one starts from the previous one's tip, and once the lower PR merges, its successor moves onto main by `git rebase --onto` with the old base named by commit ID. Every step below then runs per PR, code review included. If the issue tracker closes work through PRs, or the user asks for one, open a draft PR once the first ticket lands in step 5 (a branch with no commits ahead of main can't open one), marked as closing the spec and tickets: its body opens with the line the tracker file's "Agent PRs" section gives.
 
-   When the tracker file has a "move an item" section, move each PR's issue (the `Tracker: #N` line in its ticket files) to In progress as that section says when its integration branch is created, and to In review when its PR is ready for review in step 9.
+   Move each PR's item (the `Tracker:` line in its ticket files) to In progress as the tracker file's "move an item" section says when its integration branch is created, and to In review when its PR is ready for review in step 9.
 
 4. Use **implementer subagents** to implement each ticket, each in its own worktree on its own branch. Create each worktree in its own command, then work in it. Hand each one its ticket's absolute path in this checkout, since a new worktree has no copy of a gitignored scratch folder. Each implementer subagent:
    - is told the integration tip's commit ID and confirms its worktree starts there before anything else, recreating its branch from that tip if not;
@@ -41,7 +41,7 @@ Tickets that touch a user interface are built through `impeccable` and checked o
 
 7. Once all tickets are complete, call the Skill tool with `code-review` on the integration branch. Fix all issues raised by the code review in a single **implementer subagent**.
 
-8. Publish the **recap page**: every file the branch touched, grouped by purpose, each with a plain-words line on why it changed. Below that, when the tracker file's "publish to the issue tracker" section leaves filing to the user, one paste-ready ticket per PR the tickets were grouped into, each with a Copy button: the tickets are what the user files; the spec and the work items stay local. When that section filed the issues already, list each PR's issue `#N` instead.
+8. Publish the **recap page**: every file the branch touched, grouped by purpose, each with a plain-words line on why it changed. Below that, one entry per PR the tickets were grouped into, in the form the tracker file's "publish to the issue tracker" section gives the recap page.
 
 9. If a draft PR exists, mark it ready for review. Otherwise, resolve each ticket as the tracker file's "close" or "resolve" section says, and report the integration branch.
 

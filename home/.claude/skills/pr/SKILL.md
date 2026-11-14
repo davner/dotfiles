@@ -17,7 +17,7 @@ Before writing, read the subjects of the PR's commits (`git log --format=%s <bas
 
 The title is one Conventional Commits line in the imperative, at most 72 characters, naming the PR's one theme and ending with the ticket ID in brackets, e.g. `feat: time out a hung SSO refresh [sc-10510]`.
 
-Find the ticket ID (Shortcut `sc-1234`, Jira `KEY-123`, or GitHub `#123`, per the tracker file's "Tracker IDs" section) in the branch name, a `Tracker:` line in the ticket file, or the commit messages; when none has it, ask the user. The body's first line names it. When the tracker file has an "Agent PRs" section (a GitHub tracker), that line is `Closes #123`, so the merge closes the issue. Otherwise it is `Shortcut: sc-1234` or `Jira: KEY-123`, a link when the tracker URL is known.
+Find the ticket ID (Shortcut `sc-1234`, Jira `KEY-123`, or GitHub `#123`, per the tracker file's "Tracker IDs" section) in the branch name, a `Tracker:` line in the ticket file, or the commit messages; when none has it, ask the user. The body's first line names it, in the form the tracker file's "Agent PRs" section gives.
 
 Use this template for the body:
 
