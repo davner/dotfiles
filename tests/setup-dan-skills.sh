@@ -255,13 +255,21 @@ contains "it prints the board's workflows page" "$OUT" $'\nhttps://github.com/us
 contains "it prints the auto-add filter" "$OUT" "is:issue is:open"
 eq "it creates four views, all on the template" 4 "$(grep -c '^api users/me/projectsV2/7/views ' <<<"$CALLS")"
 called "it creates the Agent queue view on the template, a table of ready, unblocked agent work" \
-  '^api users/me/projectsV2/7/views --method POST -f name=Agent queue -f layout=table -f filter=is:open status:Ready label:ready-for-agent -is:blocked -label:spec -F visible_fields\[\]=101 -F visible_fields\[\]=104 -F visible_fields\[\]=106$'
+  '^api users/me/projectsV2/7/views --method POST -f name=Agent queue -f layout=table -f filter=is:issue is:open status:Ready label:ready-for-agent -is:blocked -label:spec -F visible_fields\[\]=101 -F visible_fields\[\]=104 -F visible_fields\[\]=106$'
 called "it creates the Board view, columns by Status, specs left out" \
   '^api users/me/projectsV2/7/views --method POST -f name=Board -f layout=board -f filter=is:issue -label:spec -F visible_fields\[\]=101 -F visible_fields\[\]=104 -F visible_fields\[\]=105 -F visible_fields\[\]=106 -F vertical_group_by\[\]=103$'
 called "it creates the Specs view, with each spec's sub-issue progress" \
   '^api users/me/projectsV2/7/views --method POST -f name=Specs -f layout=table -f filter=label:spec -F visible_fields\[\]=101 -F visible_fields\[\]=103 -F visible_fields\[\]=107$'
 called "it creates the Tickets by parent view, grouped by parent issue" \
   '^api users/me/projectsV2/7/views --method POST -f name=Tickets by parent -f layout=table -f filter=is:open has:parent-issue -F visible_fields\[\]=101 -F visible_fields\[\]=103 -F visible_fields\[\]=105 -F group_by\[\]=106$'
+# An agent reads the queue through next-up, a human through the view, so the two
+# must pick the same items.
+queue_view="$(sed -nE 's/^api .*-f name=Agent queue .*-f filter=//p' <<<"$CALLS" | sed 's/ -F .*//')"
+next_up="$(sed -n '/^## When a skill says "next-up"$/,/^## /p' "$SDS/../issue-tracker-github.md" |
+  sed -nE "s/^ *--query '(.*)'.*/\1/p")"
+eq "the Agent queue view filter equals the tracker template's next-up query" "$next_up" "$queue_view"
+eq "and that query is the agreed one" \
+  "is:issue is:open status:Ready label:ready-for-agent -is:blocked -label:spec" "$next_up"
 
 board_run "3=dan-skills template" "4=me/other"
 want_exit "with the template and no board, board.sh exits 0" 0 "$RC"

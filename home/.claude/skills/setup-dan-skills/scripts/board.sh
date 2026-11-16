@@ -68,7 +68,7 @@ create_views() { # project number, project url
   create_view "$1" "$login" "$ids" Board board "is:issue -label:spec" \
     Title Labels "Linked pull requests" "Parent issue" vertical_group_by=Status
   create_view "$1" "$login" "$ids" "Agent queue" table \
-    "is:open status:Ready label:ready-for-agent -is:blocked -label:spec" Title Labels "Parent issue"
+    "is:issue is:open status:Ready label:ready-for-agent -is:blocked -label:spec" Title Labels "Parent issue"
   create_view "$1" "$login" "$ids" Specs table "label:spec" Title Status "Sub-issues progress"
   create_view "$1" "$login" "$ids" "Tickets by parent" table "is:open has:parent-issue" \
     Title Status "Linked pull requests" "group_by=Parent issue"
