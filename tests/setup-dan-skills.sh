@@ -117,6 +117,7 @@ LABELS="$SDS/labels.sh"
 LABELS_DEFAULTS='["bug","documentation","duplicate","enhancement","good first issue","help wanted","invalid","question","wontfix"]'
 labels_repo() { # label names as a JSON array -> a fake repo holding those labels, with nothing labelled
   gh_reset
+  rm -f "$GH/repo/towncrier.toml"
   gh_can repo-view '{"nameWithOwner":"owner/repo"}'
   gh_can label-list "$(jq '[.[] | {name: .}]' <<<"$1")"
   gh_can issue-list '[]'
@@ -161,6 +162,12 @@ label delete question -R owner/repo --yes
 label delete invalid -R owner/repo --yes" "$(calls_to label delete)"
 eq "a fresh repo: each delete is checked against issues and PRs in every state" "8" \
   "$(grep -cE '^(issue|pr) list .*--state all' <<<"$CALLS")"
+
+labels_repo "$LABELS_DEFAULTS"
+touch "$GH/repo/towncrier.toml"
+gh_run "$LABELS"
+called "a repo with towncrier.toml: skip-changelog is created" \
+  '^label create skip-changelog -R owner/repo --color [0-9a-f]{6} --description .+ --force$'
 
 labels_repo "$LABELS_DEFAULTS"
 gh_can issue-list '[{"number":7}]'
