@@ -52,7 +52,7 @@ For a GitHub tracker only. Run each script from the repo root, by its path in th
    ```
 
    Wait for them to say they ran them, then check that `git config --get claude.allowPush` and `git config --get claude.allowPrs` each print `true`. Until both do, the tracker file records agents opening no PRs.
-4. **Changelog**, after a yes to 8. Offer the towncrier templates as [changelog/README.md](changelog/README.md) lays them out, filling its placeholders. When step 1 found another changelog tool, offer the switch first and name the files it would replace. Writing them is the user's call, and committing them is a commit for the user to make.
+4. **Changelog**, after a yes to 8. Offer the towncrier templates as [changelog/README.md](changelog/README.md) lays them out, filling its placeholders. When step 1 found another changelog tool, offer the switch first and name the files it would replace. Writing them is the user's call, and committing them is a commit for the user to make. Once `towncrier.toml` is written, run `scripts/labels.sh` again: it adds `skip-changelog` only when that file exists.
 5. **Repo settings**, after a yes to 7 and both switches `true`. Pass each CI job the default branch should require as `--check`, plus the changelog check `changelog/README.md` names when the user took the templates. Show the output of `scripts/repo-settings.sh --dry-run --check <name>...`, and run the same command without `--dry-run` only after the user's OK. When GitHub refuses a setting, relay its error and record agents not merging.
 
 ## 4. Show the drafts
