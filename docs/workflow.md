@@ -141,6 +141,17 @@ watching:
    all closed, with a summary of what landed, so specs finished by
    auto-merges get closed too.
 
+### Goals and priority
+
+A goal is an open issue labelled `goal`, for an outcome that outlasts any one
+spec. You name the goals; an agent files one only when you say so. Specs,
+bugs and TODO items go under the goal they serve as sub-issues, and a spec's
+own tickets go under the spec. A goal stays open until you close it.
+
+Priority is a board field: P1, P2 or P3. You set it, or an agent does when
+you name one; an agent never guesses. The Agent queue takes P1 first, then
+P2, P3, then items with no priority, in board order within each.
+
 ### Issue forms
 
 `setup-dan-skills` offers to copy two issue forms into the repo's
