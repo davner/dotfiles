@@ -422,4 +422,29 @@ eq "and prints no board line" "" "$(grep '^board=' <<<"$OUT")"
 executable board.sh
 executable labels.sh
 
+# --- issue forms ---
+section "setup-dan-skills issue forms"
+FORMS="$SDS/../issue-forms"
+form_labels() { # form file -> its labels, one per line; a list not on one line fails the read
+  local line
+  line="$(grep -E '^labels:' "$1")" || return 0
+  [[ $line =~ ^labels:\ *\[(.*)\]$ ]] || { echo "<labels not a one-line [list]>"; return; }
+  tr ',' '\n' <<<"${BASH_REMATCH[1]}" | sed -E 's/^ *//; s/ *$//'
+}
+eq "the Bug form adds fix" "fix" "$(form_labels "$FORMS/bug.yml")"
+eq "the TODO form adds todo" "todo" "$(form_labels "$FORMS/todo.yml")"
+eq "the TODO form asks for From, Why, Known and Next, as the TODO body has them" "From
+Why
+Known
+Next" "$(sed -nE 's/^ +label: *(.+)$/\1/p' "$FORMS/todo.yml")"
+eq "blank issues are off" "blank_issues_enabled: false" "$(grep -E '^blank_issues_enabled:' "$FORMS/config.yml")"
+# Filing from a form must never queue work for an agent or skip the owner's triage.
+queued=""
+for form in "$FORMS"/*.yml; do
+  while read -r label; do
+    case $label in ready-for-agent | ready-for-human | needs-triage | needs-info | "<"*) queued+=" ${form##*/}:$label" ;; esac
+  done < <(form_labels "$form")
+done
+eq "no form adds a queue or triage label" "" "$queued"
+
 finish

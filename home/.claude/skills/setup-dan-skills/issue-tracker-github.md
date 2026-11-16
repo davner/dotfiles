@@ -38,6 +38,10 @@ A goal is an open issue labelled `goal`. The owner names the goals; an agent fil
 
 Priority is a board field: P1, P2 or P3, P1 first. The owner sets it, or an agent on the owner's word; an agent never guesses one, so an item can have none. Next-up and every view sort by it.
 
+## Issue forms
+
+A new issue on GitHub's web page starts from a form in `.github/ISSUE_TEMPLATE/`; blank issues are off. The Bug form adds `fix`. The TODO form adds `todo`, and its From, Why, Known and Next fields are the TODO body below. Neither form adds `ready-for-agent`, `ready-for-human` or a triage label: an issue filed from a form waits in Backlog for the owner to place it under a goal, set its Priority, and queue it.
+
 ## Locations
 
 - Scratch folder: `<scratch>` (specs and tickets; <gitignored | committed>)

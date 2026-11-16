@@ -16,8 +16,8 @@ whether the repo ships releases.
 In a shared repo the glossary and ADRs are committed for everyone, and the
 tracker file stays in `~/.claude/repos/<repo>/`, out of the repo. GitHub is
 offered only for a repo nobody else commits to. Its scripts set up the labels
-and a board copied from a template board, as
-[Hands-off board work](#hands-off-board-work) describes. A repo that ships releases gets
+and a board copied from a template board, and it offers Bug and TODO issue
+forms, as [Hands-off board work](#hands-off-board-work) describes. A repo that ships releases gets
 towncrier, which builds the changelog from one small file per PR and releases
 through a PR. Any other repo gets no changelog.
 
@@ -141,6 +141,15 @@ watching:
    all closed, with a summary of what landed, so specs finished by
    auto-merges get closed too.
 
+### Issue forms
+
+`setup-dan-skills` offers to copy two issue forms into the repo's
+`.github/ISSUE_TEMPLATE/`, with blank issues turned off. The Bug form adds
+`fix`; the TODO form adds `todo` and asks From, Why, Known and Next, the
+fields a fresh session needs. Neither adds `ready-for-agent` or a triage
+label, so a new issue waits in Backlog until you put it under a goal, give it
+a priority and queue it.
+
 ### The labels
 
 `scripts/labels.sh` in `setup-dan-skills` creates the same set in every repo:
@@ -153,7 +162,7 @@ watching:
 | `goal` | A long-lived goal. Its sub-issues are the specs, bugs and TODO items that serve it |
 | `spec` | A parent issue holding a spec. Its sub-issues are the work |
 | `needs-info` | Waiting on an answer |
-| `needs-triage` | An outside reporter's issue, waiting for you |
+| `needs-triage` | Waiting for you to look at it |
 | `todo` | A TODO list entry |
 | `wontfix` | Will not be done |
 | `breaking`, `dependencies` | A breaking change; a dependency update |
