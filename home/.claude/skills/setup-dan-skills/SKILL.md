@@ -43,7 +43,7 @@ For GitHub only, three more:
 For a GitHub tracker only. Run each script from the repo root, by its path in this skill's folder; each reads the repo from `gh repo view`. Put every link the user opens on its own line.
 
 1. **Labels.** Run `scripts/labels.sh` and relay what it renamed, kept, and deleted.
-2. **Board.** Run `scripts/board.sh`. When it stops on the missing project scope, hand the user `gh auth refresh -s project`, wait for them to say they ran it, and run it again. Its `board=` and `url=` lines fill the tracker file's board number and URL, and the owner is the login in that URL. Relay every line after `url=`: they are manual steps on GitHub's workflows pages, which have no API.
+2. **Board.** Run `scripts/board.sh`. When it stops on the missing project scope, hand the user `gh auth refresh -s project`, wait for them to say they ran it, and run it again. When it stops naming a half-built template to delete, hand the user that message and its project URL, and run it again once they say it is deleted. Its `board=` and `url=` lines fill the tracker file's board number and URL, and the owner is the login in that URL. Relay every line after `url=`: they are manual steps on GitHub's workflows pages, which have no API.
 3. **Switches**, after a yes to 6. Hand the user these to run inside the repo, since an agent may not set them:
 
    ```sh

@@ -24,11 +24,16 @@ find_project() { # title -> "number url" of the user's project with that title, 
     jq -r --arg t "$1" '.projects[] | select(.title == $t) | "\(.number) \(.url)"' | head -n 1
 }
 
-set_status_options() { # project number
+half_built() { # reason, template url -> stops board.sh, saying how to start over
+  echo "board.sh: $1. A re-run reuses the template as it is, so delete the project at $2 and re-run board.sh." >&2
+  exit 1
+}
+
+set_status_options() { # project number, project url
   local field
   field=$(gh project field-list "$1" --owner @me --format json |
     jq -r '.fields[] | select(.name == "Status") | .id')
-  [[ -n $field ]] || { echo "board.sh: project $1 has no Status field" >&2; exit 1; }
+  [[ -n $field ]] || half_built "project $1 has no Status field" "$2"
   # A new project's Status holds Todo, In Progress, Done; this replaces them wholesale.
   # shellcheck disable=SC2016  # $fieldId is a GraphQL variable, not a shell one
   gh api graphql -F fieldId="$field" -f query='
@@ -43,17 +48,18 @@ set_status_options() { # project number
     }' >/dev/null
 }
 
-create_view() { # project number, login, field IDs by name as JSON, view name, layout, filter, field...
+create_view() { # project number, login, field IDs by name as JSON, project url, view name, layout, filter, field...
   # A field is a visible field's name, or group_by=NAME or vertical_group_by=NAME.
-  local project=$1 login=$2 ids=$3 args=(-f name="$4" -f layout="$5" -f filter="$6") field key id
-  shift 6
+  local project=$1 login=$2 ids=$3 url=$4 name=$5 args=(-f name="$5" -f layout="$6" -f filter="$7") field key id
+  shift 7
   for field in "$@"; do
     key=visible_fields
     [[ $field != *=* ]] || { key=${field%%=*}; field=${field#*=}; }
     id=$(jq -r --arg n "$field" '.[$n]' <<<"$ids")
     args+=(-F "${key}[]=$id")
   done
-  gh api "users/$login/projectsV2/$project/views" --method POST "${args[@]}" >/dev/null
+  gh api "users/$login/projectsV2/$project/views" --method POST "${args[@]}" >/dev/null ||
+    half_built "creating the $name view failed" "$url"
 }
 
 create_views() { # project number, project url
@@ -63,14 +69,14 @@ create_views() { # project number, project url
   # Checked before any view exists, since a re-run reuses the template as it is.
   for field in Title Status Labels "Linked pull requests" "Parent issue" "Sub-issues progress"; do
     jq -e --arg n "$field" 'has($n)' <<<"$ids" >/dev/null ||
-      { echo "board.sh: project $1 has no $field field" >&2; exit 1; }
+      half_built "project $1 has no $field field" "$2"
   done
-  create_view "$1" "$login" "$ids" Board board "is:issue -label:spec" \
+  create_view "$1" "$login" "$ids" "$2" Board board "is:issue -label:spec" \
     Title Labels "Linked pull requests" "Parent issue" vertical_group_by=Status
-  create_view "$1" "$login" "$ids" "Agent queue" table \
+  create_view "$1" "$login" "$ids" "$2" "Agent queue" table \
     "is:issue is:open status:Ready label:ready-for-agent -is:blocked -label:spec" Title Labels "Parent issue"
-  create_view "$1" "$login" "$ids" Specs table "label:spec" Title Status "Sub-issues progress"
-  create_view "$1" "$login" "$ids" "Tickets by parent" table "is:open has:parent-issue" \
+  create_view "$1" "$login" "$ids" "$2" Specs table "label:spec" Title Status "Sub-issues progress"
+  create_view "$1" "$login" "$ids" "$2" "Tickets by parent" table "is:open has:parent-issue" \
     Title Status "Linked pull requests" "group_by=Parent issue"
 }
 
@@ -79,7 +85,7 @@ found=$(find_project "$TEMPLATE_TITLE")
 if [[ -z $found ]]; then
   created=$(gh project create --owner @me --title "$TEMPLATE_TITLE" --format json)
   found=$(jq -r '"\(.number) \(.url)"' <<<"$created")
-  set_status_options "${found%% *}"
+  set_status_options "${found%% *}" "${found#* }"
   create_views "${found%% *}" "${found#* }"
   steps+=("" "Template created. Turn on these built-in workflows at:" "${found#* }/workflows"
     "- Item closed: set Status to Done"

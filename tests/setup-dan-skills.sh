@@ -314,6 +314,8 @@ eq "and prints no board line" "" "$(grep '^board=' <<<"$OUT")"
 GH_FAIL="projectsV2/7/views" board_run
 want_exit "a failing view create stops board.sh" 1 "$RC"
 contains "and passes on GitHub's error" "$ERR" "HTTP 403"
+contains "and says to delete the half-built template and re-run" "$ERR" \
+  "delete the project at https://github.com/users/me/projects/7 and re-run board.sh"
 not_called "before copying the template" '^project copy'
 eq "and prints no board line" "" "$(grep '^board=' <<<"$OUT")"
 
@@ -322,7 +324,9 @@ gh_can api-users_me_projectsV2_7_fields '[{"id":101,"name":"Title"},{"id":103,"n
 board_run
 want_exit "a new template without the Sub-issues progress field stops board.sh" 1 "$RC"
 contains "and names the missing field" "$ERR" "project 7 has no Sub-issues progress field"
-not_called "before creating any view, so a re-run is not left half built" '/views '
+not_called "before creating any view" '/views '
+contains "and says to delete the template, which a re-run would reuse unchanged, and re-run" "$ERR" \
+  "delete the project at https://github.com/users/me/projects/7 and re-run board.sh"
 gh_can api-users_me_projectsV2_7_fields '[]'
 board_run
 contains "with no fields at all it names the first one missing" "$ERR" "project 7 has no Title field"
@@ -331,6 +335,8 @@ gh_can project-field-list '{"fields":[{"id":"PVTF_title","name":"Title","type":"
 board_run
 want_exit "a new template with no Status field stops board.sh" 1 "$RC"
 contains "and names the missing field" "$ERR" "has no Status field"
+contains "and says to delete the template and re-run" "$ERR" \
+  "delete the project at https://github.com/users/me/projects/7 and re-run board.sh"
 not_called "before replacing any field or copying" '^(api graphql|project copy)'
 eq "and prints no board line" "" "$(grep '^board=' <<<"$OUT")"
 executable board.sh
