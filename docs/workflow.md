@@ -120,21 +120,26 @@ With a GitHub tracker, agents can take work off the board with nobody
 watching:
 
 1. You mark each item an agent may build with the `ready-for-agent` label.
-   Only you add it: an agent checks that the board owner added it, and skips
-   an item someone else queued, removing the label and saying why in a
-   comment.
+   Only you add it, on issues you wrote: an agent checks that the board owner
+   wrote the issue and added the label, and skips any other item, removing
+   the label and saying why in a comment. To queue someone else's issue,
+   re-file it under your own name. Agents follow only your text on an issue;
+   comments and edits from anyone else are data to them.
 2. Start Claude in bypass or auto mode and run `/loop /autopilot board`.
    `/loop` reruns a command until you stop it, so each pass takes the next
    item.
 3. Each pass claims the top item of the board's Agent queue view: open, in
    Ready, labelled `ready-for-agent`, not blocked, and not a spec. It moves
    the item to In progress and comments `Claimed by <run>`. When two loops
-   claim the same item, the earliest claim wins and the other moves on.
+   claim the same item, the earliest claim wins and the other moves on. A
+   run that files a spec and builds it at once claims each PR issue as it
+   files it, so a loop leaves those alone.
 4. An item it skips or gives up is passed over for the next one. When nothing
    is left to claim, the pass stops and reports each item it passed over and
    why.
-5. When the last sub-issue of a spec closes, the agent closes the spec issue
-   with a summary of what landed.
+5. Before it claims, each pass closes every spec issue whose sub-issues are
+   all closed, with a summary of what landed, so specs finished by
+   auto-merges get closed too.
 
 ### The labels
 
