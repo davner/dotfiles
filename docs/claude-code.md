@@ -13,7 +13,7 @@ Each folder under [`home/.claude/skills/`](../home/.claude/skills/) is linked in
 
 | Stage | Skill | What it does |
 | --- | --- | --- |
-| Setup | [`setup-dan-skills`](../home/.claude/skills/setup-dan-skills/SKILL.md) | Configures a repo once: tracker (GitHub, Shortcut or Jira) and where docs go |
+| Setup | [`setup-dan-skills`](../home/.claude/skills/setup-dan-skills/SKILL.md) | Configures a repo once: tracker (GitHub, Shortcut or Jira) and where docs go; for GitHub, the labels and a board with its views |
 | Align | [`grill-me`](../home/.claude/skills/grill-me/SKILL.md) | Interviews you until a plan has no open questions |
 | Align | [`grill-with-docs`](../home/.claude/skills/grill-with-docs/SKILL.md) | The same, recording the glossary and ADRs as it goes |
 | Align | [`grilling`](../home/.claude/skills/grilling/SKILL.md) | The interview engine behind both |
@@ -23,8 +23,8 @@ Each folder under [`home/.claude/skills/`](../home/.claude/skills/) is linked in
 | Design | [`improve-codebase-architecture`](../home/.claude/skills/improve-codebase-architecture/SKILL.md) | Finds modules worth simplifying, as a visual report |
 | Design | [`making-clipart-gifs`](../home/.claude/skills/making-clipart-gifs/SKILL.md) | Original 90s 3D clip-art GIFs: render, shrink to 200 px, check against measured specs |
 | Plan | [`to-spec`](../home/.claude/skills/to-spec/SKILL.md) | Writes the spec, paste-ready |
-| Plan | [`to-tickets`](../home/.claude/skills/to-tickets/SKILL.md) | Splits it into thin tickets with their order, paste-ready or filed as GitHub issues |
-| Build | [`autopilot`](../home/.claude/skills/autopilot/SKILL.md) | Runs the whole flow, idea or board item to reviewed code, with nobody watching |
+| Plan | [`to-tickets`](../home/.claude/skills/to-tickets/SKILL.md) | Splits it into thin tickets with their order, paste-ready or filed as GitHub sub-issues of a spec issue |
+| Build | [`autopilot`](../home/.claude/skills/autopilot/SKILL.md) | Runs the whole flow, idea or board item to reviewed code, with nobody watching; `/loop /autopilot board` keeps taking `ready-for-agent` items |
 | Build | [`implement`](../home/.claude/skills/implement/SKILL.md) | Builds one ticket or a small change |
 | Build | [`implement-spec`](../home/.claude/skills/implement-spec/SKILL.md) | Builds a whole spec, tickets in parallel |
 | Build | [`tdd`](../home/.claude/skills/tdd/SKILL.md) | Test first, one slice at a time |

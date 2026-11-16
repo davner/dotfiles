@@ -43,7 +43,7 @@ For GitHub only, three more:
 For a GitHub tracker only. Run each script from the repo root, by its path in this skill's folder; each reads the repo from `gh repo view`. Put every link the user opens on its own line.
 
 1. **Labels.** Run `scripts/labels.sh` and relay what it renamed, kept, and deleted.
-2. **Board.** Run `scripts/board.sh`. When it stops on the missing project scope, hand the user `gh auth refresh -s project`, wait for them to say they ran it, and run it again. Its `board=` and `url=` lines fill the tracker file's board number and URL, and the owner is the login in that URL. Relay every line after `url=`: they are manual steps on GitHub's workflows pages, which have no API.
+2. **Board.** Run `scripts/board.sh`. When it stops on the missing project scope, hand the user `gh auth refresh -s project`, wait for them to say they ran it, and run it again. When it stops naming a half-built template to delete, hand the user that message and its project URL, and run it again once they say it is deleted. Its `board=` and `url=` lines fill the tracker file's board number and URL, and the owner is the login in that URL. Relay every line after `url=`: they are manual steps on GitHub's workflows pages, which have no API.
 3. **Switches**, after a yes to 6. Hand the user these to run inside the repo, since an agent may not set them:
 
    ```sh
@@ -52,7 +52,7 @@ For a GitHub tracker only. Run each script from the repo root, by its path in th
    ```
 
    Wait for them to say they ran them, then check that `git config --get claude.allowPush` and `git config --get claude.allowPrs` each print `true`. Until both do, the tracker file records agents opening no PRs.
-4. **Changelog**, after a yes to 8. Offer the towncrier templates as [changelog/README.md](changelog/README.md) lays them out, filling its placeholders. When step 1 found another changelog tool, offer the switch first and name the files it would replace. Writing them is the user's call, and committing them is a commit for the user to make.
+4. **Changelog**, after a yes to 8. Offer the towncrier templates as [changelog/README.md](changelog/README.md) lays them out, filling its placeholders. When step 1 found another changelog tool, offer the switch first and name the files it would replace. Writing them is the user's call, and committing them is a commit for the user to make. Once `towncrier.toml` is written, run `scripts/labels.sh` again: it adds `skip-changelog` only when that file exists.
 5. **Repo settings**, after a yes to 7 and both switches `true`. Pass each CI job the default branch should require as `--check`, plus the changelog check `changelog/README.md` names when the user took the templates. Show the output of `scripts/repo-settings.sh --dry-run --check <name>...`, and run the same command without `--dry-run` only after the user's OK. When GitHub refuses a setting, relay its error and record agents not merging.
 
 ## 4. Show the drafts

@@ -77,7 +77,7 @@ Save the approved tickets the way the tracker file's "publish to the issue track
 
 Work the **frontier**: any ticket whose blockers are all done. For a purely linear chain that means top to bottom.
 
-Do NOT close or modify any parent issue.
+Leave parent issues as they are, beyond what the tracker file's publish and close sections do to them.
 
 <local-ticket-template>
 
@@ -100,11 +100,7 @@ Do NOT close or modify any parent issue.
 
 <issue-template>
 
-One per PR, filed or handed over when the tracker file's "publish to the issue tracker" section says.
-
-## Parent
-
-A reference to the parent issue on the tracker (if the source was an existing issue, otherwise omit this section).
+One per PR, filed or handed over when the tracker file's "publish to the issue tracker" section says. When that section gives an issue layout, its layout wins, and it sets any parent and blocking links.
 
 ## What to build
 
@@ -115,13 +111,17 @@ The end-to-end behaviour this PR makes work, from the user's perspective, not la
 - [ ] Criterion 1
 - [ ] Criterion 2
 
+## Files
+
+The files or areas the PR touches.
+
 ## Blocked by
 
-- A reference to each PR's ticket that must merge first, or "None (can start immediately)".
+The titles of the PRs that must merge first, or "None (can start immediately)".
 
 </issue-template>
 
-In either form, avoid specific file paths or code snippets: they go stale fast. Exception: if a prototype produced a snippet that encodes a decision more precisely than prose can (state machine, reducer, schema, type shape), inline it and note briefly that it came from a prototype. Trim to the decision-rich parts, not a working demo, just the important bits.
+Outside an issue's Files section, avoid specific file paths or code snippets: they go stale fast. Exception: if a prototype produced a snippet that encodes a decision more precisely than prose can (state machine, reducer, schema, type shape), inline it and note briefly that it came from a prototype. Trim to the decision-rich parts, not a working demo, just the important bits.
 
 ## When headless:
 

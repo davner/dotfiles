@@ -23,9 +23,12 @@ LABELS=(
   "todo|f9d0c4|A TODO item, not yet ready for work"
   "breaking|b60205|A breaking change"
   "dependencies|0366d6|Updates a dependency"
-  "skip-changelog|eeeeee|Needs no changelog entry"
-  "duplicate|cfd3d7|This issue or pull request already exists"
+  "spec|5319e7|A spec: parent of its PR sub-issues"
 )
+# changelog-check.yml exempts a PR carrying it, and only towncrier repos get that check.
+if [ -f "$(git rev-parse --show-toplevel 2>/dev/null || pwd)/towncrier.toml" ]; then
+  LABELS+=("skip-changelog|eeeeee|Needs no changelog entry")
+fi
 # GitHub defaults that mean the same as a label in the set.
 RENAMES=(
   "bug|fix"
@@ -49,7 +52,7 @@ for pair in "${RENAMES[@]}"; do
 done
 
 # Deleting a label strips it from everything carrying it, so one in use stays.
-for name in "good first issue" "help wanted" "question" "invalid"; do
+for name in "good first issue" "help wanted" "question" "invalid" "duplicate"; do
   has "$name" || continue
   issues="$(gh issue list -R "$repo" --label "$name" --state all --limit 1 --json number --jq length)"
   prs="$(gh pr list -R "$repo" --label "$name" --state all --limit 1 --json number --jq length)"
