@@ -81,7 +81,7 @@ gh project item-edit <number> --owner <owner> --url "$url" --field Status --valu
 
    When the work came from a board issue `#N`, the first PR group reuses it instead of filing a new one: `gh issue edit N --body-file <body.md> [--parent <P>]`, keeping its labels and Status. Only the other groups are filed.
 
-   When this session builds the groups itself, as an autopilot idea run or `implement-spec` right after filing does, it claims each group as it files it: `gh issue comment N --body "Claimed by <run name>"`, the run name as "claim an item" says. A board loop running at the same time then gives the group up at its claim step 4.
+   When this session builds the groups itself, as an autopilot idea run or `implement-spec` right after filing does, it files each group in Status In progress instead of Ready, and marks it with `gh issue comment N --body "Claimed by <run name>"`, the run name as "claim an item" says. Next-up lists only Ready items, so a board loop running at the same time never sees these groups, however long a stacked group waits.
 3. Write `Tracker: #N` near the top of each ticket file in that group, and `Tracker: #P` near the top of `spec.md`. Tell the user the issue numbers.
 4. The recap page lists each PR's issue `#N` and the spec's `#P`: nothing is left for the user to file.
 
