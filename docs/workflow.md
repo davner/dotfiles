@@ -150,6 +150,7 @@ watching:
 | `feat`, `fix`, `docs`, `refactor`, `perf`, `test`, `chore` | The Conventional Commit type of the PR that closes it |
 | `ready-for-agent` | An agent may build it hands-off |
 | `ready-for-human` | You build it |
+| `goal` | A long-lived goal. Its sub-issues are the specs, bugs and TODO items that serve it |
 | `spec` | A parent issue holding a spec. Its sub-issues are the work |
 | `needs-info` | Waiting on an answer |
 | `needs-triage` | An outside reporter's issue, waiting for you |

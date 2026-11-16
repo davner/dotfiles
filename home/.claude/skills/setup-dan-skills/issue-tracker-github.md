@@ -21,6 +21,7 @@ Each fact about an item lives in one place:
 - `needs-info`: waiting on an answer. `wontfix`: will not be done.
 - `needs-triage`: waiting for the owner to look. Only an outside reporter's issue form sets it.
 - `todo`: where the item came from, a TODO list entry.
+- `goal`: a long-lived goal, the parent of the specs, bugs and TODO items that serve it. It stays open while work toward it remains, and next-up never takes it.
 - `spec`: a parent issue holding a spec. Its sub-issues are the work, and next-up takes only them.
 - Kind, the Conventional Commit type of the PR that closes it: `feat`, `fix`, `docs`, `refactor`, `perf`, `test`, `chore`.
 - Other: `breaking`, `dependencies`, and `skip-changelog` (a PR that needs no changelog fragment), which exists only in a repo with towncrier.

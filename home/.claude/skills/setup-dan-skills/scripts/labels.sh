@@ -24,6 +24,7 @@ LABELS=(
   "breaking|b60205|A breaking change"
   "dependencies|0366d6|Updates a dependency"
   "spec|5319e7|A spec: parent of its PR sub-issues"
+  "goal|0e8a16|A long-lived goal: parent of the specs and TODO items that serve it"
 )
 # changelog-check.yml exempts a PR carrying it, and only towncrier repos get that check.
 if [ -f "$(git rev-parse --show-toplevel 2>/dev/null || pwd)/towncrier.toml" ]; then

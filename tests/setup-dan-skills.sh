@@ -130,6 +130,7 @@ dependencies
 docs
 feat
 fix
+goal
 needs-info
 needs-triage
 perf
@@ -146,6 +147,8 @@ gh_run "$LABELS"
 eq "a fresh repo: labels.sh exits 0" "0" "$RC"
 called "a fresh repo: spec is created with a colour and description" \
   '^label create spec -R owner/repo --color [0-9a-f]{6} --description A spec: parent of its PR sub-issues --force$'
+called "a fresh repo: goal is created green, as the parent of the work that serves it" \
+  '^label create goal -R owner/repo --color 0e8a16 --description A long-lived goal: parent of the specs and TODO items that serve it --force$'
 not_called "a repo without towncrier.toml: skip-changelog is not created" '^label create skip-changelog '
 eq "a fresh repo: every label in the set is created" "$LABELS_SET" \
   "$(calls_to label create | awk '{print $3}' | sort)"
@@ -188,7 +191,7 @@ gh_run "$LABELS"
 eq "a re-run: labels.sh exits 0" "0" "$RC"
 eq "a re-run: nothing is renamed" "" "$(calls_to label edit)"
 eq "a re-run: nothing is deleted" "" "$(calls_to label delete)"
-eq "a re-run: the set is written again with --force" "16" \
+eq "a re-run: the set is written again with --force" "17" \
   "$(calls_to label create | grep -c -- '--force')"
 eq "a re-run: no label outside the set is created" "$LABELS_SET" \
   "$(calls_to label create | awk '{print $3}' | sort)"
