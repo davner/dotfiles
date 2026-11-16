@@ -148,20 +148,20 @@ watching:
 | Label | Meaning |
 | --- | --- |
 | `feat`, `fix`, `docs`, `refactor`, `perf`, `test`, `chore` | The Conventional Commit type of the PR that closes it |
-| `ready-for-agent` | An agent may build it hands-off. Only you add it |
+| `ready-for-agent` | An agent may build it hands-off |
 | `ready-for-human` | You build it |
 | `spec` | A parent issue holding a spec. Its sub-issues are the work |
 | `needs-info` | Waiting on an answer |
-| `needs-triage` | An outside reporter's issue, waiting for you. Agents never add it |
+| `needs-triage` | An outside reporter's issue, waiting for you |
 | `todo` | A TODO list entry |
 | `wontfix` | Will not be done |
 | `breaking`, `dependencies` | A breaking change; a dependency update |
-| `skip-changelog` | A PR with no changelog fragment. Only in a repo with towncrier |
+| `skip-changelog` | A PR with no changelog fragment, in a repo with towncrier |
 
-There is no `duplicate` label. The script deletes GitHub's default one when no
-issue uses it, and a duplicate closes with GitHub's duplicate reason
-(`gh issue close N --duplicate-of M`). Blocking is a real GitHub dependency,
-not a line of text, so the board marks a blocked item.
+A duplicate closes with GitHub's duplicate reason, so the set has no
+`duplicate` label. Blocking is a GitHub dependency, so the board marks a
+blocked item. The rules agents follow for each label, Status and view are in
+the [GitHub tracker template](../home/.claude/skills/setup-dan-skills/issue-tracker-github.md).
 
 ### The board views
 
@@ -171,5 +171,5 @@ A board made from the template comes with four views:
 | --- | --- |
 | Board | Status columns, specs left out |
 | Agent queue | What the next pass will take, in order |
-| Specs | Each spec with its Status and sub-issue progress bar |
+| Specs | Each spec and its progress |
 | Tickets by parent | Open sub-issues grouped by their spec |

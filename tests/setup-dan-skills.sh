@@ -203,6 +203,12 @@ while read -r name; do
   grep -Fq -- "\`$name\`" "$SDS/../issue-tracker-github.md" || missing+=" $name"
 done <<<"$LABELS_SET"$'\n'"skip-changelog"
 eq "the GitHub tracker template names every label in the set" "" "$missing"
+label_table="$(sed -n '/^### The labels$/,/^### /p' "$DIR/docs/workflow.md" | grep '^| ')"
+missing=""
+while read -r name; do
+  grep -Fq -- "\`$name\`" <<<"$label_table" || missing+=" $name"
+done <<<"$LABELS_SET"$'\n'"skip-changelog"
+eq "docs/workflow.md's label table names every label in the set" "" "$missing"
 
 for failing in "repo view" "label list" "label edit" "issue list" "pr list" "label delete" "label create"; do
   labels_repo "$LABELS_DEFAULTS"
