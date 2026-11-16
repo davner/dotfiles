@@ -64,7 +64,7 @@ write gh api --method PATCH "repos/$repo" \
 protect=(gh api --method PUT "repos/$repo/branches/$branch/protection"
   -F 'required_status_checks[strict]=true')
 for c in "${checks[@]}"; do protect+=(-f "required_status_checks[contexts][]=$c"); done
-protect+=(-F enforce_admins=false
+protect+=(-F enforce_admins=true
   -F 'required_pull_request_reviews[required_approving_review_count]=0'
   -F restrictions=null -F required_linear_history=true
   -F allow_force_pushes=false -F allow_deletions=false)

@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-# shellcheck disable=SC2154  # lib.sh sets rc, listed and first
 # shellcheck source=/dev/null
 source "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
 
@@ -23,29 +22,28 @@ entries() { # repo folder, find tests -> the names in it, sorted
   shift
   find "$DIR/$d" -mindepth 1 -maxdepth 1 "$@" -exec basename {} \; | sort
 }
-link_target() { # links, user, home.file key -> the repo path it links to
-  awk -F'\t' -v k="$3" -v p="ln -s /Users/$2/.dotfiles/" -v e=' $out' \
+link_target() { # links, home.file key -> the repo path it links to
+  awk -F'\t' -v k="$2" -v p="ln -s /Users/danavner/.dotfiles/" -v e=' $out' \
     '$1 == k && index($2, p) == 1 && substr($2, length($2) - length(e) + 1) == e {
       print substr($2, length(p) + 1, length($2) - length(p) - length(e)) }' <<<"$1"
 }
-linked_each() { # links, user, repo folder, home folder, names on disk
+linked_each() { # links, repo folder, home folder, names on disk
   local name missing="" extra why=()
   while read -r name; do
     [ -n "$name" ] || continue
-    [ "$(link_target "$1" "$2" "$4/$name")" = "$3/$name" ] || missing="$missing $name"
-  done <<<"$5"
-  extra="$(awk -F'\t' -v d="$4/" 'index($1, d) == 1 { n = substr($1, length(d) + 1); if (n !~ /\//) print n }' <<<"$1" |
-    grep -vxF -f <(printf '%s\n' "$5") | tr '\n' ' ')"
+    [ "$(link_target "$1" "$3/$name")" = "$2/$name" ] || missing="$missing $name"
+  done <<<"$4"
+  extra="$(awk -F'\t' -v d="$3/" 'index($1, d) == 1 { n = substr($1, length(d) + 1); if (n !~ /\//) print n }' <<<"$1" |
+    grep -vxF -f <(printf '%s\n' "$4") | tr '\n' ' ')"
   [ -z "$missing" ] || why+=("not linked to its repo path:$missing - a flake sees only tracked files, git add it")
   [ -z "${extra// /}" ] || why+=("linked but not on disk: $extra")
   if [ "${#why[@]}" -eq 0 ]; then
-    ok "$2: each entry of $3 is linked into ~/$4"
+    ok "each entry of $2 is linked into ~/$3"
   else
-    bad "$2: each entry of $3 is linked into ~/$4" "${why[@]}"
+    bad "each entry of $2 is linked into ~/$3" "${why[@]}"
   fi
 }
 if full_only && require nix jq; then
-  fixture_users
   # impeccable's paths are under skills/, where its own installer puts them.
   # shellcheck disable=SC2016  # the $HOME is the literal text being matched
   settings_runs="$(jq -r '.. | objects | .command? // empty' "$BASE" |
@@ -56,23 +54,20 @@ if full_only && require nix jq; then
   hooks_on_disk="$(entries home/.claude/hooks -type f)"
   rules_on_disk="$(entries home/.claude/rules -type f -name '*.md')"
   skills_on_disk="$(entries home/.claude/skills -type d)"
-  while read -r u; do
-    [ -n "$u" ] || continue
     # shellcheck disable=SC2016  # the ${} are Nix interpolation, not shell
-    links="$(nix eval --raw "$DIR#darwinConfigurations.${u//./-}.config.home-manager.users.\"$u\".home.file" \
+    links="$(nix eval --raw "$DIR#darwinConfigurations.danavner.config.home-manager.users.danavner.home.file" \
       --apply 'f: builtins.concatStringsSep "\n" (builtins.concatMap (n:
         let s = f.${n}.source; in
         if builtins.substring 0 8 n == ".claude/" && builtins.isAttrs s && s ? buildCommand
         then [ "${n}\t${s.buildCommand}" ] else [ ]) (builtins.attrNames f))' \
       2>"$WORK/stderr")"
     if [ -z "$links" ]; then
-      bad "$u: home.file evaluates" "$(grep -v '^warning:' "$WORK/stderr" | head -5)"
-      continue
-    fi
+      bad "home.file evaluates" "$(grep -v '^warning:' "$WORK/stderr" | head -5)"
+    else
     broken=""
     while read -r p; do
       [ -n "$p" ] || continue
-      rel="$(link_target "$links" "$u" "$p")"
+      rel="$(link_target "$links" "$p")"
       if [ -z "$rel" ]; then
         broken="$broken ~/$p(no out-of-store link into ~/.dotfiles)"
       elif [ ! -f "$DIR/$rel" ] || [ ! -x "$DIR/$rel" ]; then
@@ -82,14 +77,14 @@ if full_only && require nix jq; then
       fi
     done <<<"$settings_runs"
     if [ -z "$broken" ]; then
-      ok "$u: everything settings.base.json runs is linked to an executable tracked file"
+      ok "everything settings.base.json runs is linked to an executable tracked file"
     else
-      bad "$u: everything settings.base.json runs is linked to an executable tracked file" "$broken"
+      bad "everything settings.base.json runs is linked to an executable tracked file" "$broken"
     fi
-    linked_each "$links" "$u" home/.claude/hooks .claude/hooks "$hooks_on_disk"
-    linked_each "$links" "$u" home/.claude/rules .claude/rules "$rules_on_disk"
-    linked_each "$links" "$u" home/.claude/skills .claude/skills "$skills_on_disk"
-  done <<<"$listed"
+    linked_each "$links" home/.claude/hooks .claude/hooks "$hooks_on_disk"
+    linked_each "$links" home/.claude/rules .claude/rules "$rules_on_disk"
+    linked_each "$links" home/.claude/skills .claude/skills "$skills_on_disk"
+    fi
 fi
 
 finish

@@ -10,22 +10,12 @@ usage() {
 Takes a fresh Mac from nothing to a built nix-darwin config. Run this once.
 After it finishes, use ./rebuild.sh for every later change.
 
-usage: ./bootstrap.sh [--user USERNAME]
-  --user NAME  build a configuration other than the current user's. Defaults
-               to whoever runs this.
+usage: ./bootstrap.sh
 EOF
 }
 
-# Resolve the target user before any sudo call: sudo rewrites $USER to root,
-# so the real interactive user has to be captured first. SUDO_USER covers the
-# case where this script itself was invoked with sudo.
-TARGET_USER="${SUDO_USER:-$(id -un)}"
 while [ $# -gt 0 ]; do
   case "$1" in
-    -u | --user)
-      TARGET_USER="${2:?--user needs a username}"
-      shift 2
-      ;;
     -h | --help)
       usage
       exit 0
@@ -37,9 +27,6 @@ while [ $# -gt 0 ]; do
       ;;
   esac
 done
-# Same substitution flake.nix makes: darwin-rebuild splits its flake attribute
-# on ".", so a username with a dot in it is keyed with dashes instead.
-TARGET_ATTR="${TARGET_USER//./-}"
 
 echo "==> Step 1: Determinate Nix"
 if command -v nix >/dev/null 2>&1; then
@@ -56,29 +43,7 @@ echo "==> Step 2: symlink this repo to ~/.dotfiles"
 # has to exist before the first switch or the build will fail to find them.
 ln -sfn "$DIR" ~/.dotfiles
 
-echo "==> Step 3: make sure flake.nix knows this username"
-# The usernames key an attrset, so a new machine is an addition rather than a
-# swap. Nothing already configured is touched.
-if "$DIR/users.sh" has "$TARGET_USER"; then
-  echo "    flake.nix already builds for \"$TARGET_USER\", nothing to do."
-else
-  echo "    flake.nix has no configuration for \"$TARGET_USER\" yet."
-  read -r -p "    Add \"$TARGET_USER\" to the users attrset in flake.nix? [y/N] " REPLY
-  if [ "$REPLY" = "y" ] || [ "$REPLY" = "Y" ]; then
-    "$DIR/users.sh" add "$TARGET_USER"
-    echo "    Added, with an empty record. Review it with: git diff flake.nix"
-    # Step 4 stops on this, by design, rather than committing from whichever
-    # address happened to be lying around.
-    echo "    Fill in its email before step 4, or the build will refuse to"
-    echo "    guess which address this machine commits as."
-  else
-    echo "    Skipped. Add \"$TARGET_USER\" to the users attrset in flake.nix,"
-    echo "    or re-run with --user for a username that is already listed."
-    exit 1
-  fi
-fi
-
-echo "==> Step 4: first darwin-rebuild switch for \"$TARGET_USER\""
+echo "==> Step 3: first darwin-rebuild switch"
 # darwin-rebuild doesn't exist yet on a fresh machine, so run it straight
 # from the flake this once. After this, rebuild.sh works normally.
 # This fetches the darwin-rebuild tool from the nix-darwin-26.05 release branch,
@@ -89,7 +54,7 @@ echo "==> Step 4: first darwin-rebuild switch for \"$TARGET_USER\""
 # on PATH here. Resolve the absolute path first and invoke that instead.
 NIX_BIN="$(command -v nix)"
 sudo "$NIX_BIN" run github:nix-darwin/nix-darwin/nix-darwin-26.05#darwin-rebuild -- \
-  switch --flake "$DIR#$TARGET_ATTR"
+  switch --flake "$DIR#danavner"
 # If this still fails with "nix: command not found", open a new terminal
 # (Determinate adds nix to new shells' PATH) and re-run ./bootstrap.sh.
 

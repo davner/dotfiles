@@ -35,7 +35,6 @@
 
   outputs =
     inputs@{
-      self,
       nix-darwin,
       nix-homebrew,
       home-manager,
@@ -43,157 +42,40 @@
       ...
     }:
     let
-      # Every macOS username this repo can build for. This is an attrset, not a
-      # single value, so one checkout serves several Macs
-      # at once - switching between them is a matter of which entry
-      # gets built, not an edit to this file that has to be undone later.
-      # bootstrap.sh and rebuild.sh pick the entry matching whoever runs them.
-      #
-      # A record holds only what genuinely differs from one machine to the
-      # next, so it does not turn into the place every new option gets parked:
-      # anything the machines agree on belongs in configuration.nix or home.nix
-      # where it is stated once. Note that weekly.yml and update.yml build
-      # every entry on macos-latest, which is arm64 - an x86_64-darwin record
-      # would fail CI with no builder available.
-      users = {
-        "danavner" = {
-          email = "ldpavner@gmail.com";
-          system = "aarch64-darwin";
-        };
-        "dan.avner" = {
-          email = "dan.avner@noirlab.edu";
-          system = "aarch64-darwin";
-        };
-        "dna" = {
-          email = "ldpavner@gmail.com";
-          system = "aarch64-darwin";
-        };
-      }; # end users - bootstrap.sh appends new usernames above this line
-
-      # darwin-rebuild splits its flake attribute on ".", so a username
-      # containing a dot cannot be an attribute name: `#darwinConfigurations
-      # .first.last.system` would be read as four path segments. Dots become
-      # dashes, and both scripts apply the same substitution when they choose
-      # which configuration to build.
-      attrFor = user: builtins.replaceStrings [ "." ] [ "-" ] user;
-
-      # Every configured machine is aarch64-darwin today, but the dev shell is
-      # useful on either Mac.
-      forEachDarwin =
-        f:
-        builtins.listToAttrs (
-          map
-            (system: {
-              name = system;
-              value = f nixpkgs.legacyPackages.${system};
-            })
-            [
-              "aarch64-darwin"
-              "x86_64-darwin"
-            ]
-        );
-
-      # A record's fields are optional, which is what lets `users.sh add` write
-      # an empty one and lets the missing-email throw be the thing that speaks.
-      # That same tolerance would swallow a typo: `sytem = "x86_64-darwin"` is
-      # not an error, it is an ignored key and a silent aarch64 build. So the
-      # keys are checked even though the values are not.
-      knownFields = [
-        "email"
-        "system"
-      ];
-      checkRecord =
-        user: record:
-        let
-          unknown = builtins.filter (k: !(builtins.elem k knownFields)) (builtins.attrNames record);
-        in
-        if unknown == [ ] then
-          record
-        else
-          throw ''
-            flake.nix: user "${user}" has unknown field(s): ${builtins.concatStringsSep ", " unknown}.
-            A record holds only ${builtins.concatStringsSep " and " knownFields}. Check the spelling.'';
-
-      # A record feeds the modules' options; a field it leaves out stays unset,
-      # so the module's own default or missing-email message applies.
-      mkDarwin =
-        user:
-        let
-          cfg = checkRecord user users.${user};
-        in
-        nix-darwin.lib.darwinSystem {
-          modules = darwinParts ++ [
-            {
-              dotfiles = {
-                user.name = user;
-              }
-              // nixpkgs.lib.optionalAttrs (cfg ? email) { git.email = cfg.email; }
-              // nixpkgs.lib.optionalAttrs (cfg ? system) { inherit (cfg) system; };
-            }
-          ];
-        };
-
-      # The key lets a consumer import homeModules.default, already wired in, without doubling it.
-      coreModule =
-        name: file:
-        let
-          module = import file inputs;
-        in
-        nixpkgs.lib.setFunctionArgs (
-          args:
-          module args
-          // {
-            key = "github:davner/dotfiles#${name}";
-            _file = file;
-          }
-        ) (nixpkgs.lib.functionArgs module);
-
-      # Top level for the personal Macs: lists merge in import-depth order, so a wrapper reorders them.
-      darwinParts = [
-        (coreModule "configuration" ./configuration.nix)
-        nix-homebrew.darwinModules.nix-homebrew
-        home-manager.darwinModules.home-manager
-      ];
+      # The one Mac this repo builds for. CI runs on macos-latest, which is
+      # arm64, so changing this would leave update.yml without a builder.
+      system = "aarch64-darwin";
+      pkgs = nixpkgs.legacyPackages.${system};
     in
     {
-      # What another flake imports to build on this one; the personal Macs
-      # below are built from the same parts.
-      darwinModules.default = {
-        key = "github:davner/dotfiles#darwinModules.default";
-        imports = darwinParts;
+      darwinConfigurations.danavner = nix-darwin.lib.darwinSystem {
+        specialArgs = { inherit inputs; };
+        modules = [
+          ./configuration.nix
+          nix-homebrew.darwinModules.nix-homebrew
+          home-manager.darwinModules.home-manager
+        ];
       };
-      homeModules.default = coreModule "homeModules.default" ./home.nix;
 
-      # One configuration per username, e.g. `#danavner` and `#dna`.
-      darwinConfigurations = builtins.listToAttrs (
-        map (user: {
-          name = attrFor user;
-          value = mkDarwin user;
-        }) (builtins.attrNames users)
-      );
-
-      # What ./test.sh lints with and what regenerates CHANGELOG.md, pinned by
-      # flake.lock so CI and this machine agree. `nix develop --command
+      # What ./test.sh lints with, pinned by flake.lock so CI and this machine
+      # agree. `nix develop --command
       # ./test.sh` skips nothing.
-      devShells = forEachDarwin (pkgs: {
-        default = pkgs.mkShellNoCC {
-          # jq is what home/.claude/hooks/comment-audit.sh parses its payload with,
-          # and test.sh skips those checks without it. macOS has shipped jq at
-          # /usr/bin/jq since Sequoia and CI runners carry one, so the tests
-          # pass either way - but neither is this flake's to promise.
-          packages = [
-            pkgs.shellcheck
-            pkgs.actionlint
-            pkgs.git-cliff
-            pkgs.jq
-            pkgs.nixfmt
-          ];
-        };
-      });
+      devShells.${system}.default = pkgs.mkShellNoCC {
+        # jq is what home/.claude/hooks/comment-audit.sh parses its payload with,
+        # and test.sh skips those checks without it. macOS has shipped jq at
+        # /usr/bin/jq since Sequoia and CI runners carry one, so the tests
+        # pass either way - but neither is this flake's to promise.
+        packages = [
+          pkgs.shellcheck
+          pkgs.actionlint
+          pkgs.jq
+          pkgs.nixfmt
+        ];
+      };
 
       # `nix fmt` to fix, `nixfmt --check` in test.sh to gate. nixfmt-tree
       # rather than nixfmt itself: bare nixfmt reads stdin when given no
       # arguments, so `nix fmt` with no path would format nothing and fail.
-      formatter = forEachDarwin (pkgs: pkgs.nixfmt-tree);
+      formatter.${system} = pkgs.nixfmt-tree;
     };
 }

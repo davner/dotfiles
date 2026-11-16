@@ -6,7 +6,7 @@ section "syntax and lint"
 # From git, so a new script is linted without anyone listing it. Untracked
 # files count too: the flake would miss them, but a typo in one should not.
 SCRIPTS=()
-while IFS= read -r s; do SCRIPTS+=("$s"); done < <(cd "$DIR" && git ls-files -co --exclude-standard '*.sh')
+while IFS= read -r s; do [ -e "$DIR/$s" ] && SCRIPTS+=("$s"); done < <(cd "$DIR" && git ls-files -co --exclude-standard '*.sh')
 [ "${#SCRIPTS[@]}" -gt 0 ] || bad "git lists the shell scripts" "git ls-files found no *.sh in $DIR"
 bash_scripts=()
 for s in "${SCRIPTS[@]}"; do
@@ -48,8 +48,6 @@ if command -v actionlint >/dev/null 2>&1; then
 else
   skip "actionlint (nix develop --command ./test.sh installs it)"
 fi
-# users.sh parses flake.nix by shape, so a reformat is the change that could
-# break it silently.
 if command -v nixfmt >/dev/null 2>&1; then
   if err="$(cd "$DIR" && git ls-files -z '*.nix' | xargs -0 nixfmt --check 2>&1)"; then
     ok "nixfmt"

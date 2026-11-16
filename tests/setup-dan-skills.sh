@@ -90,7 +90,7 @@ eq "a real run makes the three writes, in order" "$(
   cat <<'CALLS'
 repo edit davner/demo --enable-auto-merge --delete-branch-on-merge --enable-squash-merge --enable-merge-commit=false --enable-rebase-merge=false
 api --method PATCH repos/davner/demo -f squash_merge_commit_title=PR_TITLE -f squash_merge_commit_message=BLANK
-api --method PUT repos/davner/demo/branches/main/protection -F required_status_checks[strict]=true -f required_status_checks[contexts][]=test -f required_status_checks[contexts][]=towncrier check -F enforce_admins=false -F required_pull_request_reviews[required_approving_review_count]=0 -F restrictions=null -F required_linear_history=true -F allow_force_pushes=false -F allow_deletions=false
+api --method PUT repos/davner/demo/branches/main/protection -F required_status_checks[strict]=true -f required_status_checks[contexts][]=test -f required_status_checks[contexts][]=towncrier check -F enforce_admins=true -F required_pull_request_reviews[required_approving_review_count]=0 -F restrictions=null -F required_linear_history=true -F allow_force_pushes=false -F allow_deletions=false
 CALLS
 )" "$(writes)"
 eq "a real run keeps GitHub's JSON replies off stdout" "" "$OUT"

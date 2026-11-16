@@ -2,8 +2,10 @@ name: test
 
 # Everything here is quick: the shell-level half of ./test.sh, plus the
 # linters. The flake evaluations and the actual system builds are slow enough
-# to live in weekly.yml instead.
-on: [push, pull_request]
+# to live in update.yml instead.
+
+# workflow_dispatch lets update.yml start this on its own PR branch.
+on: [push, pull_request, workflow_dispatch]
 
 concurrency:
   group: test-${{ github.ref }}
@@ -20,13 +22,10 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v7
-        with:
-          # tests/changelog.sh renders the changelog template, which needs the history.
-          fetch-depth: 0
 
       - uses: DeterminateSystems/nix-installer-action@main
 
-      # nix develop supplies shellcheck, actionlint and git-cliff at the
+      # nix develop supplies shellcheck and actionlint at the
       # versions flake.lock pins, so nothing in tests/ has to skip.
       - name: ./test.sh --fast
         run: nix develop --command ./test.sh --fast
