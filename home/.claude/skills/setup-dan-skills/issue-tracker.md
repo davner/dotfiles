@@ -55,6 +55,10 @@ Set a `Status: needs-info` line near the top of the item's ticket file, and writ
 
 The oldest ticket file under `<scratch>/*/issues/` with `Status: ready-for-agent`. None means nothing is ready.
 
+## When a skill says "claim an item"
+
+Nothing to claim: the tracker holds no queue an agent takes from, so the item next-up names is the run's item.
+
 ## Agent PRs
 
 None: the user opens PRs. A PR body's first line names its ticket, <`Shortcut: sc-1234` | `Jira: <KEY>-123`>, a link when the tracker URL is known.

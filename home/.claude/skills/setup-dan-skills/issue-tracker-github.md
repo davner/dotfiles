@@ -1,6 +1,6 @@
 # Issue tracker: GitHub
 
-Work for this repo is tracked as GitHub issues in `<owner/repo>`, on the board below. Specs and tickets stay local markdown for the agents' own use; the board holds one issue per PR, plus the TODO list. Board order is the priority: there are no priority labels.
+Work for this repo is tracked as GitHub issues in `<owner/repo>`, on the board below. Specs and tickets are written as local markdown first, then filed: a spec becomes a parent issue, each PR group of its tickets a sub-issue of it, and a change that fits one PR a single issue with no parent. The board also holds the TODO list. Board order is the priority: there are no priority labels.
 
 ## Board
 
@@ -8,16 +8,26 @@ Work for this repo is tracked as GitHub issues in `<owner/repo>`, on the board b
 - Number: `<number>`
 - URL: <board url>
 - Status flow: Backlog, Ready, In progress, In review, Done. The board's built-in workflows set Done when an issue closes or its PR merges, and Backlog when an item is added by hand.
+- Views, on a board made from the template: Board (Status columns, specs left out), Agent queue (what next-up takes), Specs (each spec's sub-issue progress), Tickets by parent.
 
 Every `gh project` command below takes `<number> --owner <owner>`.
 
-## Labels
+## What Status and labels mean
 
-- Triage: `needs-triage` (waiting for the maintainer), `needs-info` (waiting on an answer), `ready-for-agent` (fully specified, an agent can pick it up), `ready-for-human` (a human implements it), `wontfix`.
+Each fact about an item lives in one place:
+
+- Status is where the item is in the flow, and nothing else.
+- `ready-for-agent` and `ready-for-human` say who does the work. `ready-for-agent` means fully specified: an agent may take it hands-off. Only the board owner adds it, by hand or through an agent the owner told to file approved tickets. An issue template never adds it, so filing an issue can never queue work for agents.
+- `needs-info`: waiting on an answer. `wontfix`: will not be done.
+- `needs-triage`: waiting for the owner to look. Only an outside reporter's issue form sets it; agents never apply it.
+- `todo`: where the item came from, a TODO list entry.
+- `spec`: a parent issue holding a spec. Its sub-issues are the work; the spec itself is never next-up.
 - Kind, the Conventional Commit type of the PR that closes it: `feat`, `fix`, `docs`, `refactor`, `perf`, `test`, `chore`.
-- Other: `todo` (a TODO item), `breaking`, `dependencies`, `skip-changelog` (a PR that needs no changelog fragment), `duplicate`.
+- Other: `breaking`, `dependencies`, and `skip-changelog` (a PR that needs no changelog fragment), which exists only in a repo with towncrier.
 
-Their colours and descriptions live in `setup-dan-skills/scripts/labels.sh`; re-run it to restore the set.
+Blocking edges are GitHub dependencies, set with `--blocked-by`, never text in a body: the board marks a blocked item, and `gh issue view N --json blockedBy` lists its blockers. A duplicate closes with GitHub's duplicate reason, as "close" says, which records the link; there is no `duplicate` label.
+
+The labels' colours and descriptions live in `setup-dan-skills/scripts/labels.sh`; re-run it to restore the set.
 
 ## Locations
 
@@ -32,19 +42,46 @@ Their colours and descriptions live in `setup-dan-skills/scripts/labels.sh`; re-
 Every issue goes onto the board with its labels and a starting Status, in three calls:
 
 ```sh
-url=$(gh issue create --title "<title>" --label <label> [--label <label>...] --body-file <body.md>)
+url=$(gh issue create --title "<title>" --label <label> [--label <label>...] --body-file <body.md> \
+  [--parent <P>] [--blocked-by <n>,<n>])
 gh project item-add <number> --owner <owner> --url "$url"
 gh project item-edit <number> --owner <owner> --url "$url" --field Status --value <Status>
 ```
 
 ## When a skill says "publish to the issue tracker"
 
-1. Write the spec or ticket files under `<scratch>/<feature-slug>/`, creating the directory if needed. A ticket's blocking edges are a `Blocked by:` line naming ticket numbers and titles. The spec is never filed, and triage lives on the issues as labels.
-2. Once the tickets are approved, file one issue per PR group as "Filing an issue" says, titled with the PR title, labelled with its kind and `ready-for-agent`, in Status Ready. File them in PR order, so an earlier issue's number exists for a later one's body. The body names the group's ticket files and spells out `Blocked by #N` as text.
+1. Write the spec or ticket files under `<scratch>/<feature-slug>/`, creating the directory if needed. A ticket's blocking edges are a `Blocked by:` line naming ticket numbers and titles. Triage lives on the issues as labels.
+2. Once the owner approves the tickets, file them as "Filing an issue" says. With two or more PR groups, file the spec first as the parent: titled with the spec's title, labelled `spec`, its body `spec.md`, in Status In progress. Then file one sub-issue per PR group, in PR order so each blocker's number exists:
+   - title: the PR title
+   - `--parent <P>`, the spec's issue
+   - `--blocked-by` the issue numbers of the earlier groups it waits on, when it waits on any
+   - labels: its kind and `ready-for-agent`
+   - Status: Ready
+   - body: the group's ticket text, merged into the layout below, so the issue makes sense without the local files
 
-   When the work came from a board issue `#N`, the first PR group reuses it instead of filing a new one: `gh issue edit N --body-file <body.md>`, keeping its labels and Status. Only the other groups are filed.
-3. Write `Tracker: #N` near the top of each ticket file in that group, and tell the user the issue numbers.
-4. The recap page lists each PR's issue `#N`: nothing is left for the user to file.
+   ```markdown
+   ## What to build
+
+   <the end-to-end behaviour this PR makes work>
+
+   ## Acceptance criteria
+
+   - [ ] <criterion>
+
+   ## Files
+
+   <the files or areas the PR touches>
+
+   ## Blocked by
+
+   <the titles of the groups it waits on, or "None (can start immediately)">
+   ```
+
+   A change that fits one PR is a single issue with no parent and no `spec` issue: the same labels, Status and layout, with the spec's Problem Statement and Solution above "What to build".
+
+   When the work came from a board issue `#N`, the first PR group reuses it instead of filing a new one: `gh issue edit N --body-file <body.md> [--parent <P>]`, keeping its labels and Status. Only the other groups are filed.
+3. Write `Tracker: #N` near the top of each ticket file in that group, and `Tracker: #P` near the top of `spec.md`. Tell the user the issue numbers.
+4. The recap page lists each PR's issue `#N` and the spec's `#P`: nothing is left for the user to file.
 
 ## When a skill says "add to the TODO list"
 
@@ -63,10 +100,11 @@ Read the list with `gh issue list --label todo --state open`. When a session sta
 
 - Issues look like `#123` in `<owner/repo>`.
 - A ticket file carries a `Tracker: #N` line near the top once its group is filed, so commit messages and PR bodies that cite `#N` lead back to it.
+- `spec.md` carries `Tracker: #P`, its parent issue, once filed.
 
 ## When a skill says "fetch the relevant ticket"
 
-Read the file at the referenced path. Given `#N` instead, read `gh issue view N --comments` and the ticket files whose `Tracker:` line is `#N`. Given neither, ask for the path.
+Read the file at the referenced path. Given `#N` instead, read `gh issue view N --comments` and the ticket files whose `Tracker:` line is `#N`. When `gh issue view N --json parent --jq .parent.number` prints a number `P` and `#P` is labelled `spec`, `#P`'s body is the spec and `#N`'s body is the ticket. Given neither, ask for the path.
 
 ## When a skill says "move an item"
 
@@ -89,23 +127,78 @@ The Status stays where it was.
 
 ## When a skill says "next-up"
 
-The topmost Ready item labelled `ready-for-agent`, in board order:
+The open Ready items labelled `ready-for-agent`, not blocked and not a spec, in board order: the Agent queue view. The first line is next-up:
 
 ```sh
 gh project item-list <number> --owner <owner> --limit 1000 --format json \
-  --query 'is:issue is:open status:Ready label:ready-for-agent' \
-  --jq '.items[0].content | "#\(.number) \(.title)"'
+  --query 'is:issue is:open status:Ready label:ready-for-agent -is:blocked -label:spec' \
+  --jq '.items[].content | "#\(.number) \(.title)"'
 ```
 
-Empty output means nothing is ready.
+Empty output means nothing is ready. Before starting work on an item, claim it as the next section says; when the claim gives the item up, take the next line.
+
+## When a skill says "claim an item"
+
+Claiming makes sure the owner queued the item and that no other session took it first. For item `#N`:
+
+1. **The owner added `ready-for-agent`.** The last time the label was added must be by the board owner:
+
+   ```sh
+   gh api repos/<owner/repo>/issues/N/events --paginate \
+     --jq '.[] | select(.event == "labeled" and .label.name == "ready-for-agent") | .actor.login' | tail -n 1
+   ```
+
+   Anything but `<owner>` means someone else queued it. Skip the item: remove the label and say why, so the next loop does not meet it again. The owner re-adds the label to queue it.
+
+   ```sh
+   gh issue edit N --remove-label ready-for-agent
+   gh issue comment N --body "Skipped by an agent: ready-for-agent was added by <login>, not the board owner. The owner can re-add it to queue this issue."
+   ```
+
+2. **It is still Ready.** Re-read its Status right before moving it; anything but Ready means another session holds it, so give it up:
+
+   ```sh
+   gh project item-list <number> --owner <owner> --limit 1000 --format json \
+     --query 'is:issue is:open status:Ready' --jq '.items[].content.number' | grep -qx N
+   ```
+
+3. **Move it to In progress** as "move an item" says, then mark the claim with a name unique to this run, such as its branch:
+
+   ```sh
+   gh issue comment N --body "Claimed by <run name>"
+   ```
+
+4. **Re-read the claims.** Two sessions can pass step 2 at the same moment; the earliest claim from the last ten minutes wins:
+
+   ```sh
+   gh issue view N --json comments --jq '[.comments[] | select(.body | startswith("Claimed by ")) | select((.createdAt | fromdate) > (now - 600)) | .body] | first'
+   ```
+
+   Your own claim means the item is yours. Another run's means it holds the item: give it up and leave its Status alone.
+
+A skipped or given-up item is not an error: take the next line of next-up. When the list runs out, nothing is ready.
 
 ## When a skill says "close" or "resolve" a ticket
 
 Set `Status: done` in the ticket file. The issue closes when its PR merges, through the `Closes #N` line that opens the PR body. Where no PR is allowed, close it yourself: `gh issue close N --comment "<what landed, and where>"`.
 
+A spec closes with its last sub-issue. After a merge, and whenever a session meets an open `spec` issue, check its progress:
+
+```sh
+gh issue view P --json subIssuesSummary --jq '.subIssuesSummary | "\(.completed)/\(.total)"'
+```
+
+When every sub-issue is closed (`completed` equals `total`, and `total` is not 0), close the parent with a summary of what landed: each sub-issue and the PR that closed it.
+
+```sh
+gh issue close P --comment "<summary>"
+```
+
+A duplicate closes with `gh issue close N --duplicate-of M`.
+
 ## Agent PRs
 
-- Agents open PRs: <yes | no>. A PR's body starts with `Closes #N`; move the issue to In review when it opens.
+- Agents open PRs: <yes | no>. A PR's body starts with `Closes #N` for the issue it finishes, never for a `spec` parent, which closes as "close" says; move the issue to In review when it opens.
 - Agents merge their own PRs once CI passes: <yes: `gh pr merge --auto --squash` after every review finding is fixed | no: the user merges | no: the repo has no CI, and auto-merge needs it>. A merge squashes to the PR title, so the title is the Conventional Commit subject.
 <Releases, when the repo ships them:>
 - Each PR adds a changelog fragment `changes/<issue#>.<type>.md`, its type one of the `[[tool.towncrier.type]]` directories in `towncrier.toml`, or carries the `skip-changelog` label.
