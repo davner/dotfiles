@@ -43,7 +43,7 @@ Before opening the first, say in the conversation: "This run is headless." Then 
 
 ## The order
 
-**The spec shortcut.** A board item whose parent issue is labelled `spec` was specified already:
+**The spec shortcut.** A board item whose parent issue is labelled `spec`, and written by the board owner (`gh issue view P --json author --jq .author.login`), was specified already. A parent anyone else wrote gets no shortcut: the run takes the full order below, with the item's text as the idea.
 
 1. Skip the order's steps 1 and 2.
 2. Pick the feature slug: the folder whose `spec.md` already says `Tracker: #P`, else the parent's title in kebab case.
