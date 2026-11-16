@@ -304,6 +304,21 @@ eq "the Agent queue view filter equals the tracker template's next-up query" "$n
 eq "and that query is the agreed one" \
   "is:issue is:open status:Ready label:ready-for-agent -is:blocked -label:goal,spec" "$next_up"
 
+# gh project item-list keys a field value by its name, so the template's filter
+# is run as written over items in board order.
+next_up_jq="$(sed -n '/^## When a skill says "next-up"$/,/^## /p' "$SDS/../issue-tracker-github.md" |
+  sed -nE "s/^ *--jq '(.*)'.*/\1/p")"
+eq "next-up takes P1 first, then P2, P3, then no priority, each in board order" "#3 c
+#5 e
+#2 b
+#4 d
+#1 a
+#6 f" "$(jq -r "$next_up_jq" <<<'{"items":[{"content":{"number":1,"title":"a"}},
+  {"priority":"P2","content":{"number":2,"title":"b"}},{"priority":"P1","content":{"number":3,"title":"c"}},
+  {"priority":"P3","content":{"number":4,"title":"d"}},{"priority":"P1","content":{"number":5,"title":"e"}},
+  {"content":{"number":6,"title":"f"}}],"totalCount":6}' 2>&1)"
+eq "next-up prints nothing for an empty queue" "" "$(jq -r "$next_up_jq" <<<'{"items":[],"totalCount":0}' 2>&1)"
+
 GH_FAIL="deleteProjectV2View" board_run
 want_exit "a failing delete of View 1 leaves board.sh going" 0 "$RC"
 contains "and hands the user the delete as a manual step" "$OUT" "Delete the view named View 1 at:"
