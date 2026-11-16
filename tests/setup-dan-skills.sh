@@ -128,7 +128,6 @@ LABELS_SET="breaking
 chore
 dependencies
 docs
-duplicate
 feat
 fix
 needs-info
@@ -156,11 +155,13 @@ contains "a fresh repo: bug is renamed to fix" "$(calls_to label edit)" "label e
 eq "a fresh repo: the three overlapping defaults are renamed" "label edit bug -R owner/repo --name fix
 label edit enhancement -R owner/repo --name feat
 label edit documentation -R owner/repo --name docs" "$(calls_to label edit)"
-eq "a fresh repo: the four unused defaults are deleted" "label delete good first issue -R owner/repo --yes
+eq "a fresh repo: the five unused defaults are deleted" "label delete good first issue -R owner/repo --yes
 label delete help wanted -R owner/repo --yes
 label delete question -R owner/repo --yes
-label delete invalid -R owner/repo --yes" "$(calls_to label delete)"
-eq "a fresh repo: each delete is checked against issues and PRs in every state" "8" \
+label delete invalid -R owner/repo --yes
+label delete duplicate -R owner/repo --yes" "$(calls_to label delete)"
+not_called "a fresh repo: duplicate is not created" '^label create duplicate '
+eq "a fresh repo: each delete is checked against issues and PRs in every state" "10" \
   "$(grep -cE '^(issue|pr) list .*--state all' <<<"$CALLS")"
 
 labels_repo "$LABELS_DEFAULTS"
@@ -175,6 +176,7 @@ gh_run "$LABELS"
 eq "a default an issue carries: labels.sh exits 0" "0" "$RC"
 eq "a default an issue carries: it is kept" "" "$(calls_to label delete)"
 contains "a default an issue carries: the kept label is reported" "$OUT" "kept question: an issue or PR carries it"
+contains "a duplicate an issue carries: it is kept" "$OUT" "kept duplicate: an issue or PR carries it"
 
 labels_repo "$LABELS_DEFAULTS"
 gh_can pr-list '[{"number":8}]'
@@ -186,8 +188,10 @@ gh_run "$LABELS"
 eq "a re-run: labels.sh exits 0" "0" "$RC"
 eq "a re-run: nothing is renamed" "" "$(calls_to label edit)"
 eq "a re-run: nothing is deleted" "" "$(calls_to label delete)"
-eq "a re-run: the set is written again with --force" "17" \
+eq "a re-run: the set is written again with --force" "16" \
   "$(calls_to label create | grep -c -- '--force')"
+eq "a re-run: no label outside the set is created" "$LABELS_SET" \
+  "$(calls_to label create | awk '{print $3}' | sort)"
 
 labels_repo '["bug","fix"]'
 gh_run "$LABELS"
