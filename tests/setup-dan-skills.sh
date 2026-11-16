@@ -21,7 +21,7 @@ if [ -n "${GH_FAIL-}" ] && [[ $args == *"$GH_FAIL"* ]]; then
   echo "HTTP 403: Upgrade to GitHub Pro or make this repository public to enable this feature." >&2
   exit 1
 fi
-canned="$root/canned/$1-$2"
+canned="$root/canned/$1-${2//\//_}"
 [ -f "$canned" ] || canned="$root/canned/$1"
 [ -f "$canned" ] || exit 0
 filter=""
@@ -223,6 +223,9 @@ gh_can project-create '{"number":7,"id":"PVT_t","title":"dan-skills template","u
 gh_can project-copy '{"number":8,"id":"PVT_b","title":"me/app","url":"https://github.com/users/me/projects/8"}'
 gh_can project-field-list '{"fields":[{"id":"PVTF_title","name":"Title","type":"ProjectV2Field"},{"id":"PVTSSF_status","name":"Status","type":"ProjectV2SingleSelectField","options":[{"id":"a","name":"Todo"},{"id":"b","name":"In Progress"},{"id":"c","name":"Done"}]}],"totalCount":2}'
 gh_can api '{"data":{}}'
+gh_can api-users_me_projectsV2_7_fields '[{"id":101,"name":"Title"},{"id":102,"name":"Assignees"},{"id":103,"name":"Status"},
+  {"id":104,"name":"Labels"},{"id":105,"name":"Linked pull requests"},{"id":106,"name":"Parent issue"},
+  {"id":107,"name":"Sub-issues progress"}]'
 board_scopes() { # scope list as gh prints it -> gh auth status reports those scopes
   gh_can auth-status "$(printf 'github.com\n  - Token scopes: %s' "$1")"
 }
@@ -246,16 +249,27 @@ called "with Backlog, Ready, In progress, In review, Done in order" \
 not_called "it leaves the template unmarked" '^project mark-template'
 contains "it prints the template's workflows page" "$OUT" $'\nhttps://github.com/users/me/projects/7/workflows\n'
 for wf in "Item closed: set Status to Done" "Pull request merged: set Status to Done" \
-  "Auto-close issue: on" "Auto-archive items: Done items after 14 days" "Item added to project: set Status to Backlog"; do
+  "Auto-close issue: on" "Auto-archive items: Done items after 14 days" "Item added to project: set Status to Backlog" \
+  "Auto-add sub-issues to project: on" "Pull request linked to issue: set Status to In review"; do
   contains "it lists the template workflow '$wf'" "$OUT" "$wf"
 done
 contains "it prints the board's workflows page" "$OUT" $'\nhttps://github.com/users/me/projects/8/workflows'
 contains "it prints the auto-add filter" "$OUT" "is:issue is:open"
+eq "it creates four views, all on the template" 4 "$(grep -c '^api users/me/projectsV2/7/views ' <<<"$CALLS")"
+called "it creates the Agent queue view on the template, a table of ready, unblocked agent work" \
+  '^api users/me/projectsV2/7/views --method POST -f name=Agent queue -f layout=table -f filter=is:open status:Ready label:ready-for-agent -is:blocked -label:spec -F visible_fields\[\]=101 -F visible_fields\[\]=104 -F visible_fields\[\]=106$'
+called "it creates the Board view, columns by Status, specs left out" \
+  '^api users/me/projectsV2/7/views --method POST -f name=Board -f layout=board -f filter=is:issue -label:spec -F visible_fields\[\]=101 -F visible_fields\[\]=104 -F visible_fields\[\]=105 -F visible_fields\[\]=106 -F vertical_group_by\[\]=103$'
+called "it creates the Specs view, with each spec's sub-issue progress" \
+  '^api users/me/projectsV2/7/views --method POST -f name=Specs -f layout=table -f filter=label:spec -F visible_fields\[\]=101 -F visible_fields\[\]=103 -F visible_fields\[\]=107$'
+called "it creates the Tickets by parent view, grouped by parent issue" \
+  '^api users/me/projectsV2/7/views --method POST -f name=Tickets by parent -f layout=table -f filter=is:open has:parent-issue -F visible_fields\[\]=101 -F visible_fields\[\]=103 -F visible_fields\[\]=105 -F group_by\[\]=106$'
 
 board_run "3=dan-skills template" "4=me/other"
 want_exit "with the template and no board, board.sh exits 0" 0 "$RC"
 not_called "it creates nothing" '^project create'
 not_called "it leaves the template's Status alone" '^api graphql'
+not_called "or its views" '/views '
 called "it copies the existing template" '^project copy 3 .*--title me/app'
 called "and links the copy" '^project link 8 '
 eq "it prints the numbers, the URL and only the auto-add step" "template=3
@@ -267,7 +281,7 @@ https://github.com/users/me/projects/8/workflows" "$OUT"
 
 board_run "3=dan-skills template" "5=me/app"
 want_exit "with the template and the board, board.sh exits 0" 0 "$RC"
-not_called "it creates, copies or links nothing" '^(project (create|copy|link)|api graphql)'
+not_called "it creates, copies or links nothing" '^(project (create|copy|link)|api )'
 eq "it prints the numbers and the URL, and no manual steps" "template=3
 board=5
 url=https://github.com/users/me/projects/5" "$OUT"
@@ -290,6 +304,22 @@ want_exit "a failing gh api graphql stops board.sh" 1 "$RC"
 eq "a failing gh api graphql is the last call made" "api graphql" \
   "$(tail -n 1 <<<"$CALLS" | awk '{print $1, $2}')"
 eq "and prints no board line" "" "$(grep '^board=' <<<"$OUT")"
+
+GH_FAIL="projectsV2/7/views" board_run
+want_exit "a failing view create stops board.sh" 1 "$RC"
+contains "and passes on GitHub's error" "$ERR" "HTTP 403"
+not_called "before copying the template" '^project copy'
+eq "and prints no board line" "" "$(grep '^board=' <<<"$OUT")"
+
+gh_can api-users_me_projectsV2_7_fields '[{"id":101,"name":"Title"},{"id":103,"name":"Status"},{"id":104,"name":"Labels"},
+  {"id":105,"name":"Linked pull requests"},{"id":106,"name":"Parent issue"}]'
+board_run
+want_exit "a new template without the Sub-issues progress field stops board.sh" 1 "$RC"
+contains "and names the missing field" "$ERR" "project 7 has no Sub-issues progress field"
+not_called "before creating any view, so a re-run is not left half built" '/views '
+gh_can api-users_me_projectsV2_7_fields '[]'
+board_run
+contains "with no fields at all it names the first one missing" "$ERR" "project 7 has no Title field"
 
 gh_can project-field-list '{"fields":[{"id":"PVTF_title","name":"Title","type":"ProjectV2Field"}],"totalCount":1}'
 board_run
