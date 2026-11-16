@@ -49,8 +49,8 @@ set_status_options() { # project number, project url
 }
 
 # Shared, since every view goes on the one template create_views builds: its
-# number, owner login, URL, and field IDs by name as JSON.
-view_project="" view_login="" view_url="" view_ids=""
+# number, owner's numeric ID, URL, and field IDs by name as JSON.
+view_project="" view_user="" view_url="" view_ids=""
 
 field_id() { # field name -> its ID on the template
   jq -r --arg n "$1" '.[$n]' <<<"$view_ids"
@@ -68,15 +68,17 @@ create_view() { # name, layout, filter, [--group-by FIELD], [--columns-by FIELD]
     shift
   done
   [[ -z $grouping ]] || args+=(-F "$grouping")
-  gh api "users/$view_login/projectsV2/$view_project/views" --method POST "${args[@]}" >/dev/null ||
+  gh api "users/$view_user/projectsV2/$view_project/views" --method POST "${args[@]}" >/dev/null ||
     half_built "creating the $name view failed" "$view_url"
 }
 
 create_views() { # project number, project url
-  local field
-  view_project=$1 view_url=$2 view_login=${2#*/users/}
-  view_login=${view_login%%/*}
-  view_ids=$(gh api "users/$view_login/projectsV2/$1/fields" --jq 'map({(.name): .id}) | add // {}')
+  local field login=${2#*/users/}
+  login=${login%%/*}
+  view_project=$1 view_url=$2
+  # The views path takes the owner's numeric ID; the fields path takes the login.
+  view_user=$(gh api user --jq .id)
+  view_ids=$(gh api "users/$login/projectsV2/$1/fields" --jq 'map({(.name): .id}) | add // {}')
   # Checked before any view exists, since a re-run reuses the template as it is.
   for field in Title Status Labels "Linked pull requests" "Parent issue" "Sub-issues progress"; do
     jq -e --arg n "$field" 'has($n)' <<<"$view_ids" >/dev/null ||

@@ -224,6 +224,9 @@ gh_can api '{"data":{}}'
 gh_can api-users_me_projectsV2_7_fields '[{"id":101,"name":"Title"},{"id":102,"name":"Assignees"},{"id":103,"name":"Status"},
   {"id":104,"name":"Labels"},{"id":105,"name":"Linked pull requests"},{"id":106,"name":"Parent issue"},
   {"id":107,"name":"Sub-issues progress"}]'
+# GitHub's docs name the views path's user {user_id}, "the unique identifier of
+# the user", where the fields path takes {username}, the handle.
+gh_can api-user '{"login":"me","id":4242}'
 board_scopes() { # scope list as gh prints it -> gh auth status reports those scopes
   gh_can auth-status "$(printf 'github.com\n  - Token scopes: %s' "$1")"
 }
@@ -253,15 +256,15 @@ for wf in "Item closed: set Status to Done" "Pull request merged: set Status to 
 done
 contains "it prints the board's workflows page" "$OUT" $'\nhttps://github.com/users/me/projects/8/workflows'
 contains "it prints the auto-add filter" "$OUT" "is:issue is:open"
-eq "it creates four views, all on the template" 4 "$(grep -c '^api users/me/projectsV2/7/views ' <<<"$CALLS")"
+eq "it creates four views, all on the template" 4 "$(grep -c '^api users/4242/projectsV2/7/views ' <<<"$CALLS")"
 called "it creates the Agent queue view on the template, a table of ready, unblocked agent work" \
-  '^api users/me/projectsV2/7/views --method POST -f name=Agent queue -f layout=table -f filter=is:issue is:open status:Ready label:ready-for-agent -is:blocked -label:spec -F visible_fields\[\]=101 -F visible_fields\[\]=104 -F visible_fields\[\]=106$'
+  '^api users/4242/projectsV2/7/views --method POST -f name=Agent queue -f layout=table -f filter=is:issue is:open status:Ready label:ready-for-agent -is:blocked -label:spec -F visible_fields\[\]=101 -F visible_fields\[\]=104 -F visible_fields\[\]=106$'
 called "it creates the Board view, columns by Status, specs left out" \
-  '^api users/me/projectsV2/7/views --method POST -f name=Board -f layout=board -f filter=is:issue -label:spec -F visible_fields\[\]=101 -F visible_fields\[\]=104 -F visible_fields\[\]=105 -F visible_fields\[\]=106 -F vertical_group_by\[\]=103$'
+  '^api users/4242/projectsV2/7/views --method POST -f name=Board -f layout=board -f filter=is:issue -label:spec -F visible_fields\[\]=101 -F visible_fields\[\]=104 -F visible_fields\[\]=105 -F visible_fields\[\]=106 -F vertical_group_by\[\]=103$'
 called "it creates the Specs view, with each spec's sub-issue progress" \
-  '^api users/me/projectsV2/7/views --method POST -f name=Specs -f layout=table -f filter=label:spec -F visible_fields\[\]=101 -F visible_fields\[\]=103 -F visible_fields\[\]=107$'
+  '^api users/4242/projectsV2/7/views --method POST -f name=Specs -f layout=table -f filter=label:spec -F visible_fields\[\]=101 -F visible_fields\[\]=103 -F visible_fields\[\]=107$'
 called "it creates the Tickets by parent view, grouped by parent issue" \
-  '^api users/me/projectsV2/7/views --method POST -f name=Tickets by parent -f layout=table -f filter=is:open has:parent-issue -F visible_fields\[\]=101 -F visible_fields\[\]=103 -F visible_fields\[\]=105 -F group_by\[\]=106$'
+  '^api users/4242/projectsV2/7/views --method POST -f name=Tickets by parent -f layout=table -f filter=is:open has:parent-issue -F visible_fields\[\]=101 -F visible_fields\[\]=103 -F visible_fields\[\]=105 -F group_by\[\]=106$'
 # An agent reads the queue through next-up, a human through the view, so the two
 # must pick the same items.
 queue_view="$(sed -nE 's/^api .*-f name=Agent queue .*-f filter=//p' <<<"$CALLS" | sed 's/ -F .*//')"
@@ -310,6 +313,10 @@ want_exit "a failing gh api graphql stops board.sh" 1 "$RC"
 eq "a failing gh api graphql is the last call made" "api graphql" \
   "$(tail -n 1 <<<"$CALLS" | awk '{print $1, $2}')"
 eq "and prints no board line" "" "$(grep '^board=' <<<"$OUT")"
+
+GH_FAIL="api user" board_run
+want_exit "a failing gh api user stops board.sh" 1 "$RC"
+not_called "before creating any view" '/views '
 
 GH_FAIL="projectsV2/7/views" board_run
 want_exit "a failing view create stops board.sh" 1 "$RC"
