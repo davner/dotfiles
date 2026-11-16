@@ -50,27 +50,32 @@ set_status_options() { # project number, project url
     }' >/dev/null
 }
 
+add_priority_field() { # project number, project url
+  gh project field-create "$1" --owner @me --name Priority --data-type SINGLE_SELECT \
+    --single-select-options P1,P2,P3 >/dev/null || half_built "creating the Priority field failed" "$2"
+}
+
 # Shared, since every view goes on the one template create_views builds: its
 # number, owner login, URL, and field IDs by name as JSON.
 view_project="" view_login="" view_url="" view_ids=""
 
-field_id() { # field name -> its ID on the template
-  jq -r --arg n "$1" '.[$n]' <<<"$view_ids"
-}
-
-create_view() { # name, layout, filter, [--group-by FIELD], [--columns-by FIELD], visible field...
-  local name=$1 args=(-f name="$1" -f layout="$2" -f filter="$3") grouping=""
+create_view() { # name, layout, filter, [--group-by FIELD | --columns-by FIELD], visible field...
+  local name=$1 layout=$2 filter=$3 group_key="" group="" fields=()
   shift 3
   while (($#)); do
     case $1 in
-      --group-by) grouping="group_by[]=$(field_id "$2")"; shift ;;
-      --columns-by) grouping="vertical_group_by[]=$(field_id "$2")"; shift ;;
-      *) args+=(-F "visible_fields[]=$(field_id "$1")") ;;
+      --group-by) group_key=group_by group=$2; shift ;;
+      --columns-by) group_key=vertical_group_by group=$2; shift ;;
+      *) fields+=("$1") ;;
     esac
     shift
   done
-  [[ -z $grouping ]] || args+=(-F "$grouping")
-  gh api "users/$view_login/projectsV2/$view_project/views" --method POST "${args[@]}" >/dev/null ||
+  jq -n --arg name "$name" --arg layout "$layout" --arg filter "$filter" --arg key "$group_key" \
+    --arg group "$group" --argjson ids "$view_ids" '
+    {name: $name, layout: $layout, filter: $filter, visible_fields: [$ARGS.positional[] | $ids[.]],
+      sort_by: [[$ids.Priority, "asc"]]} + (if $key == "" then {} else {($key): [$ids[$group]]} end)' \
+    --args "${fields[@]}" |
+    gh api "users/$view_login/projectsV2/$view_project/views" --method POST --input - >/dev/null ||
     half_built "creating the $name view failed" "$view_url"
 }
 
@@ -80,24 +85,38 @@ create_views() { # project number, project url
   view_login=${view_login%%/*}
   view_ids=$(gh api "users/$view_login/projectsV2/$1/fields" --jq 'map({(.name): .id}) | add // {}')
   # Checked before any view exists, since a re-run reuses the template as it is.
-  for field in Title Status Labels "Linked pull requests" "Parent issue" "Sub-issues progress"; do
+  for field in Title Status Labels "Linked pull requests" "Parent issue" "Sub-issues progress" Priority; do
     jq -e --arg n "$field" 'has($n)' <<<"$view_ids" >/dev/null ||
       half_built "project $1 has no $field field" "$2"
   done
-  create_view Board board "is:issue -label:spec" --columns-by Status \
-    Title Labels "Linked pull requests" "Parent issue"
-  create_view "Agent queue" table "is:issue is:open status:Ready label:ready-for-agent -is:blocked -label:spec" \
-    Title Labels "Parent issue"
-  create_view Specs table "label:spec" Title Status "Sub-issues progress"
+  create_view Board board "is:issue -label:goal,spec" --columns-by Status \
+    Title Labels "Linked pull requests" "Parent issue" Priority
+  create_view "Agent queue" table "is:issue is:open status:Ready label:ready-for-agent -is:blocked -label:goal,spec" \
+    Title Labels "Parent issue" Priority
+  create_view "Needs attention" table "is:open label:needs-info,needs-triage" Title Labels Status Priority
+  create_view "Goals and specs" table "label:goal,spec" --group-by Status \
+    Title Status "Sub-issues progress" Priority
   create_view "Tickets by parent" table "is:open has:parent-issue" --group-by "Parent issue" \
-    Title Status "Linked pull requests"
+    Title Status "Linked pull requests" Priority
+}
+
+delete_default_view() { # -> deletes the template's "View 1", or says to delete it by hand
+  local id
+  # shellcheck disable=SC2016  # $login, $number and $viewId are GraphQL variables
+  id=$(gh api graphql -f login="$view_login" -F number="$view_project" -f query='
+    query($login: String!, $number: Int!) {
+      user(login: $login) { projectV2(number: $number) { views(first: 20) { nodes { id name } } } }
+    }' --jq '(.data.user.projectV2.views.nodes // [])[] | select(.name == "View 1") | .id' | head -n 1) &&
+    { [[ -z $id ]] || gh api graphql -f viewId="$id" -f query='
+    mutation($viewId: ID!) { deleteProjectV2View(input: {viewId: $viewId}) { clientMutationId } }' >/dev/null; } ||
+    steps+=("" "Delete the view named View 1 at:" "$view_url")
 }
 
 steps=()
 workflows=("- Item closed: set Status to Done"
   "- Pull request merged: set Status to Done"
   "- Auto-close issue: on, for Status Done"
-  "- Auto-archive items: Done items after 14 days"
+  "- Auto-archive items: on, filter is:issue is:closed updated:<@today-2w"
   "- Item added to project: set Status to Backlog"
   "- Auto-add sub-issues to project: on"
   "- Pull request linked to issue: set Status to In review")
@@ -107,9 +126,11 @@ if [[ -z $found ]]; then
   created=$(gh project create --owner @me --title "$TEMPLATE_TITLE" --format json)
   found=$(jq -r '"\(.number) \(.url)"' <<<"$created")
   set_status_options "${found%% *}" "${found#* }"
+  add_priority_field "${found%% *}" "${found#* }"
   create_views "${found%% *}" "${found#* }"
   template_new=1
   steps+=("" "Template created. Turn on these built-in workflows at:" "${found#* }/workflows" "${workflows[@]}")
+  delete_default_view
 fi
 template=${found%% *}
 

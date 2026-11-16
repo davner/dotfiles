@@ -8,7 +8,8 @@ Work for this repo is tracked as GitHub issues in `<owner/repo>`, on the board b
 - Number: `<number>`
 - URL: <board url>
 - Status flow: Backlog, Ready, In progress, In review, Done. The board's built-in workflows set Backlog when an item is added by hand, In review when a linked PR opens, and Done when an issue closes or its PR merges. Sub-issues are auto-added to the board with their parent.
-- Views, on a board made from the template: Board (Status columns, specs left out), Agent queue (what next-up takes), Specs (each spec's Status and sub-issue progress), Tickets by parent (open sub-issues grouped by parent, with Status and linked PRs).
+- Views, on a board made from the template, each sorted by Priority: Board (Status columns, goals and specs left out), Agent queue (what next-up takes), Needs attention (open items labelled `needs-info` or `needs-triage`), Goals and specs (grouped by Status, with sub-issue progress), Tickets by parent (open sub-issues grouped by parent, with Status and linked PRs).
+- Closed issues not updated for two weeks are archived off the board by its auto-archive workflow.
 
 Every `gh project` command below takes `<number> --owner <owner>`.
 
@@ -130,7 +131,7 @@ The Status stays where it was.
 
 ## When a skill says "next-up"
 
-The open Ready items labelled `ready-for-agent`, not blocked and not a spec, in board order: the Agent queue view.
+The open Ready items labelled `ready-for-agent`, not blocked and not a goal or spec, in board order: the Agent queue view.
 
 First sweep up finished specs: check each open `spec` issue's progress, and close it as "close" says when every sub-issue is closed. Auto-merges close sub-issues with nobody watching, so this sweep is what closes their parents:
 
@@ -142,7 +143,7 @@ Then list the queue. The first line is next-up:
 
 ```sh
 gh project item-list <number> --owner <owner> --limit 1000 --format json \
-  --query 'is:issue is:open status:Ready label:ready-for-agent -is:blocked -label:spec' \
+  --query 'is:issue is:open status:Ready label:ready-for-agent -is:blocked -label:goal,spec' \
   --jq '.items[].content | "#\(.number) \(.title)"'
 ```
 

@@ -129,8 +129,8 @@ watching:
    `/loop` reruns a command until you stop it, so each pass takes the next
    item.
 3. Each pass claims the top item of the board's Agent queue view: open, in
-   Ready, labelled `ready-for-agent`, not blocked, and not a spec. It moves
-   the item to In progress and comments `Claimed by <run>`. When two loops
+   Ready, labelled `ready-for-agent`, not blocked, and not a goal or spec. It
+   moves the item to In progress and comments `Claimed by <run>`. When two loops
    claim the same item, the earliest claim wins and the other moves on. A
    run that files a spec and builds it at once claims each PR issue as it
    files it, so a loop leaves those alone.
@@ -166,11 +166,16 @@ the [GitHub tracker template](../home/.claude/skills/setup-dan-skills/issue-trac
 
 ### The board views
 
-A board made from the template comes with four views:
+A board made from the template comes with five views, each sorted by
+Priority:
 
 | View | Shows |
 | --- | --- |
-| Board | Status columns, specs left out |
+| Board | Status columns, goals and specs left out |
 | Agent queue | What the next pass will take, in order |
-| Specs | Each spec and its progress |
-| Tickets by parent | Open sub-issues grouped by their spec |
+| Needs attention | Open items waiting on an answer or on triage |
+| Goals and specs | Each goal and spec by Status, with its progress |
+| Tickets by parent | Open sub-issues grouped by their goal or spec |
+
+Its auto-archive workflow takes closed issues off the board two weeks after
+their last update.
