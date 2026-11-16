@@ -244,7 +244,8 @@ board_run
 want_exit "with no projects, board.sh exits 0" 0 "$RC"
 called "it creates the template" '^project create .*--title dan-skills template'
 called "it copies the template to the repo's title" '^project copy 7 .*--title me/app'
-called "it links the board to the repo" '^project link 8 '
+called "it links the board to the repo by its owner and name" '^project link 8 --owner me --repo app$'
+contains "a board copied from a template made in the same run lists the template's workflows too" "$OUT" $'Board created. Turn on these built-in workflows'
 contains "it prints the board number" "$OUT" $'\nboard=8\n'
 called "it replaces the Status field of the new template" '^api graphql .*fieldId=PVTSSF_status'
 called "with Backlog, Ready, In progress, In review, Done in order" \
@@ -283,7 +284,7 @@ not_called "it creates nothing" '^project create'
 not_called "it leaves the template's Status alone" '^api graphql'
 not_called "or its views" '/views '
 called "it copies the existing template" '^project copy 3 .*--title me/app'
-called "and links the copy" '^project link 8 '
+called "and links the copy by the repo's owner and name" '^project link 8 --owner me --repo app$'
 eq "it prints the numbers, the URL and only the auto-add step" "template=3
 board=8
 url=https://github.com/users/me/projects/8

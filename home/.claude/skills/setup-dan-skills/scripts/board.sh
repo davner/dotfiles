@@ -92,20 +92,22 @@ create_views() { # project number, project url
 }
 
 steps=()
+workflows=("- Item closed: set Status to Done"
+  "- Pull request merged: set Status to Done"
+  "- Auto-close issue: on, for Status Done"
+  "- Auto-archive items: Done items after 14 days"
+  "- Item added to project: set Status to Backlog"
+  "- Auto-add sub-issues to project: on"
+  "- Pull request linked to issue: set Status to In review")
+template_new=""
 found=$(find_project "$TEMPLATE_TITLE")
 if [[ -z $found ]]; then
   created=$(gh project create --owner @me --title "$TEMPLATE_TITLE" --format json)
   found=$(jq -r '"\(.number) \(.url)"' <<<"$created")
   set_status_options "${found%% *}" "${found#* }"
   create_views "${found%% *}" "${found#* }"
-  steps+=("" "Template created. Turn on these built-in workflows at:" "${found#* }/workflows"
-    "- Item closed: set Status to Done"
-    "- Pull request merged: set Status to Done"
-    "- Auto-close issue: on, for Status Done"
-    "- Auto-archive items: Done items after 14 days"
-    "- Item added to project: set Status to Backlog"
-    "- Auto-add sub-issues to project: on"
-    "- Pull request linked to issue: set Status to In review")
+  template_new=1
+  steps+=("" "Template created. Turn on these built-in workflows at:" "${found#* }/workflows" "${workflows[@]}")
 fi
 template=${found%% *}
 
@@ -113,9 +115,15 @@ found=$(find_project "$repo")
 if [[ -z $found ]]; then
   copied=$(gh project copy "$template" --source-owner @me --target-owner @me --title "$repo" --format json)
   found=$(jq -r '"\(.number) \(.url)"' <<<"$copied")
-  gh project link "${found%% *}" --owner @me >/dev/null
-  steps+=("" "Board created. Turn on Auto-add to project for $repo with the filter is:issue is:open at:"
-    "${found#* }/workflows")
+  gh project link "${found%% *}" --owner "${repo%%/*}" --repo "${repo#*/}" >/dev/null
+  # A copy takes only the workflows the template already had on, and a new template has none yet.
+  if [[ -n $template_new ]]; then
+    steps+=("" "Board created. Turn on these built-in workflows at:" "${found#* }/workflows" "${workflows[@]}"
+      "- Auto-add to project: $repo, filter is:issue is:open")
+  else
+    steps+=("" "Board created. Turn on Auto-add to project for $repo with the filter is:issue is:open at:"
+      "${found#* }/workflows")
+  fi
 fi
 board=${found%% *}
 url=${found#* }
