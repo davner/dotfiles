@@ -48,36 +48,47 @@ set_status_options() { # project number, project url
     }' >/dev/null
 }
 
-create_view() { # project number, login, field IDs by name as JSON, project url, view name, layout, filter, field...
-  # A field is a visible field's name, or group_by=NAME or vertical_group_by=NAME.
-  local project=$1 login=$2 ids=$3 url=$4 name=$5 args=(-f name="$5" -f layout="$6" -f filter="$7") field key id
-  shift 7
-  for field in "$@"; do
-    key=visible_fields
-    [[ $field != *=* ]] || { key=${field%%=*}; field=${field#*=}; }
-    id=$(jq -r --arg n "$field" '.[$n]' <<<"$ids")
-    args+=(-F "${key}[]=$id")
+# Shared, since every view goes on the one template create_views builds: its
+# number, owner login, URL, and field IDs by name as JSON.
+view_project="" view_login="" view_url="" view_ids=""
+
+field_id() { # field name -> its ID on the template
+  jq -r --arg n "$1" '.[$n]' <<<"$view_ids"
+}
+
+create_view() { # name, layout, filter, [--group-by FIELD], [--columns-by FIELD], visible field...
+  local name=$1 args=(-f name="$1" -f layout="$2" -f filter="$3") grouping=""
+  shift 3
+  while (($#)); do
+    case $1 in
+      --group-by) grouping="group_by[]=$(field_id "$2")"; shift ;;
+      --columns-by) grouping="vertical_group_by[]=$(field_id "$2")"; shift ;;
+      *) args+=(-F "visible_fields[]=$(field_id "$1")") ;;
+    esac
+    shift
   done
-  gh api "users/$login/projectsV2/$project/views" --method POST "${args[@]}" >/dev/null ||
-    half_built "creating the $name view failed" "$url"
+  [[ -z $grouping ]] || args+=(-F "$grouping")
+  gh api "users/$view_login/projectsV2/$view_project/views" --method POST "${args[@]}" >/dev/null ||
+    half_built "creating the $name view failed" "$view_url"
 }
 
 create_views() { # project number, project url
-  local login=${2#*/users/} ids field
-  login=${login%%/*}
-  ids=$(gh api "users/$login/projectsV2/$1/fields" --jq 'map({(.name): .id}) | add // {}')
+  local field
+  view_project=$1 view_url=$2 view_login=${2#*/users/}
+  view_login=${view_login%%/*}
+  view_ids=$(gh api "users/$view_login/projectsV2/$1/fields" --jq 'map({(.name): .id}) | add // {}')
   # Checked before any view exists, since a re-run reuses the template as it is.
   for field in Title Status Labels "Linked pull requests" "Parent issue" "Sub-issues progress"; do
-    jq -e --arg n "$field" 'has($n)' <<<"$ids" >/dev/null ||
+    jq -e --arg n "$field" 'has($n)' <<<"$view_ids" >/dev/null ||
       half_built "project $1 has no $field field" "$2"
   done
-  create_view "$1" "$login" "$ids" "$2" Board board "is:issue -label:spec" \
-    Title Labels "Linked pull requests" "Parent issue" vertical_group_by=Status
-  create_view "$1" "$login" "$ids" "$2" "Agent queue" table \
-    "is:issue is:open status:Ready label:ready-for-agent -is:blocked -label:spec" Title Labels "Parent issue"
-  create_view "$1" "$login" "$ids" "$2" Specs table "label:spec" Title Status "Sub-issues progress"
-  create_view "$1" "$login" "$ids" "$2" "Tickets by parent" table "is:open has:parent-issue" \
-    Title Status "Linked pull requests" "group_by=Parent issue"
+  create_view Board board "is:issue -label:spec" --columns-by Status \
+    Title Labels "Linked pull requests" "Parent issue"
+  create_view "Agent queue" table "is:issue is:open status:Ready label:ready-for-agent -is:blocked -label:spec" \
+    Title Labels "Parent issue"
+  create_view Specs table "label:spec" Title Status "Sub-issues progress"
+  create_view "Tickets by parent" table "is:open has:parent-issue" --group-by "Parent issue" \
+    Title Status "Linked pull requests"
 }
 
 steps=()
