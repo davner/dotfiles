@@ -79,6 +79,14 @@ links_note() {
 }
 links_note grilling "When headless:" agent-decision-confidence
 links_note autopilot "The retry rule" agent-retry-limits
+# GitHub reads blocking only from the dependency --blocked-by sets; an issue
+# number written as text marks nothing on the board, so next-up would take it.
+text_blocks="$(grep -rnIiE 'blocked[ -]by:?[*`]* *#[0-9N]' "$SKILLS_DIR" | sed "s|^$SKILLS_DIR/||")"
+if [ -z "$text_blocks" ]; then
+  ok "no skill or tracker template files Blocked by #N as text"
+else
+  bad "no skill or tracker template files Blocked by #N as text" "use --blocked-by: ${text_blocks//$'\n'/ | }"
+fi
 
 section "third-party skills"
 # Third-party skills come from flake inputs, so an upstream move or rename is
