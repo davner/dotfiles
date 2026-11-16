@@ -7,8 +7,8 @@ Work for this repo is tracked as GitHub issues in `<owner/repo>`, on the board b
 - Owner: `<owner>` (the login in the board URL)
 - Number: `<number>`
 - URL: <board url>
-- Status flow: Backlog, Ready, In progress, In review, Done. The board's built-in workflows set Done when an issue closes or its PR merges, and Backlog when an item is added by hand.
-- Views, on a board made from the template: Board (Status columns, specs left out), Agent queue (what next-up takes), Specs (each spec's sub-issue progress), Tickets by parent.
+- Status flow: Backlog, Ready, In progress, In review, Done. The board's built-in workflows set Backlog when an item is added by hand, In review when a linked PR opens, and Done when an issue closes or its PR merges. Sub-issues are auto-added to the board with their parent.
+- Views, on a board made from the template: Board (Status columns, specs left out), Agent queue (what next-up takes), Specs (each spec's Status and sub-issue progress), Tickets by parent (open sub-issues grouped by parent, with Status and linked PRs).
 
 Every `gh project` command below takes `<number> --owner <owner>`.
 
