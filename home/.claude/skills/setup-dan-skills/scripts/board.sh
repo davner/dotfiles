@@ -2,7 +2,8 @@
 # Gives the GitHub repo in the working directory a project board, copied from
 # the user's "dan-skills template" project, creating the template and its views
 # first if missing.
-# Safe to re-run: an existing template or board is reused, never changed.
+# Safe to re-run: an existing template or board is reused, never changed. The
+# board is the open project linked to the repo, else the one titled owner/name.
 # Prints template=, board= and url= lines, then any manual steps on GitHub.
 
 # usage: board.sh
@@ -17,7 +18,8 @@ if [[ $auth != *"'project'"* ]]; then
   exit 1
 fi
 
-repo=$(gh repo view --json nameWithOwner --jq .nameWithOwner)
+repo_json=$(gh repo view --json nameWithOwner,projectsV2)
+repo=$(jq -r .nameWithOwner <<<"$repo_json")
 
 find_project() { # title -> "number url" of the user's project with that title, or nothing
   gh project list --owner @me --limit 1000 --format json |
@@ -111,7 +113,10 @@ if [[ -z $found ]]; then
 fi
 template=${found%% *}
 
-found=$(find_project "$repo")
+# The owner may rename the board, so its link to the repo outranks its title.
+found=$(jq -r --arg t "$TEMPLATE_TITLE" '.projectsV2.Nodes // [] | map(select(.closed | not) | select(.title != $t))
+  | first // empty | "\(.number) \(.url)"' <<<"$repo_json")
+[[ -n $found ]] || found=$(find_project "$repo")
 if [[ -z $found ]]; then
   copied=$(gh project copy "$template" --source-owner @me --target-owner @me --title "$repo" --format json)
   found=$(jq -r '"\(.number) \(.url)"' <<<"$copied")

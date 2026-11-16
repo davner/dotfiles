@@ -299,6 +299,27 @@ eq "it prints the numbers and the URL, and no manual steps" "template=3
 board=5
 url=https://github.com/users/me/projects/5" "$OUT"
 
+# The owner may rename a board; the link to the repo is what makes it the board.
+board_linked() { # linked project as number=title=closed... -> gh repo view reports those links
+  gh_can repo-view "$(printf '%s\n' "$@" | jq -R -s '{nameWithOwner: "me/app", projectsV2: {Nodes: [split("\n")[] |
+    select(. != "") | split("=") | {number: (.[0] | tonumber), title: .[1], closed: (.[2] == "true"),
+    url: "https://github.com/users/me/projects/\(.[0])"}]}}')"
+}
+board_linked "5=app=false"
+board_run "3=dan-skills template" "5=app"
+want_exit "with a renamed board linked to the repo, board.sh exits 0" 0 "$RC"
+not_called "it copies or links nothing" '^project (create|copy|link)'
+eq "it prints the linked board" "template=3
+board=5
+url=https://github.com/users/me/projects/5" "$OUT"
+board_linked "6=old=true" "5=app=false"
+board_run "3=dan-skills template" "6=old" "5=app" "9=me/app"
+contains "a closed linked project is passed over for an open one, before any title match" "$OUT" $'\nboard=5\n'
+board_linked "6=old=true"
+board_run "3=dan-skills template" "6=old" "9=me/app"
+contains "with only a closed project linked, the title decides" "$OUT" $'\nboard=9\n'
+gh_can repo-view '{"nameWithOwner":"me/app"}'
+
 board_scopes "'gist', 'read:org', 'repo'"
 board_run
 want_exit "without the project scope, board.sh exits 1" 1 "$RC"
