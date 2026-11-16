@@ -199,9 +199,7 @@ eq "bug beside an existing fix: bug is not renamed" "" "$(calls_to label edit)"
 contains "bug beside an existing fix: it is reported" "$OUT" "kept bug: fix already exists"
 
 missing=""
-# spec has no line in the template yet; drop this skip once it does.
 while read -r name; do
-  [ "$name" = spec ] && continue
   grep -Fq -- "\`$name\`" "$SDS/../issue-tracker-github.md" || missing+=" $name"
 done <<<"$LABELS_SET"$'\n'"skip-changelog"
 eq "the GitHub tracker template names every label in the set" "" "$missing"
