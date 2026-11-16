@@ -446,5 +446,8 @@ for form in "$FORMS"/*.yml; do
   done < <(form_labels "$form")
 done
 eq "no form adds a queue or triage label" "" "$queued"
+# This repo's board runs on the same forms the skill hands out.
+eq "this repo's issue forms are the skill's, file for file" "" \
+  "$(diff -r "$FORMS" "$DIR/.github/ISSUE_TEMPLATE" 2>&1)"
 
 finish

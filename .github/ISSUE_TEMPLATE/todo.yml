@@ -1,0 +1,30 @@
+name: TODO
+description: Work for later that belongs to no spec yet
+labels: [todo]
+body:
+  - type: input
+    id: from
+    attributes:
+      label: From
+      description: The session or spec it came out of
+    validations:
+      required: true
+  - type: textarea
+    id: why
+    attributes:
+      label: Why
+      description: The problem, in a sentence or two
+    validations:
+      required: true
+  - type: textarea
+    id: known
+    attributes:
+      label: Known
+      description: Decisions already made; files, ADRs or issues involved
+  - type: textarea
+    id: next
+    attributes:
+      label: Next
+      description: The first step, and the skill to start with
+    validations:
+      required: true

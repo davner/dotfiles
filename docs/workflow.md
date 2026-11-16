@@ -148,7 +148,7 @@ watching:
 `fix`; the TODO form adds `todo` and asks From, Why, Known and Next, the
 fields a fresh session needs. Neither adds `ready-for-agent` or a triage
 label, so a new issue waits in Backlog until you put it under a goal, give it
-a priority and queue it.
+a priority and queue it. This repo uses the same forms.
 
 ### The labels
 
