@@ -33,12 +33,25 @@ Before opening the first, say in the conversation: "This run is headless." Then 
    - The branch: `git branch -d <branch>`. A branch pushed to main first gets `git branch --set-upstream-to=origin/main <branch>`, since `-d` accepts a branch merged into its upstream and the main checkout's `HEAD` may lag `origin/main`. When it refuses, as it does for a squash-merged branch git sees as unmerged, the branch stays and the report lists it for the user to delete.
 
    The report names what was removed and what stayed, with why.
-4. **Board.** For `board`, take next-up as the tracker file's "next-up" section says, and claim it as its "claim an item" section says, naming the claim `autopilot-` plus the run's start time in UTC (`date -u +%Y%m%dT%H%M%SZ`), since the branch is not named yet. A claim that skips or gives up the item moves on to the next line, as those sections say. When no line is left, stop and report that nothing could be claimed, naming each item skipped or given up and why. Read the claimed item as the "fetch the relevant ticket" section says. When its parent is a `spec` issue, the run takes **the spec shortcut** in "The order"; otherwise the item's text is the idea.
+4. **Board.** For `board` only:
+   1. Take next-up as the tracker file's "next-up" section says.
+   2. Claim it as its "claim an item" section says. Name the claim `autopilot-` plus the run's start time in UTC (`date -u +%Y%m%dT%H%M%SZ`), since the branch is not named yet.
+   3. When the claim skips or gives up the item, move on to the next line, as those sections say. When no line is left, stop and report that nothing could be claimed, naming each item skipped or given up and why.
+   4. Read the claimed item as the "fetch the relevant ticket" section says.
+   5. When its parent is a `spec` issue, the run takes **the spec shortcut** in "The order". Otherwise the item's text is the idea.
 5. **Skill selection.** List the installed skills in `~/.claude/skills/` and `~/.agents/skills/` and read each description. Match it against the repo's manifests (`pyproject.toml`, `package.json` dependencies, `tsconfig.json`, `go.mod`, UI files) and the item's area. Keep the matches with a one-line reason each, and the languages and libraries no skill covers. Name the matches in every subagent brief, since subagents do not inherit loaded skills.
 
 ## The order
 
-**The spec shortcut.** A board item whose parent issue is labelled `spec` was specified already: skip steps 1 and 2. Write the parent's body to `.scratch/<feature-slug>/spec.md` in the main checkout (step 2 says how to find it), with `Tracker: #P` near the top, and the item's body as the single ticket `.scratch/<feature-slug>/issues/<N>-<item slug>.md`, with `Tracker: #N` and `Status: ready-for-agent` near the top. The feature slug is the folder whose `spec.md` already says `Tracker: #P`, else the parent's title in kebab case. Then go on at step 3, and tell `implement-spec` that this ticket is its only one.
+**The spec shortcut.** A board item whose parent issue is labelled `spec` was specified already:
+
+1. Skip the order's steps 1 and 2.
+2. Pick the feature slug: the folder whose `spec.md` already says `Tracker: #P`, else the parent's title in kebab case.
+3. Write the parent's body to `.scratch/<feature-slug>/spec.md` in the main checkout (the order's step 2 says how to find it), with `Tracker: #P` near the top.
+4. Write the item's body as the single ticket `.scratch/<feature-slug>/issues/<N>-<item slug>.md`, with `Tracker: #N` and `Status: ready-for-agent` near the top.
+5. Go on at the order's step 3, and tell `implement-spec` that this ticket is its only one.
+
+The order, for every run:
 
 1. Grill: `grill-with-docs` when the repo has domain docs (a glossary, an ADR folder, or a tracker or domain file that names them), else `grill-me`.
 2. `to-spec`, then `to-tickets`, told in a board run which item the run took, for the tracker file's publish section to reuse. `.scratch/` paths resolve to the main checkout: `dirname "$(git rev-parse --path-format=absolute --git-common-dir)"`.
