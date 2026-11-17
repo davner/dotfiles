@@ -2,7 +2,7 @@
 
 Everything a rebuild puts on the Mac: packages, apps, shell setup, the font, and the macOS settings it changes.
 
-The sources are [`home.nix`](../home.nix) for the packages and the shell, and [`configuration.nix`](../configuration.nix) for Homebrew and the macOS settings. `tests/docs.sh` fails when a package, brew or cask there has no row here.
+The sources are [`home.nix`](../home.nix) for the packages and the shell, and [`configuration.nix`](../configuration.nix) for Homebrew and the macOS settings. `tests/docs.sh` fails when a package, brew, cask or App Store app there has no row here.
 
 ## Nix packages
 
@@ -32,8 +32,33 @@ Installed by nix-darwin through Homebrew, from `configuration.nix`. Cleanup is `
 | Name | Kind | What it is for |
 | --- | --- | --- |
 | `openmotif` | brew | The Motif GUI toolkit; installed on request and kept so `zap` does not remove it |
+| `mas` | brew | The App Store command line, which installs the App Store apps below |
 | `wezterm` | cask | The terminal |
 | `claude-code@latest` | cask | Claude Code on the latest channel, which tracks the npm release; plain `claude-code` lags behind |
+| `visual-studio-code` | cask | The editor; its settings are merged from `home/vscode/` ([ADR 0010](adr/0010-vscode-settings-merge-and-add-only-extensions.md)) |
+| `google-chrome` | cask | The browser |
+| `obsidian` | cask | Notes |
+| `docker-desktop` | cask | Containers; also puts `docker` and `kubectl` in `/usr/local/bin` |
+| `xquartz` | cask | The X11 server `openmotif` apps draw through |
+| `spotify` | cask | Music |
+| `discord` | cask | Chat |
+| `zoom` | cask | Video calls |
+| `chatgpt` | cask | The ChatGPT desktop app |
+| `vlc` | cask | Plays any video or audio file |
+| `the-unarchiver` | cask | Opens archive formats macOS cannot, such as RAR and 7z |
+| `appcleaner` | cask | Removes an app installed outside this config, with its leftover files |
+| `Magnet` | App Store | Snaps windows to halves and corners |
+| `Amphetamine` | App Store | Keeps the Mac awake on demand |
+| `Slack` | App Store | Chat |
+| `Tailscale` | App Store | Private network between your devices |
+| `uBlock Origin Lite` | App Store | Safari content blocker |
+| `Hover for Safari` | App Store | Safari extension |
+| `Vinegar` | App Store | Safari extension that plays YouTube in a plain video player |
+| `Keynote` | App Store | Apple's slides app |
+| `Xcode` | App Store | Apple's IDE; over 10 GB, so a fresh Mac's first rebuild takes a while |
+| `Apple Configurator` | App Store | Sets up and restores iPhones, iPads and Macs over USB |
+
+App Store apps install through `mas` and only while you are signed in to the App Store with an Apple ID that already owns them. Cleanup uninstalls every App Store app not in `masApps`, the same as `zap` does for casks, so an App Store app you install by hand is removed on the next rebuild unless you add it here.
 
 ## Programs and shell setup
 
@@ -42,9 +67,9 @@ Installed by nix-darwin through Homebrew, from `configuration.nix`. Cleanup is `
 | zsh | The shell. History suggestions show as grey text; `^f` (Ctrl-F) accepts one. Valid commands turn green as you type. |
 | starship | The prompt: folder, git branch and status, how long the last command took, then `❯` on its own line (purple, or red after an error). |
 | direnv | Loads a folder's `.envrc` when you `cd` in. With nix-direnv, a `use flake` there is cached, so it loads fast the second time. |
-| git | Your name and email per Mac, `main` as the first branch, `git push` sets the upstream on the first push, and Git LFS. |
+| git | Your name and personal email, `main` as the first branch, `git push` sets the upstream on the first push, and Git LFS. |
 | gh | The GitHub CLI, over SSH. `gh co` checks out a pull request. |
-| WezTerm | The terminal, from [`home/.config/wezterm/wezterm.lua`](../home/.config/wezterm/wezterm.lua): rose-pine-moon colors, Hack Nerd Font at 15 pt, a see-through blurred window, and no tab bar with one tab. `wezterm connect casa` opens tabs on the Mac mini home server that stay alive when the laptop disconnects. |
+| WezTerm | The terminal, from [`home/.config/wezterm/wezterm.lua`](../home/.config/wezterm/wezterm.lua): rose-pine-moon colors, Hack Nerd Font at 15 pt, a see-through blurred window, and no tab bar with one tab. |
 | yt-dlp | `--vid` for 1080p video CapCut can import, `--aud` for full audio, `-T` for an iOS tone, `--cut` to trim. Files land in `~/Documents/YouTube`, which iCloud syncs. Details in [`home/.config/yt-dlp/README.md`](../home/.config/yt-dlp/README.md). |
 
 `EDITOR` is `code`, so tools that open an editor open VS Code. `~/.local/bin` is on `PATH`.

@@ -1,52 +1,24 @@
-# Over the core's inputs, so `self` is the core whichever flake imports it.
-{ self, ... }:
-{ config, lib, ... }:
+{
+  config,
+  inputs,
+  lib,
+  ...
+}:
 
 let
-  cfg = config.dotfiles;
-  user = cfg.user.name;
+  user = "danavner";
 in
 {
-  imports = [
-    {
-      options.dotfiles = {
-        user.name = lib.mkOption {
-          type = lib.types.str;
-          description = "The macOS username this machine is built for.";
-        };
-        # Null, so the home module's default is the one missing-email message.
-        git.email = lib.mkOption {
-          type = lib.types.nullOr lib.types.str;
-          default = null;
-          description = "The address git commits as. The build fails without one.";
-        };
-        # Defaulted because pkgs needs it before the missing-email throw can speak.
-        system = lib.mkOption {
-          type = lib.types.str;
-          default = "aarch64-darwin";
-          description = "The platform this machine is built for.";
-        };
-      };
-    }
-  ];
-
   # Determinate already manages the Nix daemon, so nix-darwin shouldn't.
   nix.enable = false;
 
   nixpkgs.config.allowUnfree = true;
-  nixpkgs.hostPlatform = cfg.system;
+  nixpkgs.hostPlatform = "aarch64-darwin";
 
   home-manager.useGlobalPkgs = true;
   home-manager.useUserPackages = true;
-  # mkMerge, not imports: imports would move the home module later in merge order,
-  # and the reordered lists would change the personal Macs' builds.
-  home-manager.users.${user} = lib.mkMerge [
-    self.homeModules.default
-    {
-      dotfiles.user.name = user;
-      dotfiles.git.email = lib.mkIf (cfg.git.email != null) cfg.git.email;
-    }
-  ];
+  home-manager.extraSpecialArgs = { inherit inputs; };
+  home-manager.users.${user} = ./home.nix;
   # A clashing dotfile moves to <name>.backup; an older .backup in the way must be read and deleted.
   home-manager.backupFileExtension = "backup";
 
@@ -105,8 +77,9 @@ in
   homebrew = {
     enable = true;
     onActivation.cleanup = "zap"; # remove anything not listed here
-    onActivation.autoUpdate = true;
-    onActivation.upgrade = true; # autoUpdate only refreshes metadata; this bumps what is installed
+    # Auto-update re-runs nix-homebrew's wrapper, which loses PATH, so bundle cannot find mas.
+    onActivation.autoUpdate = false;
+    onActivation.upgrade = true; # the update only refreshes metadata; this bumps what is installed
     # Activation runs as root, so nothing from the interactive shell's
     # environment is in scope here. These have to be set explicitly.
     onActivation.extraEnv = {
@@ -115,10 +88,48 @@ in
     };
     brews = [
       "openmotif"
+      "mas" # installs masApps; listed so zap does not remove it
     ];
     casks = [
       "wezterm"
       "claude-code@latest"
+      "visual-studio-code"
+      "google-chrome"
+      "obsidian"
+      "docker-desktop"
+      "xquartz" # the X11 server openmotif draws through
+      "spotify"
+      "discord"
+      "zoom"
+      "chatgpt"
+      "vlc"
+      "the-unarchiver"
+      "appcleaner"
     ];
+    # By App Store ID. Cleanup uninstalls any App Store app not listed here.
+    masApps = {
+      "Magnet" = 441258766;
+      "Amphetamine" = 937984704;
+      "Slack" = 803453959;
+      "Tailscale" = 1475387142;
+      "uBlock Origin Lite" = 6745342698;
+      "Hover for Safari" = 1540705431;
+      "Vinegar" = 1591303229;
+      "Keynote" = 409183694;
+      "Xcode" = 497799835;
+      "Apple Configurator" = 1037126344;
+    };
   };
+  # Between nix-homebrew's prefix setup (mkBefore) and bundle; offline it only warns.
+  system.activationScripts.homebrew.text = lib.mkOrder 750 ''
+    if [ -f "${config.homebrew.prefix}/bin/brew" ]; then
+      echo >&2 "Homebrew update..."
+      sudo --user=${user} --set-home env ${
+        lib.concatStringsSep " " (
+          lib.mapAttrsToList (n: v: "${n}=${lib.escapeShellArg v}") config.homebrew.onActivation.extraEnv
+        )
+      } "${config.homebrew.prefix}/bin/brew" update \
+        || echo >&2 "warning: brew update failed; upgrading against the metadata already on disk"
+    fi
+  '';
 }

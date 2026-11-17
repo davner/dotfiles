@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# shellcheck disable=SC2154  # lib.sh sets rc, listed and first
+# shellcheck disable=SC2154  # lib.sh sets rc
 # shellcheck source=/dev/null
 source "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
 

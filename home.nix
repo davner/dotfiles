@@ -1,22 +1,18 @@
-# Over the core's inputs, so the skill folders come from the core's lock whichever flake imports it.
-inputs:
 {
   config,
   lib,
   pkgs,
+  inputs,
   ...
 }:
 
 let
-  user = config.dotfiles.user.name;
-  dotfiles = config.dotfiles.checkout;
+  # A string, not a path: a path literal would be copied into the store, and
+  # the links would stop being live.
+  dotfiles = "${config.home.homeDirectory}/.dotfiles";
 
   jsonMerge = "env PATH=${pkgs.jq}/bin:$PATH ${pkgs.bash}/bin/bash ${./home/json-merge.sh}";
   vscodeUser = "$HOME/Library/Application Support/Code/User";
-  # Empty with no fragments, so a machine without any runs the plain base merge.
-  claudeFragmentArgs = lib.concatMapStrings (
-    f: " --extend ${pkgs.writeText "claude-settings-fragment.json" (builtins.toJSON f)}"
-  ) config.dotfiles.claude.settingsFragments;
 
   # Skill name -> its folder inside a pinned flake input. The name must match
   # the SKILL.md frontmatter, since Claude Code invokes a skill by that name.
@@ -48,8 +44,6 @@ let
 in
 
 {
-  home.username = user;
-  home.homeDirectory = "/Users/${user}";
   home.stateVersion = "24.11";
   home.packages = with pkgs; [
     # cli i use constantly
@@ -119,7 +113,7 @@ in
     enable = true;
     settings = {
       user.name = "Dan Avner";
-      user.email = config.dotfiles.git.email;
+      user.email = "ldpavner@gmail.com";
       init.defaultBranch = "main";
       push.autoSetupRemote = "true";
     };
@@ -151,10 +145,8 @@ in
   # in by an activation step rather than linked. Base wins on the keys it
   # names, so adding model, effortLevel or theme to it would revert /config on
   # every rebuild. A link there dates from when this file was linked, so it goes.
-  # A consumer's settingsFragments fold into the base first and may only add to
-  # it: a fragment that replaced an array would drop the base's entries, deny rules included.
   home.activation.claudeSettings = config.lib.dag.entryAfter [ "writeBoundary" ] ''
-    run ${jsonMerge} --drop-link${claudeFragmentArgs} deep "${dotfiles}/home/.claude/settings.base.json" "$HOME/.claude/settings.json"
+    run ${jsonMerge} --drop-link deep "${dotfiles}/home/.claude/settings.base.json" "$HOME/.claude/settings.json"
   '';
   # VS Code allows comments in these files and jq does not, so a hand-commented file is skipped.
   home.activation.vscodeSettings = config.lib.dag.entryAfter [ "writeBoundary" ] ''
@@ -175,56 +167,9 @@ in
   # A module, because a computed home.file cannot share this attrset with home.file."x".
   imports = [
     {
-      options.dotfiles = {
-        user.name = lib.mkOption {
-          type = lib.types.str;
-          description = "The macOS username this home belongs to.";
-        };
-        # No silent default: committing from the wrong address is what this prevents.
-        git.email =
-          let
-            missing = throw "no git email for \"${user}\". Set dotfiles.git.email; this repo's own Macs take it from flake.nix's users.";
-          in
-          lib.mkOption {
-            type = lib.types.str;
-            default = missing;
-            defaultText = lib.literalMD "none; the build fails without one";
-            # An empty address is a missing one that got past the type check.
-            apply = email: if email == "" then missing else email;
-            description = "The address git commits as.";
-          };
-        # A string, not a path: a path literal would be copied into the store,
-        # and the links would stop being live.
-        checkout = lib.mkOption {
-          type = lib.types.str;
-          default = "${config.home.homeDirectory}/.dotfiles";
-          defaultText = lib.literalExpression ''"''${config.home.homeDirectory}/.dotfiles"'';
-          description = "Where this core is checked out. Its live links and settings merges read from here.";
-        };
-        claude.settingsFragments = lib.mkOption {
-          type = lib.types.listOf (lib.types.attrsOf (pkgs.formats.json { }).type);
-          default = [ ];
-          # Same rule as settings.base.json: the merge wins, so these would undo /config on every rebuild.
-          apply = map (
-            fragment:
-            let
-              claimed = lib.intersectLists [ "model" "effortLevel" "theme" ] (builtins.attrNames fragment);
-            in
-            if claimed == [ ] then
-              fragment
-            else
-              throw "a Claude settings fragment sets ${lib.concatStringsSep ", " claimed}; /config owns those, and the merge would revert them on every rebuild (ADR 0007)."
-          );
-          description = "JSON objects folded into Claude's settings after settings.base.json, in order. A fragment may add keys and extend the base's arrays, never replace an array or object the base sets.";
-        };
-      };
-    }
-    {
       home.file = lib.mergeAttrsList [
         # impeccable's installer and local-skills.sh also write into ~/.claude/skills.
-        (linkEach "home/.claude/skills" ".claude/skills" (
-          lib.subtractLists config.dotfiles.skills.exclude coreSkills
-        ))
+        (linkEach "home/.claude/skills" ".claude/skills" coreSkills)
         # settings.base.json and the cc function reach these by path.
         (linkEach "home/.claude/hooks" ".claude/hooks" (
           entries "home/.claude/hooks" (_: type: type == "regular")
@@ -234,45 +179,12 @@ in
         ))
       ];
     }
-    # Also into ~/.agents/skills, the shared folder other agents read.
+    # Its own definition, so a third-party skill reusing a core name is a conflict, not a silent swap.
     {
-      options.dotfiles.skills.extra = lib.mkOption {
-        type = lib.types.attrsOf lib.types.path;
-        default = { };
-        description = "Skills to link beside the core's, by name to folder; the name must match the SKILL.md's.";
-      };
-      options.dotfiles.skills.exclude = lib.mkOption {
-        type = lib.types.listOf lib.types.str;
-        default = [ ];
-        # A typo would otherwise leave the skill linked with nothing to say so.
-        apply =
-          names:
-          let
-            known = coreSkills ++ lib.attrNames thirdPartySkills;
-            unknown = lib.subtractLists known names;
-          in
-          if unknown == [ ] then
-            names
-          else
-            throw "dotfiles.skills.exclude names ${
-              lib.concatMapStringsSep ", " (n: "\"${n}\"") unknown
-            }, which is neither a core nor a third-party skill.";
-        description = "Core or third-party skills not to link, by name.";
-      };
-      # Two definitions, not one merged attrset, so an extra that reuses a core name is a conflict, not a silent swap.
-      config.home.file = lib.mkMerge (
-        map
-          (lib.concatMapAttrs (
-            name: src: {
-              ".claude/skills/${name}".source = src;
-              ".agents/skills/${name}".source = src;
-            }
-          ))
-          [
-            (removeAttrs thirdPartySkills config.dotfiles.skills.exclude)
-            config.dotfiles.skills.extra
-          ]
-      );
+      home.file = lib.concatMapAttrs (name: src: {
+        ".claude/skills/${name}".source = src;
+        ".agents/skills/${name}".source = src;
+      }) thirdPartySkills;
     }
   ];
 

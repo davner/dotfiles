@@ -1,16 +1,17 @@
 name: update
 
-# Bumps the flake inputs once a week and opens a pull request, but only after
-# proving the result still builds. Nothing lands unreviewed.
-#
-# To stop the weekly bump, delete this file or comment out the schedule; the
-# workflow_dispatch trigger keeps it usable on demand either way.
+# The weekly expensive half: bump the flake inputs, then run the full suite,
+# nix flake check and a cold build of the whole system closure. The build is
+# what catches a package that vanished from nixpkgs or an option that changed
+# meaning, which the push tests cannot see. When nothing moved, the same checks
+# run on the current lock. A pull request opens only when the lock moved.
 on:
   schedule:
-    - cron: "0 15 * * 1" # Mondays, an hour after weekly.yml
+    - cron: "0 14 * * 1" # Mondays 14:00 UTC, 07:00 in Arizona
   workflow_dispatch:
 
 permissions:
+  actions: write # starts test.yml on the PR branch
   contents: write
   pull-requests: write
   id-token: write # magic-nix-cache authenticates with an OIDC token
@@ -21,14 +22,12 @@ jobs:
     timeout-minutes: 90
     steps:
       - uses: actions/checkout@v7
-        with:
-          # tests/changelog.sh renders the changelog template, which needs the history.
-          fetch-depth: 0
 
       - uses: DeterminateSystems/nix-installer-action@main
 
-      # See weekly.yml: same cold-closure build, same caveat about the 10GB
-      # Actions cache limit.
+      # The cache is backed by the GitHub Actions cache and its 10GB per-repo
+      # limit, which a darwin closure may not fit inside; if the hit rate turns
+      # out to be near zero, drop this.
       - uses: DeterminateSystems/magic-nix-cache-action@main
 
       - name: nix flake update
@@ -44,24 +43,17 @@ jobs:
             echo "moved=true" >> "$GITHUB_OUTPUT"
           fi
 
+      # A pull request opened with GITHUB_TOKEN does not trigger test.yml, so
+      # the checks that would have run on it run here instead.
       - name: ./test.sh
-        if: steps.moved.outputs.moved == 'true'
         run: nix develop --command ./test.sh
 
-      # A pull request opened with GITHUB_TOKEN does not trigger test.yml, so
-      # the checks that would have run on it run here instead. Same loop as
-      # weekly.yml: both are short enough that sharing them would cost more
-      # than the duplication does.
-      - name: Build every configuration
-        if: steps.moved.outputs.moved == 'true'
-        run: |
-          set -euo pipefail
-          for user in $(./users.sh list); do
-            attr="${user//./-}"
-            echo "::group::darwinConfigurations.$attr.system"
-            nix build --no-link --print-build-logs ".#darwinConfigurations.$attr.system"
-            echo "::endgroup::"
-          done
+      - name: nix flake check
+        run: nix flake check --print-build-logs
+
+      # Only builds. Activation needs a real Mac with this user on it.
+      - name: Build the configuration
+        run: nix build --no-link --print-build-logs .#darwinConfigurations.danavner.system
 
       - name: Open a pull request
         if: steps.moved.outputs.moved == 'true'
@@ -76,10 +68,13 @@ jobs:
           git add flake.lock
           git commit -m "chore(deps): nix flake update"
           git push --force-with-lease --set-upstream origin "$branch"
+          # A push with GITHUB_TOKEN starts no workflow, so the required test check is started by hand.
+          gh workflow run test.yml --ref "$branch"
           if gh pr view "$branch" --json number >/dev/null 2>&1; then
             echo "Pull request already open for $branch."
           else
             gh pr create \
               --title "chore(deps): nix flake update" \
-              --body "Weekly flake input bump. \`./test.sh\` passed and every configuration built before this was opened, so the checks that a token-authored PR cannot trigger have already run in the [update workflow](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})."
+              --label dependencies \
+              --body "Weekly flake input bump. \`./test.sh\` passed and the configuration built before this was opened, so the checks that a token-authored PR cannot trigger have already run in the [update workflow](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})."
           fi

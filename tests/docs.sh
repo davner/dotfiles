@@ -10,9 +10,15 @@ packages="$(awk '/home\.packages = with pkgs; \[/{f=1; next} f && /^ *\];/{exit}
   sed -E 's/#.*//; s/^ +//; s/ +$//' | grep -v '^$')"
 casks="$(awk '/^ *(brews|casks) = \[/{f=1; next} f && /^ *\];/{f=0} f' "$DIR/configuration.nix" |
   sed -nE 's/^ *"([^"]+)".*/\1/p')"
-unnamed() { # names -> those the page does not name in backticks
+# App Store names hold spaces, so this list is one name per line.
+masapps="$(awk '/^ *masApps = \{/{f=1; next} f && /^ *\};/{exit} f' "$DIR/configuration.nix" |
+  sed -nE 's/^ *"([^"]+)" *=.*/\1/p')"
+unnamed() { # newline-separated names -> those the page does not name in backticks
   local n
-  for n in $1; do grep -qF "\`$n\`" "$PAGE" 2>/dev/null || printf '%s ' "$n"; done
+  while IFS= read -r n; do
+    [ -n "$n" ] || continue
+    grep -qF "\`$n\`" "$PAGE" 2>/dev/null || printf '%s; ' "$n"
+  done <<<"$1"
 }
 inventory() { # check name, what the list holds, names
   local missing
@@ -29,6 +35,7 @@ inventory() { # check name, what the list holds, names
 }
 inventory "docs/installed.md names every package" "home.packages" "$packages"
 inventory "docs/installed.md names every brew and cask" "brews or casks" "$casks"
+inventory "docs/installed.md names every App Store app" "masApps" "$masapps"
 
 section "relative links"
 # Markdown links, reference definitions and the src, srcset and href of inline

@@ -5,7 +5,7 @@ source "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
 section "--help"
 # Every script's: a help text printed as a line range of the source leaks the
 # script itself, `set -euo pipefail` and all, the moment a line moves.
-for s in bootstrap.sh rebuild.sh users.sh preview-docs.sh home/.claude/hooks/shell-parse.sh; do
+for s in bootstrap.sh rebuild.sh preview-docs.sh home/.claude/hooks/shell-parse.sh; do
   run env -u SUDO_USER "$DIR/$s" --help
   eq "$s --help exits 0" "0" "$RUN_RC"
   contains "$s --help prints usage" "$RUN_OUT" "usage:"
@@ -17,9 +17,5 @@ for s in bootstrap.sh rebuild.sh users.sh preview-docs.sh home/.claude/hooks/she
   esac
   eq "$s --help never reaches sudo" "" "$SUDO_ARGS"
 done
-
-run env -u SUDO_USER "$DIR/users.sh"
-eq "users.sh with no command exits 2" "2" "$RUN_RC"
-contains "users.sh with no command explains itself" "$RUN_ERR" "usage:"
 
 finish

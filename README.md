@@ -1,18 +1,18 @@
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/assets/banner-dark.svg">
-  <img src="docs/assets/banner-light.svg" alt="dotfiles: nix-darwin, home-manager and Claude Code for my Macs" width="100%">
+  <img src="docs/assets/banner-light.svg" alt="dotfiles: nix-darwin, home-manager and Claude Code for my Mac" width="100%">
 </picture>
 
-One repo sets up my Macs: macOS settings, Homebrew apps, CLI tools, zsh, and a
-Claude Code setup of global rules, skills and hooks. It runs on
+One repo sets up my personal Mac: macOS settings, Homebrew apps, CLI tools,
+zsh, and a Claude Code setup of global rules, skills and hooks. It runs on
 [nix-darwin](https://github.com/nix-darwin/nix-darwin) and
-[home-manager](https://github.com/nix-community/home-manager). One branch
-serves every machine, and the config is keyed by macOS username.
+[home-manager](https://github.com/nix-community/home-manager), and builds one
+configuration, `#danavner`.
 
 This is my personal setup. Copy whatever helps, but I do not take
 contributions.
 
-## Set up a Mac
+## Set up the Mac
 
 ```sh
 git clone https://github.com/davner/dotfiles.git
@@ -25,7 +25,7 @@ Line Tools.
 
 | Command | When | sudo |
 | --- | --- | --- |
-| `./bootstrap.sh` | Once, on a new Mac | yes |
+| `./bootstrap.sh` | Once, on a fresh install | yes |
 | `./rebuild.sh` | After changing this repo | yes |
 | `./rebuild.sh --build` | Check a change builds, without applying it | no |
 | `./test.sh` | Before committing | no |
@@ -51,15 +51,6 @@ Every package, app and setting is listed in [What you get](docs/installed.md).
 Files under `home/` are linked into `$HOME`, so an edit to one takes effect at
 once. Adding or removing a linked file needs `./rebuild.sh`.
 
-## Usernames
-
-`flake.nix` maps each macOS username to what differs per machine: the git
-address and the platform. `./users.sh list` prints them, and `./bootstrap.sh`
-offers to add a missing one. Each username builds as `#<username>`.
-
-Dots become dashes because `darwin-rebuild` splits `--flake …#attr` on `.`
-([ADR 0005](docs/adr/0005-dots-become-dashes-in-flake-attributes.md)).
-
 ## Everyday commands
 
 | Command | What it does |
@@ -68,7 +59,6 @@ Dots become dashes because `darwin-rebuild` splits `--flake …#attr` on `.`
 | `cc-flow` | Prints the Claude workflow as a table: which skill to run at each step |
 | `cc-push` | Lets agents run a plain `git push` in this repo, or stops them |
 | `./test.sh --fast` | Runs the tests without the Nix evaluations |
-| `./users.sh list` | Lists the configured usernames |
 
 ## Docs
 

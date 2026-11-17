@@ -7,8 +7,7 @@ section "local skills"
 LOCAL="$DIR/home/.claude/local-skills.sh"
 LHOME="$WORK/local-home"
 LSTUB="$WORK/local-stub"
-mkdir -p "$LSTUB" "$LHOME/.claude/skills" "$LHOME/Vault/.skills/vault-a"
-touch "$LHOME/Vault/.skills/vault-a/SKILL.md"
+mkdir -p "$LSTUB" "$LHOME/.claude/skills"
 # Records the call and lays down what a real install would, without the network.
 cat >"$LSTUB/npx" <<'EOF'
 #!/usr/bin/env bash
@@ -26,12 +25,6 @@ local_run
 eq "local-skills.sh exits 0" "0" "$LOCAL_RC"
 eq "a missing impeccable is installed from ~, globally, without hooks" \
   "$LHOME|-y impeccable install --global -y --no-hooks" "$(cat "$LSTUB/npx-calls")"
-# A consumer flake links the vault skills.
-if [ -e "$LHOME/.claude/skills/vault-a" ]; then
-  bad "a vault skill is left to the consumer flake" "the core linked it"
-else
-  ok "a vault skill is left to the consumer flake"
-fi
 
 local_run
 eq "a second run exits 0" "0" "$LOCAL_RC"
