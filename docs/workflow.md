@@ -138,7 +138,8 @@ watching:
    moves the item to In progress and comments `Claimed by <run>`. When two loops
    claim the same item, the earliest claim wins and the other moves on. A
    run that files a spec and builds it at once claims each PR issue as it
-   files it, so a loop leaves those alone.
+   files it, and `/implement-spec` started by hand claims its items before it
+   builds, so a loop leaves those alone.
 4. An item it skips or gives up is passed over for the next one. When nothing
    is left to claim, the pass stops and reports each item it passed over and
    why.

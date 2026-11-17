@@ -203,7 +203,7 @@ Claiming makes sure the owner wrote and queued the item and that no other sessio
 
    Your own claim means the item is yours. Another run's means it holds the item: give it up and leave its Status alone.
 
-A skipped or given-up item is not an error: take the next line of next-up. When the list runs out, nothing is ready.
+A skipped or given-up item is not an error: a board loop takes the next line of next-up, and when the list runs out, nothing is ready. A run started on one item, such as `implement-spec` begun by hand, claims it the same way with its branch as the run name, and stops when the claim gives the item up.
 
 ## When a skill says "close" or "resolve" a ticket
 
