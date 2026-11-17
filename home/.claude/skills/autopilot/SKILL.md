@@ -64,7 +64,7 @@ The order, for every run:
 1. Grill: `grill-with-docs` when the repo has domain docs (a glossary, an ADR folder, or a tracker or domain file that names them), else `grill-me`.
 2. `to-spec`, then `to-tickets`, told in a board run which item the run took, for the tracker file's publish section to reuse. `.scratch/` paths resolve to the main checkout: `dirname "$(git rev-parse --path-format=absolute --git-common-dir)"`.
 3. **Integration worktree.** Now the feature slug is known. `git fetch origin`, then `git worktree add -b autopilot-<feature-slug> <main checkout>/.claude/worktrees/autopilot-<feature-slug> origin/main`, with the main checkout's absolute path. When `git check-ignore -q .claude/worktrees/x` fails, add `.claude/worktrees/` to the main checkout's `.git/info/exclude` (`git rev-parse --git-path info/exclude`).
-4. `implement-spec` in that worktree, told that `autopilot-<feature-slug>` is its integration branch. Its step 7 is the run's one code review, given the run's spec path.
+4. `implement-spec` in that worktree, told that `autopilot-<feature-slug>` is its integration branch. Its step 7 is the run's one code review, given the run's spec path. When `main` has a strict check (Finish, "One PR at a time"), it is also told to open a draft PR for the first PR group only.
 
 A park at any step ends the run at **Park** below.
 
@@ -100,7 +100,7 @@ The first needs admin rights and answers 404 or 403 without them; the second is 
 
 1. Push, open and arm only the first PR. Each later PR's branch stays local, so it never needs a force push.
 2. Poll `gh pr view <n> --json state --jq .state` every 60 seconds until it prints `MERGED`. When it prints `CLOSED`, or the PR's checks fail, or 45 minutes pass, stop there: the report names the PR and each branch still waiting.
-3. `git fetch origin`, then move the next branch onto the new main: `git rebase --onto origin/main <old base>`, the old base being the merged PR's tip by commit ID. Rerun the full check suite, then push, open and arm it as rung 2 says, and go back to step 2.
+3. `git fetch origin`, then move the next branch onto the new main: `git rebase --onto origin/main <old base>`, the old base being the tip of the branch it was stacked on, by commit ID. Rerun the full check suite, then push, open and arm it as rung 2 says, and go back to step 2.
 
 The decision log stays in `.scratch/`; the PR body carries only what the repo's PR rules ask.
 
