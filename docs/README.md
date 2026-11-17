@@ -71,7 +71,8 @@ writes outside a temp folder. `./test.sh NAME` runs only `tests/NAME.sh`,
 the linters.
 
 CI runs the fast suite on every push, and the full suite plus a real build
-every Monday. When the flake inputs move, it keeps them in one `flake-update`
-PR, rebuilt from `main` each week, that merges itself once the tests pass. If
+every Monday. When the flake inputs move, a stock action keeps them in one
+`flake-update` PR, rebuilt from `main` each week, that merges itself once the
+full suite and the build pass on it and the push tests pass. If
 `main` moves after the push, the PR waits for the next run to rebuild it, and
 its merge starts no workflow on `main`.
