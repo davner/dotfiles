@@ -123,10 +123,6 @@ Read the list with `gh issue list --label todo --state open`. When a session sta
 
 Read the file at the referenced path. Given `#N` instead, read `gh issue view N --comments` and the ticket files whose `Tracker:` line is `#N`. When `gh issue view N --json parent --jq .parent.number` prints a number `P` and `#P` is labelled `spec`, `#P`'s body is the spec and `#N`'s body is the ticket. Given neither, ask for the path.
 
-## When a skill says "move an item"
-
-Nothing to do: the board's built-in workflows move items. "Item added to project" sets Backlog, "Pull request linked to issue" sets In review, and "Item closed" and "Pull request merged" set Done. The moves no workflow makes are written where they happen: the starting Status in "Filing an issue", and In progress in "claim an item".
-
 ## When a skill says "park an item"
 
 Add the `needs-info` label and a comment holding the question and its numbered options, so the user sees why:

@@ -43,10 +43,6 @@ Read the file at the referenced path. Given a tracker ID instead, find the file 
 
 Set `Status: done` in the file, tick any TODO item that named this work, and name the tracker ID in the report, so the user can close it in <Shortcut | Jira>.
 
-## When a skill says "move an item"
-
-Nothing to do: the user moves items in <Shortcut | Jira>.
-
 ## When a skill says "park an item"
 
 Set a `Status: needs-info` line near the top of the item's ticket file, and write the question and its numbered options below it, so the user sees why.
