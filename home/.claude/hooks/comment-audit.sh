@@ -35,6 +35,12 @@ case $path in
   *) fenced=0 ;;
 esac
 
+# PEP 723 inline script metadata is TOML for the runner, in comment syntax.
+case $path in
+  *.py) script_meta=1 ;;
+  *) script_meta=0 ;;
+esac
+
 # Deliberately narrow, because a net that fires on domain prose gets ignored:
 # bare "previous" and "old" describe runtime state, their adverb forms never do.
 history_re='used to|no longer|formerly|superseded|(was|were) (removed|replaced|renamed)|this replaced|earlier (revision|version)|first (version|pass)|stopped being|went stale|previously|originally|refactored|renamed from|moved here from|instead of the old|until [0-9]{4}-[0-9]{2}-[0-9]{2}'
@@ -67,7 +73,7 @@ RUN_MAX=2
 # second copy of it is a second place to forget. The prefix says which fault.
 audit=$(
   awk -v hist="$history_re" -v sess="$session_re" -v stamp="$stamp_re" -v date="$date_re" \
-    -v pragma="$pragma_re" -v in_test="$in_test" -v fenced="$fenced" -v max="$RUN_MAX" '
+    -v pragma="$pragma_re" -v in_test="$in_test" -v fenced="$fenced" -v script_meta="$script_meta" -v max="$RUN_MAX" '
     # A docstring is documentation too and its body lines carry no marker, so
     # the fence is counted per occurrence: `"""One-liner."""` opens and closes.
     function fences(s,   c, i) {
@@ -82,6 +88,10 @@ audit=$(
       }
       run = 0
     }
+    # PEP 723 allows only `#` or `# ` lines inside, so any other line ends the block.
+    in_meta && /^#( |$)/ { if ($0 ~ /^# \/\/\/$/) in_meta = 0; next }
+    { in_meta = 0 }
+    script_meta && !in_doc && /^# \/\/\/ [a-zA-Z0-9-]+$/ { in_meta = 1; next }
     fenced && /"""/ { if (fences($0) % 2) in_doc = !in_doc; text = $0 }
     {
       line = $0
