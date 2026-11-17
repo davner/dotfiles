@@ -8,7 +8,7 @@ Work for this repo is tracked as GitHub issues in `davner/dotfiles`, on the boar
 - Number: `3`
 - URL: https://github.com/users/davner/projects/3
 - Fields that say where an item stands: Status and Priority.
-- Status flow: Backlog, Ready, In progress, In review, Done. The board's built-in workflows set Backlog when an item is added by hand, In review when a linked PR opens, and Done when an issue closes or its PR merges. Sub-issues are auto-added to the board with their parent.
+- Status flow: Backlog, Ready, In progress, In review, Done. The board's built-in workflows set Backlog when an item is added by hand, In review when a linked PR opens (whether a draft PR fires it, GitHub's docs do not say, so it is UNCONFIRMED: the changelog that added the workflow says only that it sets the status "whenever a linked pull request exists", https://github.blog/changelog/2025-11-06-improved-onboarding-flow-for-github-projects/), and Done when an issue closes or its PR merges. Sub-issues are auto-added to the board with their parent.
 - Views, on a board made from the template, each sorted by Priority: Board (Status columns, goals and specs left out), Agent queue (what next-up takes), Needs attention (open items labelled `needs-info` or `needs-triage`), Goals and specs (grouped by Status, with sub-issue progress), Tickets by parent (open sub-issues grouped by parent, with Status and linked PRs).
 - Closed issues not updated for two weeks are archived off the board by its auto-archive workflow.
 
