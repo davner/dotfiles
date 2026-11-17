@@ -16,7 +16,7 @@ concurrency:
   group: update
   cancel-in-progress: false
 
-# The last four are what update-flake-lock's README asks for.
+# update-flake-lock's README asks for contents, id-token, issues and pull-requests.
 permissions:
   actions: write # starts test.yml on the PR branch
   contents: write
@@ -33,7 +33,7 @@ jobs:
 
       - uses: DeterminateSystems/nix-installer-action@main
 
-      - name: nix flake update
+      - name: Update the lock and its PR
         id: update
         uses: DeterminateSystems/update-flake-lock@v29
         with:
