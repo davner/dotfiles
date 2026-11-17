@@ -11,6 +11,11 @@ on:
     - cron: "0 14 * * 1" # Mondays 14:00 UTC, 07:00 in Arizona
   workflow_dispatch:
 
+# Two runs at once would race for the one flake-update branch.
+concurrency:
+  group: update
+  cancel-in-progress: false
+
 permissions:
   actions: write # starts test.yml on the PR branch
   contents: write
@@ -30,6 +35,11 @@ jobs:
       # limit, which a darwin closure may not fit inside; if the hit rate turns
       # out to be near zero, drop this.
       - uses: DeterminateSystems/magic-nix-cache-action@main
+
+      # Read before the long checks, so a hand fix pushed during them is not overwritten.
+      - name: Where flake-update stands
+        id: lease
+        run: echo "lease=$(git ls-remote origin refs/heads/flake-update | cut -f1)" >> "$GITHUB_OUTPUT"
 
       - name: nix flake update
         run: nix flake update
@@ -63,4 +73,4 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          .github/flake-update-pr.sh flake-update "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          .github/flake-update-pr.sh flake-update "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" "${{ steps.lease.outputs.lease }}"

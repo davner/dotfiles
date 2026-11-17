@@ -72,4 +72,6 @@ the linters.
 
 CI runs the fast suite on every push, and the full suite plus a real build
 every Monday. When the flake inputs move, it keeps them in one `flake-update`
-PR, rebuilt from `main` each week, that merges itself once the tests pass.
+PR, rebuilt from `main` each week, that merges itself once the tests pass. If
+`main` moves after the push, the PR waits for the next run to rebuild it, and
+its merge starts no workflow on `main`.

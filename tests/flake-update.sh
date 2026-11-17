@@ -2,7 +2,7 @@
 # shellcheck source=/dev/null
 source "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
 
-FU="$DIR/.github/flake-update-pr.sh"
+FLAKE="$DIR/.github/flake-update-pr.sh"
 BRANCH=flake-update
 RUN_URL="https://github.com/o/r/actions/runs/1"
 
@@ -41,11 +41,15 @@ fixture() { # -> a bare origin with main, and a single-branch clone of it whose 
   # actions/checkout fetches only the ref it checks out.
   git clone -q --single-branch --branch main "$ORIGIN" "$CLONE"
   echo '{"lock":2}' >"$CLONE/flake.lock"
+  LEASE=""
 }
-fu_run() { # -> sets OUT, RC, CALLS after running the script in the clone
+read_lease() { # -> LEASE is origin's flake-update commit now, as update.yml reads it when the run starts
+  LEASE="$(git ls-remote "$ORIGIN" "refs/heads/$BRANCH" | cut -f1)"
+}
+flake_run() { # -> sets OUT, RC, CALLS after running the script in the clone
   rm -f "$FAKE/calls"
   RC=0
-  OUT="$(cd "$CLONE" && PATH="${FU_PATH-}$FAKE/bin:$PATH" "$FU" "$BRANCH" "$RUN_URL" 2>&1 </dev/null)" || RC=$?
+  OUT="$(cd "$CLONE" && PATH="$FAKE/bin:$PATH" "$FLAKE" "$BRANCH" "$RUN_URL" "$LEASE" 2>&1 </dev/null)" || RC=$?
   CALLS="$(cat "$FAKE/calls" 2>/dev/null)"
 }
 remote_lock() { git -C "$ORIGIN" show "$BRANCH:flake.lock" 2>/dev/null; }
@@ -56,7 +60,7 @@ called() { # name, extended regex -> ok when a recorded gh call matches
 section "no flake-update branch on origin"
 if require jq; then
   fixture
-  fu_run
+  flake_run
   want_exit "the script succeeds" 0 "$RC"
   eq "the branch on origin carries the moved lock" '{"lock":2}' "$(remote_lock)"
   called "a PR is opened with the dependencies label" "^pr create .*--label dependencies"
@@ -73,8 +77,9 @@ if require jq; then
   echo '{"lock":"last week"}' >"$WORK/seed/flake.lock"
   git -C "$WORK/seed" commit -q -am "chore(deps): nix flake update"
   git -C "$WORK/seed" push -q "$ORIGIN" "stale:$BRANCH"
+  read_lease
   printf '%s\n' '[{"number":7}]' >"$FAKE/canned/pr-list"
-  fu_run
+  flake_run
   want_exit "the script succeeds" 0 "$RC"
   eq "the branch on origin carries this run's lock" '{"lock":2}' "$(remote_lock)"
   eq "the branch is rebuilt on main, not on last week's commit" \
@@ -84,22 +89,32 @@ if require jq; then
   called "test.yml is started on the branch" "^workflow run test.yml --ref $BRANCH$"
 fi
 
-section "the remote branch moves after the script read it"
+section "a checkout that is not main"
+if require jq; then
+  for off in "a branch" "a detached HEAD"; do
+    fixture
+    if [ "$off" = "a branch" ]; then
+      git -C "$CLONE" switch -q -c topic
+    else
+      git -C "$CLONE" switch -q --detach
+    fi
+    flake_run
+    if [ "$RC" -ne 0 ]; then ok "on $off the script refuses"; else bad "on $off the script refuses" "out: $OUT"; fi
+    eq "on $off nothing is pushed" "" "$(git -C "$ORIGIN" for-each-ref "refs/heads/$BRANCH")"
+    eq "on $off gh is not called" "" "$CALLS"
+  done
+fi
+
+section "a hand fix lands on origin while the run is going"
 if require jq; then
   fixture
+  git -C "$WORK/seed" push -q "$ORIGIN" "HEAD:$BRANCH"
+  read_lease
   git -C "$WORK/seed" switch -q -c handfix
   echo '{"lock":"hand fix"}' >"$WORK/seed/flake.lock"
   git -C "$WORK/seed" commit -q -am "fix: pin an input by hand"
-  # Lands the hand fix on origin just before the script's push, after its ls-remote.
-  REAL_GIT="$(command -v git)"
-  mkdir -p "$WORK/racer"
-  cat >"$WORK/racer/git" <<RACER
-#!/usr/bin/env bash
-[ "\$1" != push ] || "$REAL_GIT" -C "$WORK/seed" push -q "$ORIGIN" "handfix:$BRANCH"
-exec "$REAL_GIT" "\$@"
-RACER
-  chmod +x "$WORK/racer/git"
-  FU_PATH="$WORK/racer:" fu_run
+  git -C "$WORK/seed" push -q "$ORIGIN" "handfix:$BRANCH"
+  flake_run
   if [ "$RC" -ne 0 ]; then ok "the script fails"; else bad "the script fails" "out: $OUT"; fi
   eq "the hand fix stays on origin" '{"lock":"hand fix"}' "$(remote_lock)"
   eq "no gh call follows the refused push" "" "$CALLS"

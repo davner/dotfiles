@@ -12,10 +12,11 @@ named run needs `lint` beside the module: `./test.sh NAME lint`.
 
 `.github/workflows/test.yml` runs the fast half on every push; `update.yml`
 bumps the flake inputs on Mondays, then runs the full suite, `nix flake check`
-and a real `nix build`. When the lock moved, `.github/flake-update-pr.sh`
-replaces the one `flake-update` branch from `main` and refreshes its single PR,
-which squash-merges itself once `test` passes; `tests/flake-update.sh` covers
-it. Anything slow belongs in update.yml, not in the push path.
+and a real `nix build`; when the lock moved, `.github/flake-update-pr.sh` keeps
+it in one self-merging PR. The strict required check holds that PR when `main`
+moves after the push, until the next run rebuilds the branch, and its
+`GITHUB_TOKEN` merge starts no workflow on `main`. Anything slow belongs in
+update.yml, not in the push path.
 
 ## Agent skills
 
