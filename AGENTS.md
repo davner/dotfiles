@@ -12,8 +12,10 @@ named run needs `lint` beside the module: `./test.sh NAME lint`.
 
 `.github/workflows/test.yml` runs the fast half on every push; `update.yml`
 bumps the flake inputs on Mondays, then runs the full suite, `nix flake check`
-and a real `nix build`, and opens a PR when the lock moved. Anything slow
-belongs in update.yml, not in the push path.
+and a real `nix build`. When the lock moved, `.github/flake-update-pr.sh`
+replaces the one `flake-update` branch from `main` and refreshes its single PR,
+which squash-merges itself once `test` passes; `tests/flake-update.sh` covers
+it. Anything slow belongs in update.yml, not in the push path.
 
 ## Agent skills
 
@@ -81,7 +83,8 @@ skill name to its folder in an input; a rebuild links each one into both
 `~/.claude/skills/` and `~/.agents/skills/`. The attrset name must equal the
 `name` in that `SKILL.md`, which full-mode `test.sh` checks. To add one: an
 input line (if the repo is new), `nix flake lock`, then an attrset line. The
-Monday `update.yml` PR bumps them with everything else.
+Monday `update.yml` run bumps them with everything else in its one
+self-merging `flake-update` PR.
 
 `impeccable` is the one no flake input can carry: it downloads an engine and
 writes agents, which a read-only store path cannot hold. When missing, it is

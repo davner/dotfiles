@@ -4,7 +4,8 @@ name: update
 # nix flake check and a cold build of the whole system closure. The build is
 # what catches a package that vanished from nixpkgs or an option that changed
 # meaning, which the push tests cannot see. When nothing moved, the same checks
-# run on the current lock. A pull request opens only when the lock moved.
+# run on the current lock. Only when the lock moved does it replace the one
+# flake-update branch from main and arm its PR to squash-merge itself.
 on:
   schedule:
     - cron: "0 14 * * 1" # Mondays 14:00 UTC, 07:00 in Arizona
@@ -55,26 +56,11 @@ jobs:
       - name: Build the configuration
         run: nix build --no-link --print-build-logs .#darwinConfigurations.danavner.system
 
-      - name: Open a pull request
+      - name: Push and refresh the pull request
         if: steps.moved.outputs.moved == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          set -euo pipefail
-          branch="flake-update-$(date -u +%Y-%m-%d)"
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git switch -c "$branch"
-          git add flake.lock
-          git commit -m "chore(deps): nix flake update"
-          git push --force-with-lease --set-upstream origin "$branch"
-          # A push with GITHUB_TOKEN starts no workflow, so the required test check is started by hand.
-          gh workflow run test.yml --ref "$branch"
-          if gh pr view "$branch" --json number >/dev/null 2>&1; then
-            echo "Pull request already open for $branch."
-          else
-            gh pr create \
-              --title "chore(deps): nix flake update" \
-              --label dependencies \
-              --body "Weekly flake input bump. \`./test.sh\` passed and the configuration built before this was opened, so the checks that a token-authored PR cannot trigger have already run in the [update workflow](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})."
-          fi
+          .github/flake-update-pr.sh flake-update "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
