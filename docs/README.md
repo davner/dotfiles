@@ -60,12 +60,12 @@ each with a light and a dark version.
 | `home/vscode/` | VS Code: settings and keybindings merged into the user folder, and each profile's extensions installed when missing |
 | `home/json-merge.sh` | Run by every rebuild, not linked: merges a base JSON file into a live one an app also writes, for Claude's and VS Code's settings |
 | `home/.config/zsh/functions.zsh` | Shell functions: `cc`, `cc-push` and `cc-flow` |
-| `tests/` | The test suite, one file per module |
+| `tests/` | The test suite, one file per tested module |
 | `preview-docs.sh` | Screenshots Markdown as GitHub renders it, light and dark, to check a docs change before pushing |
 
 ## Tests and CI
 
-`./test.sh` runs every file in `tests/`, one per module, with no sudo and no
+`./test.sh` runs every file in `tests/`, one per tested module, with no sudo and no
 writes outside a temp folder. `./test.sh NAME` runs only `tests/NAME.sh`,
 `--fast` skips the Nix evaluations, and `nix develop --command ./test.sh` adds
 the linters.

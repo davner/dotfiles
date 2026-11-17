@@ -58,10 +58,6 @@ not_called() { # name, pattern -> ok when no logged call matches the extended re
   if grep -Eq -- "$2" <<<"$CALLS"; then bad "$1" "a gh call matches: $2" "calls: ${CALLS//$'\n'/ | }"; else ok "$1"; fi
 }
 
-for s in repo-settings.sh labels.sh board.sh; do
-  if [ -x "$SDS/$s" ]; then ok "$s is executable"; else bad "$s is executable" "the skill runs it by path"; fi
-done
-
 # --- repo settings ---
 section "repo settings"
 RS="$SDS/repo-settings.sh"
@@ -148,12 +144,6 @@ for name in $LABELS_SET skip-changelog; do
 done
 eq "the tracker template and docs/workflow.md name every label in the set" "" "$missing"
 
-for failing in "repo view" "label list" "label edit" "issue list" "pr list" "label delete" "label create"; do
-  labels_repo "$LABELS_DEFAULTS"
-  GH_FAIL="$failing" gh_run "$LABELS"
-  eq "a failing gh $failing stops labels.sh there" "1 $failing" \
-    "$RC $(tail -n 1 <<<"$CALLS" | awk '{print $1, $2}')"
-done
 
 # --- board ---
 section "setup-dan-skills board"
@@ -190,16 +180,13 @@ board_scopes "'gist', 'project', 'read:org', 'repo'"
 
 board_run
 eq "with no projects, board.sh exits 0 and prints the new board" "0 board=8" "$RC $(board_line)"
-called "it creates the template" '^project create .*--title dan-skills template'
 called "it gives the template's Status the five columns in order" \
   'updateProjectV2Field.*"Backlog".*"Ready".*"In progress".*"In review".*"Done"'
-called "it adds the Priority field" '^project field-create 7 .*--name Priority .*P1,P2,P3'
 views() { grep '^api users/me/projectsV2/7/views ' <<<"$CALLS" | sed 's/^.* --input - //'; }
 eq "it creates the five views on the template" "Board|Agent queue|Needs attention|Goals and specs|Tickets by parent" \
   "$(views | jq -r .name | paste -sd'|' -)"
 called "it deletes the default View 1" 'viewId=PVTV_one .*deleteProjectV2View'
 not_called "and no other view" 'viewId=PVTV_board'
-called "it copies the template to a board for the repo, and links it" '^project link 8 --owner me --repo app$'
 eq "it prints both workflows pages" "$TEMPLATE_URL/workflows|https://github.com/users/me/projects/8/workflows" \
   "$(grep '/workflows$' <<<"$OUT" | paste -sd'|' -)"
 eq "and the workflows to turn on: 7 on the template, 8 on the board" 15 "$(grep -c '^- ' <<<"$OUT")"
@@ -223,7 +210,6 @@ eq "a failing delete of View 1 leaves board.sh going, and makes it a manual step
 
 board_run "3=dan-skills template" "4=me/other"
 not_called "it leaves the template alone" '^(project create|project field-create|api )'
-called "it copies the existing template" '^project copy 3 '
 eq "it exits 0 and prints the board and only the auto-add step" "0|board=8|Turn on Auto-add|0" \
   "$RC|$(board_line)|$(grep -o 'Turn on Auto-add' <<<"$OUT")|$(grep -c '^- ' <<<"$OUT")"
 

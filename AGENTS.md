@@ -2,7 +2,7 @@
 
 Run `./test.sh` before proposing a commit. It needs no sudo and touches nothing
 outside a temp directory, so there is no reason to skip it. It runs each
-`tests/*.sh`, one file per module, in its own bash process, with the shared
+`tests/*.sh`, one file per tested module, in its own bash process, with the shared
 helpers and fixtures in `tests/lib.sh`; `./test.sh NAME...` runs only
 `tests/NAME.sh`. `--fast` drops the flake evaluations when only the shell
 scripts changed, and `nix develop --command ./test.sh` adds shellcheck and
