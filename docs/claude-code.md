@@ -13,7 +13,7 @@ Each folder under [`home/.claude/skills/`](../home/.claude/skills/) is linked in
 
 | Stage | Skill | What it does |
 | --- | --- | --- |
-| Setup | [`setup-dan-skills`](../home/.claude/skills/setup-dan-skills/SKILL.md) | Configures a repo once: tracker (GitHub, Shortcut or Jira) and where docs go; for GitHub, the labels and a board with its views |
+| Setup | [`setup-dan-skills`](../home/.claude/skills/setup-dan-skills/SKILL.md) | Configures a repo once: tracker (GitHub, Shortcut or Jira) and where docs go; for GitHub, the labels, a board with its views and Priority field, and Bug and TODO issue forms |
 | Align | [`grill-me`](../home/.claude/skills/grill-me/SKILL.md) | Interviews you until a plan has no open questions |
 | Align | [`grill-with-docs`](../home/.claude/skills/grill-with-docs/SKILL.md) | The same, recording the glossary and ADRs as it goes |
 | Align | [`grilling`](../home/.claude/skills/grilling/SKILL.md) | The interview engine behind both |

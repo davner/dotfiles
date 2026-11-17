@@ -16,8 +16,8 @@ whether the repo ships releases.
 In a shared repo the glossary and ADRs are committed for everyone, and the
 tracker file stays in `~/.claude/repos/<repo>/`, out of the repo. GitHub is
 offered only for a repo nobody else commits to. Its scripts set up the labels
-and a board copied from a template board, as
-[Hands-off board work](#hands-off-board-work) describes. A repo that ships releases gets
+and a board copied from a template board, and it offers Bug and TODO issue
+forms, as [Hands-off board work](#hands-off-board-work) describes. A repo that ships releases gets
 towncrier, which builds the changelog from one small file per PR and releases
 through a PR. Any other repo gets no changelog.
 
@@ -129,8 +129,8 @@ watching:
    `/loop` reruns a command until you stop it, so each pass takes the next
    item.
 3. Each pass claims the top item of the board's Agent queue view: open, in
-   Ready, labelled `ready-for-agent`, not blocked, and not a spec. It moves
-   the item to In progress and comments `Claimed by <run>`. When two loops
+   Ready, labelled `ready-for-agent`, not blocked, and not a goal or spec. It
+   moves the item to In progress and comments `Claimed by <run>`. When two loops
    claim the same item, the earliest claim wins and the other moves on. A
    run that files a spec and builds it at once claims each PR issue as it
    files it, so a loop leaves those alone.
@@ -141,6 +141,26 @@ watching:
    all closed, with a summary of what landed, so specs finished by
    auto-merges get closed too.
 
+### Goals and priority
+
+A goal is an open issue labelled `goal`, for an outcome that outlasts any one
+spec. You name the goals; an agent files one only when you say so. Specs,
+bugs and TODO items go under the goal they serve as sub-issues, and a spec's
+own tickets go under the spec. A goal stays open until you close it.
+
+Priority is a board field: P1, P2 or P3. You set it, or an agent does when
+you name one; an agent never guesses. The Agent queue takes P1 first, then
+P2, P3, then items with no priority, in board order within each.
+
+### Issue forms
+
+`setup-dan-skills` offers to copy two issue forms into the repo's
+`.github/ISSUE_TEMPLATE/`, with blank issues turned off. The Bug form adds
+`fix`; the TODO form adds `todo` and asks From, Why, Known and Next, the
+fields a fresh session needs. Neither adds `ready-for-agent` or a triage
+label, so a new issue waits in Backlog until you put it under a goal, give it
+a priority and queue it. This repo uses the same forms.
+
 ### The labels
 
 `scripts/labels.sh` in `setup-dan-skills` creates the same set in every repo:
@@ -150,9 +170,10 @@ watching:
 | `feat`, `fix`, `docs`, `refactor`, `perf`, `test`, `chore` | The Conventional Commit type of the PR that closes it |
 | `ready-for-agent` | An agent may build it hands-off |
 | `ready-for-human` | You build it |
+| `goal` | A long-lived goal. Its sub-issues are the specs, bugs and TODO items that serve it |
 | `spec` | A parent issue holding a spec. Its sub-issues are the work |
 | `needs-info` | Waiting on an answer |
-| `needs-triage` | An outside reporter's issue, waiting for you |
+| `needs-triage` | Waiting for you to look at it |
 | `todo` | A TODO list entry |
 | `wontfix` | Will not be done |
 | `breaking`, `dependencies` | A breaking change; a dependency update |
@@ -165,11 +186,16 @@ the [GitHub tracker template](../home/.claude/skills/setup-dan-skills/issue-trac
 
 ### The board views
 
-A board made from the template comes with four views:
+A board made from the template comes with five views, each sorted by
+Priority:
 
 | View | Shows |
 | --- | --- |
-| Board | Status columns, specs left out |
+| Board | Status columns, goals and specs left out |
 | Agent queue | What the next pass will take, in order |
-| Specs | Each spec and its progress |
-| Tickets by parent | Open sub-issues grouped by their spec |
+| Needs attention | Open items waiting on an answer or on triage |
+| Goals and specs | Each goal and spec by Status, with its progress |
+| Tickets by parent | Open sub-issues grouped by their goal or spec |
+
+Its auto-archive workflow takes closed issues off the board two weeks after
+their last update.

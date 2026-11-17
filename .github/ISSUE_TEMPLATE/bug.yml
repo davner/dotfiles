@@ -1,0 +1,28 @@
+name: Bug
+description: Something in the repo is broken or gives a wrong answer
+labels: [fix]
+body:
+  - type: textarea
+    id: happened
+    attributes:
+      label: What happened
+      description: The command or page, and what it printed or showed. Paste the error if there is one.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: How to see it again
+      description: The steps or command that show it
+      render: sh
+  - type: textarea
+    id: known
+    attributes:
+      label: Known
+      description: Decisions already made; files, ADRs or issues involved

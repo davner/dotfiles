@@ -1,14 +1,16 @@
 # Issue tracker: GitHub
 
-Work for this repo is tracked as GitHub issues in `<owner/repo>`, on the board below. Specs and tickets are written as local markdown first, then filed: a spec becomes a parent issue, each PR group of its tickets a sub-issue of it, and a change that fits one PR a single issue with no parent. The board also holds the TODO list. Board order is the priority: there are no priority labels.
+Work for this repo is tracked as GitHub issues in `<owner/repo>`, on the board below. Specs and tickets are written as local markdown first, then filed: a spec becomes a parent issue, each PR group of its tickets a sub-issue of it, and a change that fits one PR a single issue with no parent. The board also holds the goals that this work serves and the TODO list.
 
 ## Board
 
 - Owner: `<owner>` (the login in the board URL)
 - Number: `<number>`
 - URL: <board url>
+- Fields that say where an item stands: Status and Priority.
 - Status flow: Backlog, Ready, In progress, In review, Done. The board's built-in workflows set Backlog when an item is added by hand, In review when a linked PR opens, and Done when an issue closes or its PR merges. Sub-issues are auto-added to the board with their parent.
-- Views, on a board made from the template: Board (Status columns, specs left out), Agent queue (what next-up takes), Specs (each spec's Status and sub-issue progress), Tickets by parent (open sub-issues grouped by parent, with Status and linked PRs).
+- Views, on a board made from the template, each sorted by Priority: Board (Status columns, goals and specs left out), Agent queue (what next-up takes), Needs attention (open items labelled `needs-info` or `needs-triage`), Goals and specs (grouped by Status, with sub-issue progress), Tickets by parent (open sub-issues grouped by parent, with Status and linked PRs).
+- Closed issues not updated for two weeks are archived off the board by its auto-archive workflow.
 
 Every `gh project` command below takes `<number> --owner <owner>`.
 
@@ -19,8 +21,9 @@ Each fact about an item lives in one place:
 - Status is where the item is in the flow, and nothing else.
 - `ready-for-agent` and `ready-for-human` say who does the work. `ready-for-agent` means fully specified: an agent may take it hands-off. Only the board owner adds it, by hand or through an agent the owner told to file approved tickets. An issue template never adds it, so filing an issue can never queue work for agents.
 - `needs-info`: waiting on an answer. `wontfix`: will not be done.
-- `needs-triage`: waiting for the owner to look. Only an outside reporter's issue form sets it.
+- `needs-triage`: waiting for the owner to look.
 - `todo`: where the item came from, a TODO list entry.
+- `goal`: a long-lived goal, the parent of the specs, bugs and TODO items that serve it. It stays open while work toward it remains, and next-up never takes it.
 - `spec`: a parent issue holding a spec. Its sub-issues are the work, and next-up takes only them.
 - Kind, the Conventional Commit type of the PR that closes it: `feat`, `fix`, `docs`, `refactor`, `perf`, `test`, `chore`.
 - Other: `breaking`, `dependencies`, and `skip-changelog` (a PR that needs no changelog fragment), which exists only in a repo with towncrier.
@@ -28,6 +31,16 @@ Each fact about an item lives in one place:
 Blocking edges are GitHub dependencies, set with `--blocked-by` when filing: the board marks a blocked item, and `gh issue view N --json blockedBy` lists its blockers. A duplicate closes with GitHub's duplicate reason, as "close" says, which records the link; there is no `duplicate` label.
 
 The labels' colours and descriptions live in `setup-dan-skills/scripts/labels.sh`; re-run it to restore the set.
+
+## Goals and priority
+
+A goal is an open issue labelled `goal`. The owner names the goals; an agent files one only on the owner's word. A new spec, bug or TODO item goes under the goal it serves, with `--parent <goal>` when filing; one that fits no goal goes under none, and the agent names it to the owner. A goal stays open until the owner closes it, however many of its sub-issues are done.
+
+Priority is a board field: P1, P2 or P3, P1 first. The owner sets it, or an agent on the owner's word; an agent never guesses one, so an item can have none. Next-up and every view sort by it.
+
+## Issue forms
+
+A new issue on GitHub's web page starts from a form in `.github/ISSUE_TEMPLATE/`; blank issues are off. The Bug form adds `fix`. The TODO form adds `todo`, and its From, Why, Known and Next fields are the TODO body below. Neither form adds `ready-for-agent`, `ready-for-human` or a triage label: an issue filed from a form waits in Backlog for the owner to place it under a goal, set its Priority, and queue it.
 
 ## Locations
 
@@ -48,10 +61,12 @@ gh project item-add <number> --owner <owner> --url "$url"
 gh project item-edit <number> --owner <owner> --url "$url" --field Status --value <Status>
 ```
 
+`<P>` is the goal or spec it goes under. When the owner names a priority, set it too: `gh project item-edit <number> --owner <owner> --url "$url" --field Priority --value <P1 | P2 | P3>`.
+
 ## When a skill says "publish to the issue tracker"
 
 1. Write the spec or ticket files under `<scratch>/<feature-slug>/`, creating the directory if needed. A ticket's blocking edges are a `Blocked by:` line naming ticket numbers and titles. Triage lives on the issues as labels.
-2. Once the owner approves the tickets, file them as "Filing an issue" says. With two or more PR groups, file the spec first as the parent: titled with the spec's title, labelled `spec`, its body `spec.md`, in Status In progress. Then file one sub-issue per PR group, in PR order so each blocker's number exists:
+2. Once the owner approves the tickets, file them as "Filing an issue" says. With two or more PR groups, file the spec first as the parent: titled with the spec's title, labelled `spec`, its body `spec.md`, under the goal it serves, in Status In progress. Then file one sub-issue per PR group, in PR order so each blocker's number exists:
    - title: the PR title
    - `--parent <P>`, the spec's issue
    - `--blocked-by` the issue numbers of the earlier groups it waits on, when it waits on any
@@ -77,7 +92,7 @@ gh project item-edit <number> --owner <owner> --url "$url" --field Status --valu
    <the titles of the groups it waits on, or "None (can start immediately)">
    ```
 
-   A change that fits one PR is a single issue with no parent and no `spec` issue: the same labels, Status and layout, with the spec's Problem Statement and Solution above "What to build".
+   A change that fits one PR is a single issue under the goal it serves, with no `spec` issue: the same labels, Status and layout, with the spec's Problem Statement and Solution above "What to build".
 
    When the work came from a board issue `#N`, the first PR group reuses it instead of filing a new one: `gh issue edit N --body-file <body.md> [--parent <P>]`, keeping its labels and Status. Only the other groups are filed.
 
@@ -87,7 +102,7 @@ gh project item-edit <number> --owner <owner> --url "$url" --field Status --valu
 
 ## When a skill says "add to the TODO list"
 
-Work that surfaces mid-session but belongs to no current spec becomes an issue as "Filing an issue" says, labelled `todo`, in Status Backlog. The body carries what a fresh session needs to pick it up:
+Work that surfaces mid-session but belongs to no current spec becomes an issue as "Filing an issue" says, labelled `todo`, under the goal it serves, in Status Backlog. The body carries what a fresh session needs to pick it up:
 
 ```markdown
 - From: <the session or spec it came out of>
@@ -129,9 +144,9 @@ The Status stays where it was.
 
 ## When a skill says "next-up"
 
-The open Ready items labelled `ready-for-agent`, not blocked and not a spec, in board order: the Agent queue view.
+The open Ready items labelled `ready-for-agent`, not blocked and not a goal or spec: P1 first, then P2, P3, then no priority, and board order within each. This is the Agent queue view.
 
-First sweep up finished specs: check each open `spec` issue's progress, and close it as "close" says when every sub-issue is closed. Auto-merges close sub-issues with nobody watching, so this sweep is what closes their parents:
+First sweep up finished specs: check each open `spec` issue's progress, and close it as "close" says when every sub-issue is closed. Auto-merges close sub-issues with nobody watching, so this sweep is what closes their parents. It leaves goals alone, since only the owner closes a goal. The open specs:
 
 ```sh
 gh issue list --label spec --state open --json number --jq '.[].number'
@@ -141,8 +156,8 @@ Then list the queue. The first line is next-up:
 
 ```sh
 gh project item-list <number> --owner <owner> --limit 1000 --format json \
-  --query 'is:issue is:open status:Ready label:ready-for-agent -is:blocked -label:spec' \
-  --jq '.items[].content | "#\(.number) \(.title)"'
+  --query 'is:issue is:open status:Ready label:ready-for-agent -is:blocked -label:goal,spec' \
+  --jq '.items | sort_by({"P1": 1, "P2": 2, "P3": 3}[.priority // ""] // 4) | .[].content | "#\(.number) \(.title)"'
 ```
 
 Empty output means nothing is ready. Before starting work on an item, claim it as the next section says; when the claim gives the item up, take the next line.

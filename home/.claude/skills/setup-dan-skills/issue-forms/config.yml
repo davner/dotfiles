@@ -1,0 +1,2 @@
+# Every issue starts from a form, so it carries its kind's label and the fields a fresh session needs.
+blank_issues_enabled: false
