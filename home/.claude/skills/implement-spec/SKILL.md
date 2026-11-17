@@ -20,7 +20,7 @@ Communication to and from subagents should be sparse. Communicate primarily thro
 
 Tickets that touch a user interface are built through `impeccable` and checked once on desktop and on mobile in Chrome device emulation.
 
-1. Read the spec and tickets to understand the task graph.
+1. Read the spec and tickets to understand the task graph. Then, before any other work, claim each PR's item (the `Tracker:` line in its ticket files) that a board loop could take, one the tracker file's "next-up" section would list, as its "claim an item" section says. The run name is the integration branch step 3 creates, so name that branch now. An item the caller says it already claimed is held: skip its claim. When a claim skips or gives up an item, stop and report which item and why.
 
 2. (optional) Use an **exploration subagent** to conduct any exploration required by the tickets - relevant codebase files or external documentation. Ensure the exploration subagent can save files - it should save its markdown notes in a directory outside the repo, accessible by all future subagents. This lets **implementer subagents** focus on implementation rather than exploration.
 
