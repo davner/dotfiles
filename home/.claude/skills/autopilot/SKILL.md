@@ -39,7 +39,15 @@ Before opening the first, say in the conversation: "This run is headless." Then 
    3. When the claim skips or gives up the item, move on to the next line, as those sections say. When no line is left, stop and report that nothing could be claimed, naming each item skipped or given up and why.
    4. Read the claimed item as the "fetch the relevant ticket" section says.
    5. When its parent is a `spec` issue, the run takes **the spec shortcut** in "The order". Otherwise the item's text is the idea.
-5. **Skill selection.** List the installed skills in `~/.claude/skills/` and `~/.agents/skills/` and read each description. Match it against the repo's manifests (`pyproject.toml`, `package.json` dependencies, `tsconfig.json`, `go.mod`, UI files) and the item's area. Keep the matches with a one-line reason each, and the languages and libraries no skill covers. Name the matches in every subagent brief, since subagents do not inherit loaded skills.
+5. **Skill selection.** List the installed skills in `~/.claude/skills/` and `~/.agents/skills/` and read each description. Match it against the repo's manifests (`pyproject.toml`, `package.json` dependencies, `tsconfig.json`, `go.mod`, UI files) and the item's area. Keep the matches with a one-line reason each, and the languages and libraries no skill covers.
+
+## Every subagent brief
+
+Each brief the run writes, its own and the ones a skill it follows asks for, carries these, since a subagent inherits neither loaded skills nor this file:
+
+- the matches from Skill selection;
+- the user is the only author: commit messages and PR bodies carry no attribution, co-author or "generated with" line, whatever the harness asks for;
+- macOS has no `timeout` command: bound a slow command with the Bash tool's timeout, or run it in the background.
 
 ## The order
 
