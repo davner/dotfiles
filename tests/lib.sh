@@ -88,16 +88,17 @@ filemode() {
 fixture_stub() { # creates $STUB, a PATH dir of witnesses, and $FAKEHOME
   [ ! -d "$STUB" ] || return 0
   mkdir -p "$STUB" "$FAKEHOME"
-  # Records what it was asked to run instead of running it, so the happy path of
-  # both scripts is observable without a password or a rebuild.
+  # tests/help.sh runs bootstrap.sh and rebuild.sh with --help; these stubs keep
+  # a regression there from running real sudo or a rebuild.
   cat >"$STUB/sudo" <<'EOF'
 #!/usr/bin/env bash
 printf '%s\n' "$*" >"$(dirname "$0")/sudo-args"
 EOF
-  # --build calls darwin-rebuild with no sudo in front of it, so it needs its own witness.
+  # rebuild.sh --build calls darwin-rebuild with no sudo in front of it.
   cat >"$STUB/darwin-rebuild" <<'EOF'
 #!/usr/bin/env bash
-printf '%s\n' "$*" >"$(dirname "$0")/darwin-rebuild-args"
+echo "test stub darwin-rebuild, should not run: $*" >&2
+exit 1
 EOF
   # bootstrap.sh resolves nix's path to hand to sudo; the stub sudo never execs it.
   cat >"$STUB/nix" <<'EOF'
@@ -112,15 +113,13 @@ RUN_OUT=""
 RUN_ERR=""
 RUN_RC=0
 SUDO_ARGS=""
-DR_ARGS=""
 run() { # run a repo script with the stubs in place; never touches real $HOME
   fixture_stub
-  rm -f "$STUB/sudo-args" "$STUB/darwin-rebuild-args"
+  rm -f "$STUB/sudo-args"
   RUN_RC=0
   RUN_OUT="$(HOME="$FAKEHOME" PATH="$STUB:$PATH" "$@" 2>"$WORK/stderr" </dev/null)" || RUN_RC=$?
   RUN_ERR="$(cat "$WORK/stderr")"
   SUDO_ARGS="$(cat "$STUB/sudo-args" 2>/dev/null)"
-  DR_ARGS="$(cat "$STUB/darwin-rebuild-args" 2>/dev/null)"
 }
 
 fixture_sthome() { # sets $STHOME, a $HOME with an empty session registry

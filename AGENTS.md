@@ -2,13 +2,17 @@
 
 Run `./test.sh` before proposing a commit. It needs no sudo and touches nothing
 outside a temp directory, so there is no reason to skip it. It runs each
-`tests/*.sh`, one file per module, in its own bash process, with the shared
+`tests/*.sh`, one file per tested module, in its own bash process, with the shared
 helpers and fixtures in `tests/lib.sh`; `./test.sh NAME...` runs only
 `tests/NAME.sh`. `--fast` drops the flake evaluations when only the shell
 scripts changed, and `nix develop --command ./test.sh` adds shellcheck and
 actionlint - run it that way when you touched a shell script or a workflow,
 since bare it silently skips both. Both live in `tests/lint.sh`, so a
 named run needs `lint` beside the module: `./test.sh NAME lint`.
+
+Test what would break silently: the hooks, the merge logic, anything whose
+wrong answer still exits 0. Skip a test whose failure already shows at rebuild
+or use, or that only restates a script's own arguments or a mock's call strings.
 
 `.github/workflows/test.yml` runs the fast half on every push; `update.yml`
 bumps the flake inputs on Mondays, then runs the full suite, `nix flake check`
