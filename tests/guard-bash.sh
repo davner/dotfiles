@@ -42,6 +42,8 @@ git restore .
 git restore -- .
 git config claude.allowPush true
 git config --unset claude.allowPush
+git config claude.allowForcePush true
+git config --local claude.allowforcepush false
 cc-push
 cc-push on
 cc-push off
@@ -640,6 +642,30 @@ git push -uf origin main
 git push origin +main
 git -C . push --force
 CASES
+# A lease refuses to overwrite commits the agent has not seen, so it alone
+# opens behind a second switch; --force, -f and + overwrite blind and stay shut.
+git init -q "$PUSHES/forced" && git -C "$PUSHES/forced" config claude.allowPush true &&
+  git -C "$PUSHES/forced" config claude.allowForcePush true
+git init -q "$PUSHES/forceonly" && git -C "$PUSHES/forceonly" config claude.allowForcePush true
+# shellcheck disable=SC2329  # passed by name to expect_exit or hook
+forced_payload() { bash_payload "$1" "$PUSHES/forced"; }
+expect_exit "a lease push is allowed where force pushes are switched on" 0 forced_payload "$GUARD" <<'CASES'
+git push --force-with-lease
+git push --force-with-lease origin topic
+git push --force-with-lease=topic:967f84c origin topic
+git push --force-with-lease --force-if-includes origin topic
+CASES
+expect_exit "a blind force push stays blocked where force pushes are switched on" 2 forced_payload "$GUARD" <<'CASES'
+git push --force origin topic
+git push -f origin topic
+git push origin +topic
+git push --force-with-lease --force origin topic
+git push --force-with-lease origin +topic
+CASES
+eq "a lease push is blocked where only plain pushes are on" "2" \
+  "$(guard_in "$PUSHES/opted" 'git push --force-with-lease origin topic')"
+eq "a lease push is blocked where only force pushes are on" "2" \
+  "$(guard_in "$PUSHES/forceonly" 'git push --force-with-lease origin topic')"
 # A subshell's cd ends with the subshell, so it moves only the pushes inside it.
 eq "cd and push inside one subshell is allowed" "0" \
   "$(guard_in "$PUSHES/closed" "(cd $PUSHES/opted && git push)")"

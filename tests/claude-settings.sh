@@ -57,7 +57,8 @@ HOOKS
       bad "settings.base.json denies $rule" "missing from permissions.deny"
     fi
   done <<'DENY'
-Bash(git push *--force*)
+Bash(git push *--force)
+Bash(git push *--force *)
 Bash(git push -f *)
 Bash(git push * -f)
 Bash(git push * -f *)
@@ -99,7 +100,9 @@ DENY
   done <<'CMDS'
 deny|git push --force
 deny|git push --force origin main
-deny|git push origin main --force-with-lease
+allow|git push origin main --force-with-lease
+allow|git push --force-with-lease=topic:abc origin topic
+deny|git push --force-with-lease --force origin topic
 deny|git push -f
 deny|git push -f origin main
 deny|git push origin main -f
