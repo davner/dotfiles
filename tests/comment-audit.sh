@@ -78,6 +78,18 @@ if require jq; then
     '{"tool_input":{"file_path":"a.sh","content":"#!/usr/bin/env bash\n# shellcheck disable=SC2086\n# shellcheck disable=SC2001\n# shellcheck disable=SC2002"}}'
   audit_case "a shebang does not pad a two-line run" 0 \
     '{"tool_input":{"file_path":"a.sh","content":"#!/usr/bin/env bash\n# one\n# two"}}'
+  # PEP 723 inline script metadata is TOML that a runner reads, and uv's
+  # exclude-newer key holds a date.
+  audit_case "a python inline script metadata block is not a comment run" 0 \
+    '{"tool_input":{"file_path":"a.py","content":"# /// script\n# requires-python = \">=3.12\"\n# dependencies = [\n#   \"httpx\",\n# ]\n# [tool.uv]\n# exclude-newer = \"2026-08-12T00:00:00Z\"\n# ///\nimport httpx"}}'
+  audit_case "a metadata block leaves a short run after it short" 0 \
+    '{"tool_input":{"file_path":"a.py","content":"#!/usr/bin/env -S uv run\n# /// script\n# dependencies = []\n# ///\n# one\n# two"}}'
+  audit_case "a comment run after a metadata block is still flagged" 2 \
+    '{"tool_input":{"file_path":"a.py","content":"# /// script\n# dependencies = []\n# ///\n# one\n# two\n# three"}}'
+  audit_case "a metadata block ends at its first uncommented line" 2 \
+    '{"tool_input":{"file_path":"a.py","content":"# /// script\nx = 1\n# formerly a generator"}}'
+  audit_case "a metadata fence outside python is an ordinary comment" 2 \
+    '{"tool_input":{"file_path":"a.sh","content":"# /// script\n# dependencies = []\n# ///"}}'
   audit_case "a trailing comment on each line is not a run" 0 \
     '{"tool_input":{"file_path":"a.ts","content":"const a=1; // one\nconst b=2; // two\nconst c=3; // three\nconst d=4; // four"}}'
   # A hook that dies on an unexpected payload takes the session's write with it.
