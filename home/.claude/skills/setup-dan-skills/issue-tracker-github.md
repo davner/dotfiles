@@ -125,11 +125,7 @@ Read the file at the referenced path. Given `#N` instead, read `gh issue view N 
 
 ## When a skill says "move an item"
 
-```sh
-gh project item-edit <number> --owner <owner> --url <issue url> --field Status --value "<Backlog | Ready | In progress | In review | Done>"
-```
-
-Move to In progress when work on the issue starts, and to In review when its PR opens. Done is the board's job.
+Nothing to do: the board's built-in workflows move items. "Item added to project" sets Backlog, "Pull request linked to issue" sets In review, and "Item closed" and "Pull request merged" set Done. The moves no workflow makes are written where they happen: the starting Status in "Filing an issue", and In progress in "claim an item".
 
 ## When a skill says "park an item"
 
@@ -192,9 +188,10 @@ Claiming makes sure the owner wrote and queued the item and that no other sessio
      --query 'is:issue is:open status:Ready' --jq '.items[].content.number' | grep -qx N
    ```
 
-3. **Move it to In progress** as "move an item" says, then mark the claim with a name unique to this run, such as its branch:
+3. **Move it to In progress**, then mark the claim with a name unique to this run, such as its branch. No workflow makes this move, and it is the lock: once it lands, step 2 fails for every other run.
 
    ```sh
+   gh project item-edit <number> --owner <owner> --url <issue url> --field Status --value "In progress"
    gh issue comment N --body "Claimed by <run name>"
    ```
 
@@ -228,7 +225,7 @@ A duplicate closes with `gh issue close N --duplicate-of M`.
 
 ## Agent PRs
 
-- Agents open PRs: <yes | no>. A PR's body starts with `Closes #N` for the sub-issue or single issue it finishes, and a `spec` parent closes as "close" says. Move the issue to In review when it opens.
+- Agents open PRs: <yes | no>. A PR's body starts with `Closes #N` for the sub-issue or single issue it finishes, and a `spec` parent closes as "close" says.
 - Agents merge their own PRs once CI passes: <yes: `gh pr merge --auto --squash` after every review finding is fixed | no: the user merges | no: the repo has no CI, and auto-merge needs it>. A merge squashes to the PR title, so the title is the Conventional Commit subject.
 <Releases, when the repo ships them:>
 - Each PR adds a changelog fragment `changes/<issue#>.<type>.md`, its type one of the `[[tool.towncrier.type]]` directories in `towncrier.toml`, or carries the `skip-changelog` label.
