@@ -51,6 +51,7 @@ opted_in() { # directory, key -> success when that repo has set the key to true
 }
 push_allowed() { opted_in "$1" claude.allowPush; }
 prs_allowed() { opted_in "$1" claude.allowPrs; }
+force_allowed() { opted_in "$1" claude.allowForcePush; }
 
 # A cd inside a subshell is undone when it closes, so each one is kept against
 # its scope and a statement sees only its own scope's and its parents'.
@@ -210,9 +211,19 @@ this task actually touched, by name."
 
   if [[ $sub == push ]]; then
     # A `+` on a refspec forces that one ref exactly as --force forces them all.
-    if has_arg '--force.*|-[a-zA-Z]*f[a-zA-Z]*|\+.+'; then
-      reason="A force push rewrites history the user did not ask you to rewrite.
-Ask for it in words and let them run it."
+    if has_arg '--force|-[a-zA-Z]*f[a-zA-Z]*|\+.+'; then
+      reason="A blind force push overwrites whatever the remote holds. Use
+--force-with-lease where the repo allows it, or ask the user to run it."
+    # A lease refuses to overwrite commits this clone has not seen, so it alone can be switched on.
+    elif has_arg '--force-with-lease(=.*)?|--force-if-includes' &&
+      ! { force_allowed "$repo" && push_allowed "$repo"; }; then
+      reason="A force push rewrites history, and this repo has not opted in:
+
+  ${repo:-(no directory could be worked out from the command)}
+
+The user opts a repo in to --force-with-lease by running both
+\`git config claude.allowPush true\` and \`git config claude.allowForcePush true\`
+inside it; until then, ask for it in words and let them run it."
     elif ! push_allowed "$repo"; then
       reason="git push is off unless the repo has opted in, and this one has not:
 
@@ -228,10 +239,11 @@ push command to run themselves."
   if [[ $sub == config ]] && ! has_arg '--get|--get-all|get'; then
     shopt -s nocasematch
     for out in ${ARGS[@]+"${ARGS[@]}"}; do
-      [[ $out == *claude.allowpush* || $out == *claude.allowprs* ]] || continue
-      reason="claude.allowPush and claude.allowPrs are the user's switches for
-letting agents push or open and merge PRs from a repo, so an agent never sets or
-clears them. Ask the user to run the git config command themselves."
+      [[ $out == *claude.allowpush* || $out == *claude.allowprs* || $out == *claude.allowforcepush* ]] || continue
+      reason="claude.allowPush, claude.allowForcePush and claude.allowPrs are the
+user's switches for letting agents push, force push with a lease, or open and
+merge PRs from a repo, so an agent never sets or clears them. Ask the user to
+run the git config command themselves."
     done
     shopt -u nocasematch
   fi
