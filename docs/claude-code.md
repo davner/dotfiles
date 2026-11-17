@@ -41,7 +41,7 @@ Each folder under [`home/.claude/skills/`](../home/.claude/skills/) is linked in
 
 ## Third-party skills
 
-These are pinned in `flake.lock`, linked into both `~/.claude/skills/` and `~/.agents/skills/`, and bumped by the weekly update PR ([ADR 0009](adr/0009-third-party-skills-are-pinned-flake-inputs.md)).
+These are pinned in `flake.lock`, linked into both `~/.claude/skills/` and `~/.agents/skills/`, and bumped by the one self-merging `flake-update` PR the weekly update keeps ([ADR 0009](adr/0009-third-party-skills-are-pinned-flake-inputs.md)).
 
 | Skill | From | What it does |
 | --- | --- | --- |
