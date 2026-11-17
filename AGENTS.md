@@ -10,6 +10,10 @@ actionlint - run it that way when you touched a shell script or a workflow,
 since bare it silently skips both. Both live in `tests/lint.sh`, so a
 named run needs `lint` beside the module: `./test.sh NAME lint`.
 
+Test what would break silently: the hooks, the merge logic, anything whose
+wrong answer still exits 0. Skip a test whose failure already shows at rebuild
+or use, or that only restates a script's own arguments or a mock's call strings.
+
 `.github/workflows/test.yml` runs the fast half on every push; `update.yml`
 bumps the flake inputs on Mondays, then runs the full suite, `nix flake check`
 and a real `nix build`; when the lock moved, the

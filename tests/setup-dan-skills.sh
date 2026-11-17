@@ -16,7 +16,7 @@ cat >"$GH/bin/gh" <<'EOF'
 root="$(dirname "$0")/.."
 args="$*"
 args="${args//$'\n'/ }"
-# A body on stdin is part of the call, so it is logged with sorted keys after the args.
+# A body on stdin is part of the call, so it is logged after the args.
 [[ $args != *"--input -"* ]] || args+=" $(jq -cS .)"
 printf '%s\n' "$args" >>"$root/calls"
 if [ -n "${GH_FAIL-}" ] && [[ $args == *"$GH_FAIL"* ]]; then
@@ -57,66 +57,48 @@ called() { # name, pattern -> ok when a logged call matches the extended regex
 not_called() { # name, pattern -> ok when no logged call matches the extended regex
   if grep -Eq -- "$2" <<<"$CALLS"; then bad "$1" "a gh call matches: $2" "calls: ${CALLS//$'\n'/ | }"; else ok "$1"; fi
 }
-executable() { # script name -> ok when the skill can run it by path
-  if [ -x "$SDS/$1" ]; then ok "$1 is executable"; else bad "$1 is executable" "the skill runs it by path"; fi
-}
+
+for s in repo-settings.sh labels.sh board.sh; do
+  if [ -x "$SDS/$s" ]; then ok "$s is executable"; else bad "$s is executable" "the skill runs it by path"; fi
+done
 
 # --- repo settings ---
 section "repo settings"
 RS="$SDS/repo-settings.sh"
-executable repo-settings.sh
 gh_reset
 gh_can repo-view '{"nameWithOwner":"davner/demo","defaultBranchRef":{"name":"main"}}'
-gh_can api '{"url":"https://api.github.com/repos/davner/demo"}'
 writes() { grep -v '^repo view' <<<"$CALLS"; }
 
 gh_run "$RS" --dry-run --check test
-want_exit "a dry run exits 0" 0 "$RC"
-eq "a dry run makes no write call" "" "$(writes)"
-contains "a dry run prints the repo edit" "$OUT" "gh repo edit davner/demo"
-contains "a dry run prints the protection PUT" "$OUT" \
-  "gh api --method PUT repos/davner/demo/branches/main/protection"
-contains "a dry run's PUT names the check" "$OUT" "'required_status_checks[contexts][]=test'"
+eq "a dry run exits 0, writes nothing and prints the three writes" "0  3" "$RC $(writes) $(grep -c '^gh ' <<<"$OUT")"
 
 # The printout is what the user approves and may paste, so a check name with a
 # quote in it must come back out of the shell unchanged.
 gh_run "$RS" --dry-run --check "it's ok"
-put="$(printf '%s\n' "$OUT" | grep -- '--method PUT')"
+put="$(grep -- '--method PUT' <<<"$OUT")"
 replayed="$(eval "set -- ${put#gh }" && printf '%s\n' "$@" | grep contexts)"
 eq "a dry run's printout replays a quoted check name intact" \
   "required_status_checks[contexts][]=it's ok" "$replayed"
 
 gh_run "$RS" --check test --check 'towncrier check'
-want_exit "a real run exits 0" 0 "$RC"
-eq "a real run makes the three writes, in order" "$(
-  cat <<'CALLS'
-repo edit davner/demo --enable-auto-merge --delete-branch-on-merge --enable-squash-merge --enable-merge-commit=false --enable-rebase-merge=false
-api --method PATCH repos/davner/demo -f squash_merge_commit_title=PR_TITLE -f squash_merge_commit_message=BLANK
-api --method PUT repos/davner/demo/branches/main/protection -F required_status_checks[strict]=true -f required_status_checks[contexts][]=test -f required_status_checks[contexts][]=towncrier check -F enforce_admins=true -F required_pull_request_reviews[required_approving_review_count]=0 -F restrictions=null -F required_linear_history=true -F allow_force_pushes=false -F allow_deletions=false
-CALLS
-)" "$(writes)"
-eq "a real run keeps GitHub's JSON replies off stdout" "" "$OUT"
+eq "a real run exits 0 and makes the writes the dry run prints, quietly" "0|repo edit|api PATCH|api PUT|" \
+  "$RC|$(writes | awk '{print $1, ($2 == "--method" ? $3 : $2)}' | paste -sd'|' -)|$OUT"
+contains "the protection requires every named check" "$(writes | tail -n 1)" \
+  "contexts][]=test -f required_status_checks[contexts][]=towncrier check"
 
 gh_run "$RS" --dry-run
-want_exit "no --check exits 2" 2 "$RC"
+eq "no --check exits 2 and calls gh for nothing" "2 " "$RC $CALLS"
 contains "and says why" "$ERR" "auto-merge with no required check merges untested work"
-eq "and calls gh for nothing" "" "$CALLS"
-gh_run "$RS" --check
-want_exit "--check with no name exits 2" 2 "$RC"
 
 GH_FAIL="--method PATCH" gh_run "$RS" --check test
-want_exit "a failing gh exits non-zero" 1 "$RC"
-contains "and GitHub's error reaches stderr" "$ERR" "HTTP 403: Upgrade to GitHub Pro"
-eq "and nothing after it runs" "2" "$(writes | wc -l | tr -d ' ')"
-
-GH_FAIL="repo view" gh_run "$RS" --dry-run --check test
-want_exit "a repo gh cannot read exits non-zero" 1 "$RC"
-eq "and prints no commands" "" "$OUT"
+eq "a failing gh exits 1 and nothing after it runs" "1 2" "$RC $(writes | wc -l | tr -d ' ')"
+contains "and GitHub's error reaches stderr" "$ERR" "HTTP 403"
 
 # --- labels ---
 section "label setup script"
 LABELS="$SDS/labels.sh"
 LABELS_DEFAULTS='["bug","documentation","duplicate","enhancement","good first issue","help wanted","invalid","question","wontfix"]'
+LABELS_SET="breaking chore dependencies docs feat fix goal needs-info needs-triage perf ready-for-agent ready-for-human refactor spec test todo wontfix"
 labels_repo() { # label names as a JSON array -> a fake repo holding those labels, with nothing labelled
   gh_reset
   rm -f "$GH/repo/towncrier.toml"
@@ -125,302 +107,162 @@ labels_repo() { # label names as a JSON array -> a fake repo holding those label
   gh_can issue-list '[]'
   gh_can pr-list '[]'
 }
-
-LABELS_SET="breaking
-chore
-dependencies
-docs
-feat
-fix
-goal
-needs-info
-needs-triage
-perf
-ready-for-agent
-ready-for-human
-refactor
-spec
-test
-todo
-wontfix"
+created() { calls_to label create | awk '{print $3}' | sort | xargs; }
+renamed() { calls_to label edit | awk '{print $3 ">" $NF}' | xargs; }
+deleted() { calls_to label delete | sed -E 's/^label delete (.*) -R .*/\1/' | sort | paste -sd, -; }
 
 labels_repo "$LABELS_DEFAULTS"
 gh_run "$LABELS"
-eq "a fresh repo: labels.sh exits 0" "0" "$RC"
-called "a fresh repo: spec is created with a colour and description" \
-  '^label create spec -R owner/repo --color [0-9a-f]{6} --description A spec: parent of its PR sub-issues --force$'
-called "a fresh repo: goal is created green, as the parent of the work that serves it" \
-  '^label create goal -R owner/repo --color 0e8a16 --description A long-lived goal: parent of the specs and TODO items that serve it --force$'
-not_called "a repo without towncrier.toml: skip-changelog is not created" '^label create skip-changelog '
-eq "a fresh repo: every label in the set is created" "$LABELS_SET" \
-  "$(calls_to label create | awk '{print $3}' | sort)"
-eq "a fresh repo: every create is --force" "" \
-  "$(calls_to label create | grep -v -- '--force')"
-contains "a fresh repo: bug is renamed to fix" "$(calls_to label edit)" "label edit bug -R owner/repo --name fix"
-eq "a fresh repo: the three overlapping defaults are renamed" "label edit bug -R owner/repo --name fix
-label edit enhancement -R owner/repo --name feat
-label edit documentation -R owner/repo --name docs" "$(calls_to label edit)"
-eq "a fresh repo: the five unused defaults are deleted" "label delete good first issue -R owner/repo --yes
-label delete help wanted -R owner/repo --yes
-label delete question -R owner/repo --yes
-label delete invalid -R owner/repo --yes
-label delete duplicate -R owner/repo --yes" "$(calls_to label delete)"
-not_called "a fresh repo: duplicate is not created" '^label create duplicate '
-eq "a fresh repo: each delete is checked against issues and PRs in every state" "10" \
-  "$(grep -cE '^(issue|pr) list .*--state all' <<<"$CALLS")"
+eq "a fresh repo: labels.sh exits 0 and creates the label set" "0 $LABELS_SET" "$RC $(created)"
+eq "a fresh repo: the overlapping defaults are renamed" "bug>fix enhancement>feat documentation>docs" "$(renamed)"
+eq "a fresh repo: the unused defaults are deleted" "duplicate,good first issue,help wanted,invalid,question" "$(deleted)"
+
+labels_repo "$(jq -R 'split(" ")' <<<"$LABELS_SET")"
+gh_run "$LABELS"
+eq "a re-run: nothing is renamed or deleted" "" "$(renamed)$(deleted)"
+eq "a re-run: only the set is written, again" "$LABELS_SET" "$(created)"
+eq "a re-run: every write is --force, so it changes nothing" "" "$(calls_to label create | grep -v -- '--force$')"
 
 labels_repo "$LABELS_DEFAULTS"
 touch "$GH/repo/towncrier.toml"
 gh_run "$LABELS"
-called "a repo with towncrier.toml: skip-changelog is created" \
-  '^label create skip-changelog -R owner/repo --color [0-9a-f]{6} --description .+ --force$'
+eq "a towncrier repo also gets skip-changelog" "$(xargs -n1 <<<"$LABELS_SET skip-changelog" | sort | xargs)" "$(created)"
 
-labels_repo "$LABELS_DEFAULTS"
-gh_can issue-list '[{"number":7}]'
-gh_run "$LABELS"
-eq "a default an issue carries: labels.sh exits 0" "0" "$RC"
-eq "a default an issue carries: it is kept" "" "$(calls_to label delete)"
-contains "a default an issue carries: the kept label is reported" "$OUT" "kept question: an issue or PR carries it"
-contains "a duplicate an issue carries: it is kept" "$OUT" "kept duplicate: an issue or PR carries it"
-
-labels_repo "$LABELS_DEFAULTS"
-gh_can pr-list '[{"number":8}]'
-gh_run "$LABELS"
-eq "a default a PR carries: it is kept" "" "$(calls_to label delete)"
-
-labels_repo "$(jq -R . <<<"$LABELS_SET" | jq -s .)"
-gh_run "$LABELS"
-eq "a re-run: labels.sh exits 0" "0" "$RC"
-eq "a re-run: nothing is renamed" "" "$(calls_to label edit)"
-eq "a re-run: nothing is deleted" "" "$(calls_to label delete)"
-eq "a re-run: the set is written again with --force" "17" \
-  "$(calls_to label create | grep -c -- '--force')"
-eq "a re-run: no label outside the set is created" "$LABELS_SET" \
-  "$(calls_to label create | awk '{print $3}' | sort)"
+for carrier in issue pr; do
+  labels_repo "$LABELS_DEFAULTS"
+  gh_can "$carrier-list" '[{"number":7}]'
+  gh_run "$LABELS"
+  eq "a default a $carrier carries is kept" "" "$(deleted)"
+  contains "and the kept label is reported" "$OUT" "kept question: an issue or PR carries it"
+done
 
 labels_repo '["bug","fix"]'
 gh_run "$LABELS"
-eq "bug beside an existing fix: bug is not renamed" "" "$(calls_to label edit)"
-contains "bug beside an existing fix: it is reported" "$OUT" "kept bug: fix already exists"
+eq "bug beside an existing fix is kept, and reported" "kept bug: fix already exists" "$(renamed)$(grep '^kept' <<<"$OUT")"
 
 missing=""
-while read -r name; do
-  grep -Fq -- "\`$name\`" "$SDS/../issue-tracker-github.md" || missing+=" $name"
-done <<<"$LABELS_SET"$'\n'"skip-changelog"
-eq "the GitHub tracker template names every label in the set" "" "$missing"
 label_table="$(sed -n '/^### The labels$/,/^### /p' "$DIR/docs/workflow.md" | grep '^| ')"
-missing=""
-while read -r name; do
-  grep -Fq -- "\`$name\`" <<<"$label_table" || missing+=" $name"
-done <<<"$LABELS_SET"$'\n'"skip-changelog"
-eq "docs/workflow.md's label table names every label in the set" "" "$missing"
+for name in $LABELS_SET skip-changelog; do
+  grep -Fq -- "\`$name\`" "$SDS/../issue-tracker-github.md" || missing+=" template:$name"
+  grep -Fq -- "\`$name\`" <<<"$label_table" || missing+=" workflow.md:$name"
+done
+eq "the tracker template and docs/workflow.md name every label in the set" "" "$missing"
 
 for failing in "repo view" "label list" "label edit" "issue list" "pr list" "label delete" "label create"; do
   labels_repo "$LABELS_DEFAULTS"
   GH_FAIL="$failing" gh_run "$LABELS"
-  want_exit "a failing gh $failing stops labels.sh non-zero" 1 "$RC"
-  eq "a failing gh $failing is the last call made" "$failing" \
-    "$(tail -n 1 <<<"$CALLS" | awk '{print $1, $2}')"
+  eq "a failing gh $failing stops labels.sh there" "1 $failing" \
+    "$RC $(tail -n 1 <<<"$CALLS" | awk '{print $1, $2}')"
 done
 
 # --- board ---
 section "setup-dan-skills board"
 BOARD="$SDS/board.sh"
+TEMPLATE_URL="https://github.com/users/me/projects/7"
+FIELDS='[{"id":101,"name":"Title"},{"id":103,"name":"Status"},{"id":104,"name":"Labels"},{"id":105,"name":"Linked pull requests"},
+  {"id":106,"name":"Parent issue"},{"id":107,"name":"Sub-issues progress"},{"id":108,"name":"Priority"}]'
+STATUS_FIELD='{"fields":[{"id":"PVTSSF_status","name":"Status","type":"ProjectV2SingleSelectField"}],"totalCount":1}'
 gh_reset
-gh_can repo-view '{"nameWithOwner":"me/app"}'
-gh_can project-create '{"number":7,"id":"PVT_t","title":"dan-skills template","url":"https://github.com/users/me/projects/7"}'
+gh_can project-create '{"number":7,"id":"PVT_t","title":"dan-skills template","url":"'"$TEMPLATE_URL"'"}'
 gh_can project-copy '{"number":8,"id":"PVT_b","title":"me/app","url":"https://github.com/users/me/projects/8"}'
-gh_can project-field-list '{"fields":[{"id":"PVTF_title","name":"Title","type":"ProjectV2Field"},{"id":"PVTSSF_status","name":"Status","type":"ProjectV2SingleSelectField","options":[{"id":"a","name":"Todo"},{"id":"b","name":"In Progress"},{"id":"c","name":"Done"}]}],"totalCount":2}'
-gh_can api '{"data":{}}'
-gh_can api-users_me_projectsV2_7_fields '[{"id":101,"name":"Title"},{"id":102,"name":"Assignees"},{"id":103,"name":"Status"},
-  {"id":104,"name":"Labels"},{"id":105,"name":"Linked pull requests"},{"id":106,"name":"Parent issue"},
-  {"id":107,"name":"Sub-issues progress"},{"id":108,"name":"Priority"}]'
+gh_can project-field-list "$STATUS_FIELD"
+gh_can api-users_me_projectsV2_7_fields "$FIELDS"
 gh_can api-graphql '{"data":{"user":{"projectV2":{"views":{"nodes":[{"id":"PVTV_board","name":"Board"},{"id":"PVTV_one","name":"View 1"}]}}}}}'
-board_scopes() { # scope list as gh prints it -> gh auth status reports those scopes
-  gh_can auth-status "$(printf 'github.com\n  - Token scopes: %s' "$1")"
+board_scopes() { gh_can auth-status "$(printf 'github.com\n  - Token scopes: %s' "$1")"; }
+board_scopes "'gist', 'project', 'read:org', 'repo'"
+projects() { # number=title[=closed]... -> those projects as gh lists them
+  printf '%s\n' "$@" | jq -R -s '[split("\n")[] | select(. != "") | split("=") | {number: (.[0] | tonumber),
+    title: .[1], closed: (.[2] == "true"), url: "https://github.com/users/me/projects/\(.[0])"}]'
 }
+board_linked() { gh_can repo-view "{\"nameWithOwner\":\"me/app\",\"projectsV2\":{\"Nodes\":$(projects "$@")}}"; }
 board_run() { # each existing project as number=title... -> runs board.sh, as gh_run
-  gh_can project-list "$(printf '%s\n' "$@" | jq -R -s '{projects: [split("\n")[] | select(. != "") | split("=") |
-    {number: (.[0] | tonumber), title: .[1], url: "https://github.com/users/me/projects/\(.[0])"}], totalCount: 0}')"
+  gh_can project-list "{\"projects\":$(projects "$@")}"
   gh_run "$BOARD"
 }
+board_line() { grep '^board=' <<<"$OUT"; }
+board_linked
+
+board_scopes "'gist', 'read:project', 'repo'"
+board_run
+eq "without the project scope, board.sh exits 1 before touching any project" "1 auth status" "$RC $CALLS"
+contains "and says how to add it" "$ERR" "gh auth refresh -s project"
 board_scopes "'gist', 'project', 'read:org', 'repo'"
 
 board_run
-want_exit "with no projects, board.sh exits 0" 0 "$RC"
+eq "with no projects, board.sh exits 0 and prints the new board" "0 board=8" "$RC $(board_line)"
 called "it creates the template" '^project create .*--title dan-skills template'
-called "it copies the template to the repo's title" '^project copy 7 .*--title me/app'
-called "it links the board to the repo by its owner and name" '^project link 8 --owner me --repo app$'
-contains "a board copied from a template made in the same run lists the template's workflows too" "$OUT" $'Board created. Turn on these built-in workflows'
-contains "it prints the board number" "$OUT" $'\nboard=8\n'
-called "it replaces the Status field of the new template" '^api graphql .*fieldId=PVTSSF_status'
-called "with Backlog, Ready, In progress, In review, Done in order" \
-  '^api graphql .*updateProjectV2Field.*"Backlog".*"Ready".*"In progress".*"In review".*"Done"'
-# GitHub has templates for organizations only, and copy works on any project.
-not_called "it leaves the template unmarked" '^project mark-template'
-contains "it prints the template's workflows page" "$OUT" $'\nhttps://github.com/users/me/projects/7/workflows\n'
-for wf in "Item closed: set Status to Done" "Pull request merged: set Status to Done" \
-  "Auto-close issue: on" "Auto-archive items: on, filter is:issue is:closed updated:<@today-2w" "Item added to project: set Status to Backlog" \
-  "Auto-add sub-issues to project: on" "Pull request linked to issue: set Status to In review"; do
-  contains "it lists the template workflow '$wf'" "$OUT" "$wf"
-done
-contains "it prints the board's workflows page" "$OUT" $'\nhttps://github.com/users/me/projects/8/workflows'
-contains "it prints the auto-add filter" "$OUT" "is:issue is:open"
-called "it adds the Priority field to the new template" \
-  '^project field-create 7 --owner @me --name Priority --data-type SINGLE_SELECT --single-select-options P1,P2,P3$'
-eq "before it reads the field IDs the views use" "project field-create" \
-  "$(grep -E '^(project field-create|api users/me/projectsV2/7/fields)' <<<"$CALLS" | head -n 1 | awk '{print $1, $2}')"
-view_body() { # view name -> the JSON body board.sh sent to create it, keys sorted
-  grep '^api users/me/projectsV2/7/views --method POST --input - ' <<<"$CALLS" |
-    sed 's/^.* --input - //' | jq -cS --arg n "$1" 'select(.name == $n)'
-}
-eq "it creates five views, all on the template" 5 "$(grep -c '^api users/me/projectsV2/7/views ' <<<"$CALLS")"
-eq "it creates the Board view, columns by Status, goals and specs left out, by Priority" \
-  "$(jq -cS . <<<'{"name":"Board","layout":"board","filter":"is:issue -label:goal,spec",
-    "visible_fields":[101,104,105,106,108],"vertical_group_by":[103],"sort_by":[[108,"asc"]]}')" "$(view_body Board)"
-eq "it creates the Agent queue view, a table of ready, unblocked agent work by Priority" \
-  "$(jq -cS . <<<'{"name":"Agent queue","layout":"table",
-    "filter":"is:issue is:open status:Ready label:ready-for-agent -is:blocked -label:goal,spec",
-    "visible_fields":[101,104,106,108],"sort_by":[[108,"asc"]]}')" "$(view_body "Agent queue")"
-eq "it creates the Needs attention view, of open items waiting on an answer or on triage" \
-  "$(jq -cS . <<<'{"name":"Needs attention","layout":"table","filter":"is:open label:needs-info,needs-triage",
-    "visible_fields":[101,104,103,108],"sort_by":[[108,"asc"]]}')" "$(view_body "Needs attention")"
-eq "it creates the Goals and specs view, grouped by Status, with sub-issue progress" \
-  "$(jq -cS . <<<'{"name":"Goals and specs","layout":"table","filter":"label:goal,spec",
-    "visible_fields":[101,103,107,108],"group_by":[103],"sort_by":[[108,"asc"]]}')" "$(view_body "Goals and specs")"
-eq "it creates the Tickets by parent view, grouped by parent issue" \
-  "$(jq -cS . <<<'{"name":"Tickets by parent","layout":"table","filter":"is:open has:parent-issue",
-    "visible_fields":[101,103,105,108],"group_by":[106],"sort_by":[[108,"asc"]]}')" "$(view_body "Tickets by parent")"
-called "it deletes the default View 1, found by name" '^api graphql .*viewId=PVTV_one .*deleteProjectV2View'
+called "it gives the template's Status the five columns in order" \
+  'updateProjectV2Field.*"Backlog".*"Ready".*"In progress".*"In review".*"Done"'
+called "it adds the Priority field" '^project field-create 7 .*--name Priority .*P1,P2,P3'
+views() { grep '^api users/me/projectsV2/7/views ' <<<"$CALLS" | sed 's/^.* --input - //'; }
+eq "it creates the five views on the template" "Board|Agent queue|Needs attention|Goals and specs|Tickets by parent" \
+  "$(views | jq -r .name | paste -sd'|' -)"
+called "it deletes the default View 1" 'viewId=PVTV_one .*deleteProjectV2View'
 not_called "and no other view" 'viewId=PVTV_board'
-eq "after the views it keeps exist" "deleteProjectV2View" \
-  "$(grep -E '^api (users/me/projectsV2/7/views|graphql .*deleteProjectV2View)' <<<"$CALLS" | tail -n 1 | grep -o deleteProjectV2View)"
+called "it copies the template to a board for the repo, and links it" '^project link 8 --owner me --repo app$'
+eq "it prints both workflows pages" "$TEMPLATE_URL/workflows|https://github.com/users/me/projects/8/workflows" \
+  "$(grep '/workflows$' <<<"$OUT" | paste -sd'|' -)"
+eq "and the workflows to turn on: 7 on the template, 8 on the board" 15 "$(grep -c '^- ' <<<"$OUT")"
+
 # An agent reads the queue through next-up, a human through the view, so the two
 # must pick the same items.
-queue_view="$(view_body "Agent queue" | jq -r .filter)"
-next_up="$(sed -n '/^## When a skill says "next-up"$/,/^## /p' "$SDS/../issue-tracker-github.md" |
-  sed -nE "s/^ *--query '(.*)'.*/\1/p")"
-eq "the Agent queue view filter equals the tracker template's next-up query" "$next_up" "$queue_view"
-eq "and that query is the agreed one" \
-  "is:issue is:open status:Ready label:ready-for-agent -is:blocked -label:goal,spec" "$next_up"
-
-# gh project item-list keys a field value by its name, so the template's filter
-# is run as written over items in board order.
-next_up_jq="$(sed -n '/^## When a skill says "next-up"$/,/^## /p' "$SDS/../issue-tracker-github.md" |
-  sed -nE "s/^ *--jq '(.*)'.*/\1/p")"
-eq "next-up takes P1 first, then P2, P3, then no priority, each in board order" "#3 c
-#5 e
-#2 b
-#4 d
-#1 a
-#6 f" "$(jq -r "$next_up_jq" <<<'{"items":[{"content":{"number":1,"title":"a"}},
+queue_view="$(views | jq -r 'select(.name == "Agent queue") | .filter')"
+next_up="$(sed -n '/^## When a skill says "next-up"$/,/^## /p' "$SDS/../issue-tracker-github.md")"
+eq "the Agent queue view filter equals the tracker template's next-up query" \
+  "$(sed -nE "s/^ *--query '(.*)'.*/\1/p" <<<"$next_up")" "$queue_view"
+next_up_jq="$(sed -nE "s/^ *--jq '(.*)'.*/\1/p" <<<"$next_up")"
+eq "next-up takes P1 first, then P2, P3, then no priority, each in board order" "#3 c|#5 e|#2 b|#4 d|#1 a|#6 f" \
+  "$(jq -r "$next_up_jq" <<<'{"items":[{"content":{"number":1,"title":"a"}},
   {"priority":"P2","content":{"number":2,"title":"b"}},{"priority":"P1","content":{"number":3,"title":"c"}},
   {"priority":"P3","content":{"number":4,"title":"d"}},{"priority":"P1","content":{"number":5,"title":"e"}},
-  {"content":{"number":6,"title":"f"}}],"totalCount":6}' 2>&1)"
-eq "next-up prints nothing for an empty queue" "" "$(jq -r "$next_up_jq" <<<'{"items":[],"totalCount":0}' 2>&1)"
+  {"content":{"number":6,"title":"f"}}],"totalCount":6}' 2>&1 | paste -sd'|' -)"
 
 GH_FAIL="deleteProjectV2View" board_run
-want_exit "a failing delete of View 1 leaves board.sh going" 0 "$RC"
-contains "and hands the user the delete as a manual step" "$OUT" "Delete the view named View 1 at:"
-contains "and still prints the board" "$OUT" $'\nboard=8\n'
+eq "a failing delete of View 1 leaves board.sh going, and makes it a manual step" "0 Delete the view named View 1 at:" \
+  "$RC $(grep '^Delete' <<<"$OUT")"
 
 board_run "3=dan-skills template" "4=me/other"
-want_exit "with the template and no board, board.sh exits 0" 0 "$RC"
-not_called "it creates nothing" '^project create'
-not_called "it leaves the template's Status alone" '^api graphql'
-not_called "or its views" '/views '
-called "it copies the existing template" '^project copy 3 .*--title me/app'
-called "and links the copy by the repo's owner and name" '^project link 8 --owner me --repo app$'
-eq "it prints the numbers, the URL and only the auto-add step" "template=3
-board=8
-url=https://github.com/users/me/projects/8
-
-Board created. Turn on Auto-add to project for me/app with the filter is:issue is:open at:
-https://github.com/users/me/projects/8/workflows" "$OUT"
-
-board_run "3=dan-skills template" "5=me/app"
-want_exit "with the template and the board, board.sh exits 0" 0 "$RC"
-not_called "it creates, copies or links nothing" '^(project (create|copy|link)|api )'
-eq "it prints the numbers and the URL, and no manual steps" "template=3
-board=5
-url=https://github.com/users/me/projects/5" "$OUT"
+not_called "it leaves the template alone" '^(project create|project field-create|api )'
+called "it copies the existing template" '^project copy 3 '
+eq "it exits 0 and prints the board and only the auto-add step" "0|board=8|Turn on Auto-add|0" \
+  "$RC|$(board_line)|$(grep -o 'Turn on Auto-add' <<<"$OUT")|$(grep -c '^- ' <<<"$OUT")"
 
 # The owner may rename a board; the link to the repo is what makes it the board.
-board_linked() { # linked project as number=title=closed... -> gh repo view reports those links
-  gh_can repo-view "$(printf '%s\n' "$@" | jq -R -s '{nameWithOwner: "me/app", projectsV2: {Nodes: [split("\n")[] |
-    select(. != "") | split("=") | {number: (.[0] | tonumber), title: .[1], closed: (.[2] == "true"),
-    url: "https://github.com/users/me/projects/\(.[0])"}]}}')"
-}
-board_linked "5=app=false"
-board_run "3=dan-skills template" "5=app"
-want_exit "with a renamed board linked to the repo, board.sh exits 0" 0 "$RC"
-not_called "it copies or links nothing" '^project (create|copy|link)'
-eq "it prints the linked board" "template=3
-board=5
-url=https://github.com/users/me/projects/5" "$OUT"
-board_linked "6=old=true" "5=app=false"
-board_run "3=dan-skills template" "6=old" "5=app" "9=me/app"
-contains "a closed linked project is passed over for an open one, before any title match" "$OUT" $'\nboard=5\n'
-board_linked "6=old=true"
-board_run "3=dan-skills template" "6=old" "9=me/app"
-contains "with only a closed project linked, the title decides" "$OUT" $'\nboard=9\n'
-gh_can repo-view '{"nameWithOwner":"me/app"}'
+while IFS='|' read -r name links projects want; do
+  IFS=';' read -ra L <<<"$links"
+  IFS=';' read -ra P <<<"$projects"
+  board_linked ${L[@]+"${L[@]}"}
+  board_run "3=dan-skills template" ${P[@]+"${P[@]}"}
+  eq "$name: board.sh reuses board $want, writes nothing, asks nothing" "0 board=$want 3" \
+    "$RC $(board_line) $(wc -l <<<"$OUT" | tr -d ' ')"
+  not_called "$name: and calls no write" '^(project (create|copy|link|field-create)|api )'
+done <<'EOF'
+a board titled for the repo||5=me/app|5
+a renamed board linked to the repo|5=app=false|5=app|5
+a closed linked project, beside an open one|6=old=true;5=app=false|6=old;5=app;9=me/app|5
+only a closed project linked|6=old=true|6=old;9=me/app|9
+EOF
+board_linked
 
-board_scopes "'gist', 'read:org', 'repo'"
-board_run
-want_exit "without the project scope, board.sh exits 1" 1 "$RC"
-contains "and tells the user how to add it" "$ERR" "gh auth refresh -s project"
-not_called "before touching any project" '^(project|api) '
-board_scopes "'gist', 'project', 'read:org', 'repo'"
-
-for step in "project list" "project copy" "project link"; do
-  GH_FAIL="$step" board_run "3=dan-skills template"
-  want_exit "a failing gh $step stops board.sh" 1 "$RC"
-  eq "and prints no board line" "" "$(grep '^board=' <<<"$OUT")"
-done
-
-GH_FAIL="api graphql" board_run
-want_exit "a failing gh api graphql stops board.sh" 1 "$RC"
-eq "a failing gh api graphql is the last call made" "api graphql" \
-  "$(tail -n 1 <<<"$CALLS" | awk '{print $1, $2}')"
-eq "and prints no board line" "" "$(grep '^board=' <<<"$OUT")"
-
-GH_FAIL="field-create" board_run
-want_exit "a failing Priority field create stops board.sh" 1 "$RC"
-contains "and says to delete the half-built template and re-run" "$ERR" \
-  "creating the Priority field failed. A re-run reuses the template as it is, so delete the project at https://github.com/users/me/projects/7"
-not_called "before creating any view" '/views '
-
-GH_FAIL="projectsV2/7/views" board_run
-want_exit "a failing view create stops board.sh" 1 "$RC"
-contains "and passes on GitHub's error" "$ERR" "HTTP 403"
-contains "and says to delete the half-built template and re-run" "$ERR" \
-  "delete the project at https://github.com/users/me/projects/7 and re-run board.sh"
-not_called "before copying the template" '^project copy'
-eq "and prints no board line" "" "$(grep '^board=' <<<"$OUT")"
-
-gh_can api-users_me_projectsV2_7_fields '[{"id":101,"name":"Title"},{"id":103,"name":"Status"},{"id":104,"name":"Labels"},
-  {"id":105,"name":"Linked pull requests"},{"id":106,"name":"Parent issue"}]'
-board_run
-want_exit "a new template without the Sub-issues progress field stops board.sh" 1 "$RC"
-contains "and names the missing field" "$ERR" "project 7 has no Sub-issues progress field"
-not_called "before creating any view" '/views '
-contains "and says to delete the template, which a re-run would reuse unchanged, and re-run" "$ERR" \
-  "delete the project at https://github.com/users/me/projects/7 and re-run board.sh"
-gh_can api-users_me_projectsV2_7_fields '[]'
-board_run
-contains "with no fields at all it names the first one missing" "$ERR" "project 7 has no Title field"
-
-gh_can project-field-list '{"fields":[{"id":"PVTF_title","name":"Title","type":"ProjectV2Field"}],"totalCount":1}'
-board_run
-want_exit "a new template with no Status field stops board.sh" 1 "$RC"
-contains "and names the missing field" "$ERR" "has no Status field"
-contains "and says to delete the template and re-run" "$ERR" \
-  "delete the project at https://github.com/users/me/projects/7 and re-run board.sh"
-not_called "before replacing any field or copying" '^(api graphql|project copy)'
-eq "and prints no board line" "" "$(grep '^board=' <<<"$OUT")"
-executable board.sh
-executable labels.sh
+# A half-built template is reused as it is, so each stop says to delete it first.
+HALF="A re-run reuses the template as it is, so delete the project at $TEMPLATE_URL"
+while IFS='|' read -r failing template can answer hint; do
+  [ -z "$can" ] || gh_can "$can" "$answer"
+  if [ -n "$template" ]; then GH_FAIL="$failing" board_run "3=dan-skills template"; else GH_FAIL="$failing" board_run; fi
+  eq "${failing:-$hint}: board.sh stops with no board" "1 " "$RC $(board_line)"
+  contains "and says why" "$ERR" "$hint"
+  gh_can project-field-list "$STATUS_FIELD"
+  gh_can api-users_me_projectsV2_7_fields "$FIELDS"
+done <<EOF
+project list|y|||HTTP 403
+project copy|y|||HTTP 403
+project link|y|||HTTP 403
+api graphql||||HTTP 403
+field-create||||creating the Priority field failed. $HALF
+projectsV2/7/views||||creating the Board view failed. $HALF
+||project-field-list|{"fields":[]}|project 7 has no Status field. $HALF
+||api-users_me_projectsV2_7_fields|[{"id":101,"name":"Title"},{"id":103,"name":"Status"}]|project 7 has no Labels field. $HALF
+EOF
 
 # --- issue forms ---
 section "setup-dan-skills issue forms"
@@ -431,13 +273,9 @@ form_labels() { # form file -> its labels, one per line; a list not on one line 
   [[ $line =~ ^labels:\ *\[(.*)\]$ ]] || { echo "<labels not a one-line [list]>"; return; }
   tr ',' '\n' <<<"${BASH_REMATCH[1]}" | sed -E 's/^ *//; s/ *$//'
 }
-eq "the Bug form adds fix" "fix" "$(form_labels "$FORMS/bug.yml")"
-eq "the TODO form adds todo" "todo" "$(form_labels "$FORMS/todo.yml")"
-eq "the TODO form asks for From, Why, Known and Next, as the TODO body has them" "From
-Why
-Known
-Next" "$(sed -nE 's/^ +label: *(.+)$/\1/p' "$FORMS/todo.yml")"
-eq "blank issues are off" "blank_issues_enabled: false" "$(grep -E '^blank_issues_enabled:' "$FORMS/config.yml")"
+eq "the Bug form adds fix, the TODO form todo" "fix todo" "$(form_labels "$FORMS/bug.yml") $(form_labels "$FORMS/todo.yml")"
+eq "the TODO form asks for From, Why, Known and Next, as the TODO body has them" "From|Why|Known|Next" \
+  "$(sed -nE 's/^ +label: *(.+)$/\1/p' "$FORMS/todo.yml" | paste -sd'|' -)"
 # Filing from a form must never queue work for an agent or skip the owner's triage.
 queued=""
 for form in "$FORMS"/*.yml; do
