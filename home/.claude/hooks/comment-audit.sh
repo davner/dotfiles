@@ -88,6 +88,23 @@ audit=$(
       while ((i = index(s, "\"\"\"")) > 0) { c++; s = substr(s, i + 3) }
       return c
     }
+    # Leaves in_block as the end of line s finds it. A `//` outside a block ends
+    # the scan, so a glob in a line comment opens nothing.
+    function track(s,   i, k) {
+      while (1) {
+        if (in_block) {
+          if (!(i = index(s, "*/"))) return
+          in_block = 0
+          s = substr(s, i + 2)
+        } else {
+          i = index(s, "/*")
+          k = index(s, "//")
+          if (!i || (k && k < i)) return
+          in_block = 1
+          s = substr(s, i + 2)
+        }
+      }
+    }
     function flush() {
       if (run > max) {
         sub(/^[[:space:]]+/, "", first)
@@ -102,15 +119,8 @@ audit=$(
     fenced && /"""/ { if (fences($0) % 2) in_doc = !in_doc; text = $0 }
     {
       line = $0
-      opener = blocks && line ~ /^[[:space:]]*\/\*/
-      marked = opener || line ~ /^[[:space:]]*(\/\/|#)/ || (in_block && line ~ /^[[:space:]]*\*/)
-      if (opener) {
-        rest = line
-        sub(/^[[:space:]]*\/\*/, "", rest)
-        in_block = !index(rest, "*/")
-      } else if (in_block && index(line, "*/")) {
-        in_block = 0
-      }
+      marked = (blocks && line ~ /^[[:space:]]*\/\*/) || line ~ /^[[:space:]]*(\/\/|#)/ || (in_block && line ~ /^[[:space:]]*\*/)
+      if (blocks) track(line)
       comment = (in_doc == 0 && marked)
       # A pragma is invisible to a run: it neither counts nor breaks one.
       if (comment && line !~ pragma) {

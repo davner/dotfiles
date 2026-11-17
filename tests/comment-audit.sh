@@ -75,6 +75,12 @@ if require jq; then
     '{"tool_input":{"file_path":"a.ts","content":"const area = w\n  * h\n  * d\n  * n;"}}'
   audit_case "a closed block comment leaves the star lines after it as code" 0 \
     '{"tool_input":{"file_path":"a.ts","content":"/* sizes */\nconst area = w\n  * h\n  * d\n  * n;"}}'
+  audit_case "a block comment opened after code is still read" 2 \
+    '{"tool_input":{"file_path":"a.ts","content":"x = 1; /* one\n * two\n * three\n */"}}'
+  audit_case "a second block opened on a closing line is still read" 2 \
+    '{"tool_input":{"file_path":"a.ts","content":"/* a */ /* b\n * no longer used\n */"}}'
+  audit_case "a block opener inside a line comment opens nothing" 0 \
+    '{"tool_input":{"file_path":"a.ts","content":"// matches src/*.ts\nconst area = w\n  * h\n  * d\n  * n;"}}'
   audit_case "a four-line python docstring is not a comment run" 0 \
     '{"tool_input":{"file_path":"a.py","content":"\"\"\"\nalpha\nbeta\ngamma\ndelta\n\"\"\""}}'
   # A fence that opens and closes on one line must leave the tracker where it
