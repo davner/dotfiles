@@ -64,6 +64,17 @@ if require jq; then
     '{"tool_input":{"file_path":"a.ts","content":"// one\n// two\n\n// three\n// four"}}'
   audit_case "a block comment run is flagged" 2 \
     '{"tool_input":{"file_path":"a.ts","content":"/* one\n * two\n * three\n */"}}'
+  audit_case "a nix block comment run is flagged" 2 \
+    '{"tool_input":{"file_path":"a.nix","content":"/* one\n * two\n * three\n */"}}'
+  # A leading `*` continues a comment only inside `/* */`; elsewhere it is code.
+  audit_case "shell case patterns are not a comment run" 0 \
+    '{"tool_input":{"file_path":"a.sh","content":"case x in\n  *.ts) ;;\n  *.py) ;;\n  *.sh) ;;\n  *) exit 0 ;;\nesac"}}'
+  audit_case "a history phrase on a shell case line is not a comment" 0 \
+    '{"tool_input":{"file_path":"a.sh","content":"case x in\n  *) echo \"no longer here\" ;;\nesac"}}'
+  audit_case "star lines outside a block comment are not a comment run" 0 \
+    '{"tool_input":{"file_path":"a.ts","content":"const area = w\n  * h\n  * d\n  * n;"}}'
+  audit_case "a closed block comment leaves the star lines after it as code" 0 \
+    '{"tool_input":{"file_path":"a.ts","content":"/* sizes */\nconst area = w\n  * h\n  * d\n  * n;"}}'
   audit_case "a four-line python docstring is not a comment run" 0 \
     '{"tool_input":{"file_path":"a.py","content":"\"\"\"\nalpha\nbeta\ngamma\ndelta\n\"\"\""}}'
   # A fence that opens and closes on one line must leave the tracker where it

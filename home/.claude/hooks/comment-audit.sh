@@ -35,6 +35,13 @@ case $path in
   *) fenced=0 ;;
 esac
 
+# Only these have `/* */` blocks, the one place a leading `*` continues a comment;
+# elsewhere it starts a glob, a case pattern or a product.
+case $path in
+  *.sh | *.py | *.graphql) blocks=0 ;;
+  *) blocks=1 ;;
+esac
+
 # PEP 723 inline script metadata is TOML for the runner, in comment syntax.
 case $path in
   *.py) script_meta=1 ;;
@@ -73,7 +80,7 @@ RUN_MAX=2
 # second copy of it is a second place to forget. The prefix says which fault.
 audit=$(
   awk -v hist="$history_re" -v sess="$session_re" -v stamp="$stamp_re" -v date="$date_re" \
-    -v pragma="$pragma_re" -v in_test="$in_test" -v fenced="$fenced" -v script_meta="$script_meta" -v max="$RUN_MAX" '
+    -v pragma="$pragma_re" -v in_test="$in_test" -v fenced="$fenced" -v script_meta="$script_meta" -v blocks="$blocks" -v max="$RUN_MAX" '
     # A docstring is documentation too and its body lines carry no marker, so
     # the fence is counted per occurrence: `"""One-liner."""` opens and closes.
     function fences(s,   c, i) {
@@ -95,7 +102,16 @@ audit=$(
     fenced && /"""/ { if (fences($0) % 2) in_doc = !in_doc; text = $0 }
     {
       line = $0
-      comment = (in_doc == 0 && line ~ /^[[:space:]]*(\/\/|#|\/\*|\*)/)
+      opener = blocks && line ~ /^[[:space:]]*\/\*/
+      marked = opener || line ~ /^[[:space:]]*(\/\/|#)/ || (in_block && line ~ /^[[:space:]]*\*/)
+      if (opener) {
+        rest = line
+        sub(/^[[:space:]]*\/\*/, "", rest)
+        in_block = !index(rest, "*/")
+      } else if (in_block && index(line, "*/")) {
+        in_block = 0
+      }
+      comment = (in_doc == 0 && marked)
       # A pragma is invisible to a run: it neither counts nor breaks one.
       if (comment && line !~ pragma) {
         if (run++ == 0) first = line
@@ -104,7 +120,7 @@ audit=$(
       }
 
       if (text == "") {
-        if (in_doc || line ~ /^[[:space:]]*(\/\/|#|\/\*|\*)/) {
+        if (in_doc || marked) {
           text = line
         }
         else if (match(line, /\/\/.*$/)) {
