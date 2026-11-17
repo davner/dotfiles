@@ -17,7 +17,7 @@ belongs in update.yml, not in the push path.
 
 ## Agent skills
 
-- Tracker: Shortcut, paste-ready; specs, tickets, and the TODO list in a gitignored `.scratch/`. See `docs/agents/issue-tracker.md`.
+- Tracker: GitHub issues on the board at https://github.com/users/davner/projects/3; specs and tickets in a gitignored `.scratch/`. See `docs/agents/issue-tracker.md`.
 - Domain docs: glossary at `docs/GLOSSARY.md` (created when the first term is settled), ADRs in `docs/adr/`. See `docs/agents/domain.md`.
 
 ## Deliberate decisions
