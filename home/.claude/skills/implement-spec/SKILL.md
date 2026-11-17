@@ -26,8 +26,6 @@ Tickets that touch a user interface are built through `impeccable` and checked o
 
 3. Create the integration branch. When the tickets group into several PRs, each PR gets its own integration branch, **stacked**: the next one starts from the previous one's tip, and once the lower PR merges, its successor moves onto main by `git rebase --onto` with the old base named by commit ID. Every step below then runs per PR, code review included. If the issue tracker closes work through PRs, or the user asks for one, open a draft PR once the first ticket lands in step 5 (a branch with no commits ahead of main can't open one), marked as closing its tickets: its body opens with the line the tracker file's "Agent PRs" section gives.
 
-   Move each PR's item (the `Tracker:` line in its ticket files) to In progress as the tracker file's "move an item" section says when its integration branch is created, and to In review when its PR is ready for review in step 9.
-
 4. Use **implementer subagents** to implement each ticket, each in its own worktree on its own branch. Create each worktree in its own command, then work in it. Hand each one its ticket's absolute path in this checkout, since a new worktree has no copy of a gitignored scratch folder. Each implementer subagent:
    - is told the integration tip's commit ID and confirms its worktree starts there before anything else, recreating its branch from that tip if not;
    - calls the Skill tool with `tdd` to build the ticket, starting from the ticket's **First red test**. Every behaviour is its own red → green slice, and the report pastes the red run of each one (a ticket whose First red test is `none` names the existing check it kept green instead);
