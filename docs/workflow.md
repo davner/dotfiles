@@ -111,6 +111,11 @@ as the repo's switches allow:
 4. A pushed branch, when only `claude.allowPush` is on. `cc-push` flips it.
 5. The local branch, with a recap page, otherwise.
 
+When a run has several PRs and `main` requires branches to be up to date
+before merging, it lands them one at a time: it opens and arms the next PR
+only after the previous one merges, from a branch rebased onto the new
+`main`. Merging them side by side would leave each one behind the last.
+
 Last, it runs `/retro` and puts the suggestions in its report without applying
 any.
 
