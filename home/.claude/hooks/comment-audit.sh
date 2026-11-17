@@ -88,8 +88,8 @@ audit=$(
       }
       run = 0
     }
-    # Every block line starts with `#`, so the first line without one ends it.
-    in_meta && /^#/ { if ($0 ~ /^# \/\/\/$/) in_meta = 0; next }
+    # PEP 723 allows only `#` or `# ` lines inside, so any other line ends the block.
+    in_meta && /^#( |$)/ { if ($0 ~ /^# \/\/\/$/) in_meta = 0; next }
     { in_meta = 0 }
     script_meta && !in_doc && /^# \/\/\/ [a-zA-Z0-9-]+$/ { in_meta = 1; next }
     fenced && /"""/ { if (fences($0) % 2) in_doc = !in_doc; text = $0 }

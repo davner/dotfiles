@@ -88,6 +88,8 @@ if require jq; then
     '{"tool_input":{"file_path":"a.py","content":"# /// script\n# dependencies = []\n# ///\n# one\n# two\n# three"}}'
   audit_case "a metadata block ends at its first uncommented line" 2 \
     '{"tool_input":{"file_path":"a.py","content":"# /// script\nx = 1\n# formerly a generator"}}'
+  audit_case "a line outside the metadata comment form ends the block" 2 \
+    '{"tool_input":{"file_path":"a.py","content":"# /// script\n##formerly a generator"}}'
   audit_case "a metadata fence outside python is an ordinary comment" 2 \
     '{"tool_input":{"file_path":"a.sh","content":"# /// script\n# dependencies = []\n# ///"}}'
   audit_case "a trailing comment on each line is not a run" 0 \
