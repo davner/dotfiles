@@ -4,8 +4,10 @@ name: test
 # linters. The flake evaluations and the actual system builds are slow enough
 # to live in update.yml instead.
 
-# workflow_dispatch lets update.yml start this on its own PR branch.
-on: [push, pull_request, workflow_dispatch]
+# workflow_dispatch lets update.yml start this on its own PR branch. There is
+# no pull_request trigger: every PR branch is pushed here first, and a bot PR's
+# run would wait for approval and hold up its auto-merge.
+on: [push, workflow_dispatch]
 
 concurrency:
   group: test-${{ github.ref }}

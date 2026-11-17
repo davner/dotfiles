@@ -3,9 +3,9 @@ name: update
 # The weekly expensive half: bump the flake inputs, then run the full suite,
 # nix flake check and a cold build of the whole system closure. The build is
 # what catches a package that vanished from nixpkgs or an option that changed
-# meaning, which the push tests cannot see. When nothing moved, the same checks
-# run on the current lock. Only when the lock moved does it replace the one
-# flake-update branch from main and arm its PR to squash-merge itself.
+# meaning, which the push tests cannot see. When the lock moved, the checks run
+# on the one flake-update PR branch and only a green run arms it to
+# squash-merge itself; when nothing moved, they run on the current lock.
 on:
   schedule:
     - cron: "0 14 * * 1" # Mondays 14:00 UTC, 07:00 in Arizona
@@ -16,11 +16,13 @@ concurrency:
   group: update
   cancel-in-progress: false
 
+# The last four are what update-flake-lock's README asks for.
 permissions:
   actions: write # starts test.yml on the PR branch
   contents: write
+  id-token: write
+  issues: write
   pull-requests: write
-  id-token: write # magic-nix-cache authenticates with an OIDC token
 
 jobs:
   flake-update:
@@ -31,28 +33,22 @@ jobs:
 
       - uses: DeterminateSystems/nix-installer-action@main
 
-      # The cache is backed by the GitHub Actions cache and its 10GB per-repo
-      # limit, which a darwin closure may not fit inside; if the hit rate turns
-      # out to be near zero, drop this.
-      - uses: DeterminateSystems/magic-nix-cache-action@main
-
-      # Read before the long checks, so a hand fix pushed during them is not overwritten.
-      - name: Where flake-update stands
-        id: lease
-        run: echo "lease=$(git ls-remote origin refs/heads/flake-update | cut -f1)" >> "$GITHUB_OUTPUT"
-
       - name: nix flake update
-        run: nix flake update
+        id: update
+        uses: DeterminateSystems/update-flake-lock@v29
+        with:
+          branch: flake-update
+          commit-msg: "chore(deps): nix flake update"
+          pr-title: "chore(deps): nix flake update"
+          pr-labels: dependencies
+          pr-body: |
+            Weekly flake input bump. The update workflow runs `./test.sh`, `nix flake check` and the build on this branch, and arms auto-merge only when they pass.
 
-      - name: Did anything move?
-        id: moved
+      - name: Check out the PR branch
+        if: steps.update.outputs.pull-request-operation == 'created' || steps.update.outputs.pull-request-operation == 'updated'
         run: |
-          if git diff --quiet flake.lock; then
-            echo "moved=false" >> "$GITHUB_OUTPUT"
-            echo "Inputs are already current."
-          else
-            echo "moved=true" >> "$GITHUB_OUTPUT"
-          fi
+          git fetch origin flake-update
+          git switch --discard-changes --detach FETCH_HEAD
 
       # A pull request opened with GITHUB_TOKEN does not trigger test.yml, so
       # the checks that would have run on it run here instead.
@@ -66,11 +62,12 @@ jobs:
       - name: Build the configuration
         run: nix build --no-link --print-build-logs .#darwinConfigurations.danavner.system
 
-      - name: Push and refresh the pull request
-        if: steps.moved.outputs.moved == 'true'
+      # A push with GITHUB_TOKEN starts no workflow, so the required test check is started by hand.
+      - name: Start test.yml and arm auto-merge
+        if: steps.update.outputs.pull-request-operation == 'created' || steps.update.outputs.pull-request-operation == 'updated'
         env:
           GH_TOKEN: ${{ github.token }}
+          PR: ${{ steps.update.outputs.pull-request-number }}
         run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          .github/flake-update-pr.sh flake-update "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" "${{ steps.lease.outputs.lease }}"
+          gh workflow run test.yml --ref flake-update
+          gh pr merge "$PR" --auto --squash
