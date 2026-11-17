@@ -244,7 +244,8 @@ board_run
 want_exit "with no projects, board.sh exits 0" 0 "$RC"
 called "it creates the template" '^project create .*--title dan-skills template'
 called "it copies the template to the repo's title" '^project copy 7 .*--title me/app'
-called "it links the board to the repo" '^project link 8 '
+called "it links the board to the repo by its owner and name" '^project link 8 --owner me --repo app$'
+contains "a board copied from a template made in the same run lists the template's workflows too" "$OUT" $'Board created. Turn on these built-in workflows'
 contains "it prints the board number" "$OUT" $'\nboard=8\n'
 called "it replaces the Status field of the new template" '^api graphql .*fieldId=PVTSSF_status'
 called "with Backlog, Ready, In progress, In review, Done in order" \
@@ -283,7 +284,7 @@ not_called "it creates nothing" '^project create'
 not_called "it leaves the template's Status alone" '^api graphql'
 not_called "or its views" '/views '
 called "it copies the existing template" '^project copy 3 .*--title me/app'
-called "and links the copy" '^project link 8 '
+called "and links the copy by the repo's owner and name" '^project link 8 --owner me --repo app$'
 eq "it prints the numbers, the URL and only the auto-add step" "template=3
 board=8
 url=https://github.com/users/me/projects/8
@@ -297,6 +298,27 @@ not_called "it creates, copies or links nothing" '^(project (create|copy|link)|a
 eq "it prints the numbers and the URL, and no manual steps" "template=3
 board=5
 url=https://github.com/users/me/projects/5" "$OUT"
+
+# The owner may rename a board; the link to the repo is what makes it the board.
+board_linked() { # linked project as number=title=closed... -> gh repo view reports those links
+  gh_can repo-view "$(printf '%s\n' "$@" | jq -R -s '{nameWithOwner: "me/app", projectsV2: {Nodes: [split("\n")[] |
+    select(. != "") | split("=") | {number: (.[0] | tonumber), title: .[1], closed: (.[2] == "true"),
+    url: "https://github.com/users/me/projects/\(.[0])"}]}}')"
+}
+board_linked "5=app=false"
+board_run "3=dan-skills template" "5=app"
+want_exit "with a renamed board linked to the repo, board.sh exits 0" 0 "$RC"
+not_called "it copies or links nothing" '^project (create|copy|link)'
+eq "it prints the linked board" "template=3
+board=5
+url=https://github.com/users/me/projects/5" "$OUT"
+board_linked "6=old=true" "5=app=false"
+board_run "3=dan-skills template" "6=old" "5=app" "9=me/app"
+contains "a closed linked project is passed over for an open one, before any title match" "$OUT" $'\nboard=5\n'
+board_linked "6=old=true"
+board_run "3=dan-skills template" "6=old" "9=me/app"
+contains "with only a closed project linked, the title decides" "$OUT" $'\nboard=9\n'
+gh_can repo-view '{"nameWithOwner":"me/app"}'
 
 board_scopes "'gist', 'read:org', 'repo'"
 board_run
