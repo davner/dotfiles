@@ -150,6 +150,40 @@ has_arg() { # ERE -> success when some argument after the subcommand is all of i
   return 1
 }
 
+stash_untraceable() { # ARGS after `stash` -> success when it takes the newest entry, clears them all, or pushes one with no tag
+  local n=${#ARGS[@]} k=0 t refs=0 need tag=""
+  ((n > 0)) || return 0
+  case ${ARGS[0]} in
+    pop | clear) return 0 ;;
+    # A named ref is how the safe path ends, so these pass once one is given;
+    # without it git takes stash@{0}, whoever pushed it.
+    apply | drop | branch)
+      need=1
+      [[ ${ARGS[0]} != branch ]] || need=2
+      for ((k = 1; k < n; k++)); do
+        [[ ${ARGS[k]} == -* ]] || refs=$((refs + 1))
+      done
+      ((refs < need))
+      return
+      ;;
+    push | save) k=1 ;;
+    -*) ;;
+    *) return 1 ;;
+  esac
+  # git keeps the last -m, and an empty one leaves nothing to find the entry by.
+  for ((; k < n; k++)); do
+    t=${ARGS[k]}
+    [[ $t != -- ]] || break
+    if [[ $t =~ ^(--message|-[pSkuaq]*m)$ ]]; then
+      tag=${ARGS[k + 1]-}
+      k=$((k + 1))
+    elif [[ $t =~ ^(--message=|-[pSkuaq]*m)(.*)$ ]]; then
+      tag=${BASH_REMATCH[2]}
+    fi
+  done
+  [[ -z $tag ]]
+}
+
 judge_statement() { # scope -> reason, msg_reason, for the statement in W and BODY
   local scope=$1 repo sub="" i n j k out
   ((${#W[@]} > 0)) || return 0
@@ -331,6 +365,21 @@ git branch -d, which refuses unless the work is safe, or ask the user."
     reason="Checking out or restoring the whole tree discards every uncommitted
 edit in it, including ones the user or another agent is making right now. Name
 the paths this task changed and restore only those."
+  fi
+
+  if [[ $sub == stash ]] && stash_untraceable; then
+    reason="Every worktree and session of a repo shares one stash stack, so the
+newest entry, or the whole stack, may be another session's, and an entry pushed
+without -m has nothing to find it by. Push with a tag and take the entry back
+by its SHA:
+
+  git stash push -u -m \"<tag>\"
+  git stash list --format='%gd %H %gs'
+  git stash apply <sha>
+  git stash drop stash@{<n>}
+
+Read <sha> and stash@{<n>} off the list line that ends in <tag>, and list
+again right before the drop, since another session's push renumbers them."
   fi
 
   if [[ $sub == commit && -z $msg_reason ]] && statement_message; then
