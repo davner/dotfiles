@@ -30,7 +30,7 @@ Before opening the first, say in the conversation: "This run is headless." Then 
 
    Any other branch stays, whatever the reason. For each landed branch:
    - Its worktree, when it has one under `<main checkout>/.claude/worktrees/autopilot-*` (`git worktree list --porcelain`): remove it with `git worktree remove <path>`, never `--force`, and only when `git -C <path> status --porcelain` prints nothing and it is not this session's working directory. A worktree with uncommitted changes stays, and so does its branch.
-   - The branch: `git branch -d <branch>`. A branch pushed to main first gets `git branch --set-upstream-to=origin/main <branch>`, since `-d` accepts a branch merged into its upstream and the main checkout's `HEAD` may lag `origin/main`. When it refuses, as it does for a squash-merged branch git sees as unmerged, the branch stays and the report lists it for the user to delete.
+   - The branch: `git branch -d <branch>`. A branch pushed to main first gets `git branch --set-upstream-to=origin/main <branch>`, since `-d` accepts a branch merged into its upstream and the main checkout's `HEAD` may lag `origin/main`. A squash-merged branch, which git sees as unmerged, takes `git branch -D <branch>` instead: `guard-bash.sh` lets it through only when the branch's PR merged at the commit the branch still points to. When either refuses, the branch stays and the report lists it for the user to delete.
 
    The report names what was removed and what stayed, with why.
 4. **Board.** For `board` only:

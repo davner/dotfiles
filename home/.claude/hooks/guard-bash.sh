@@ -184,6 +184,25 @@ stash_untraceable() { # ARGS after `stash` -> success when it takes the newest e
   [[ -z $tag ]]
 }
 
+# git branch -d refuses a squash-merged branch, since its commits sit on no
+# other ref; a PR that merged at the branch's current tip shows the work landed.
+squash_landed() { # repo, with ARGS after `branch` -> success when every branch named has landed that way
+  local dir=$1 a head tip names=0
+  [[ -n $dir && -d $dir ]] && command -v gh >/dev/null 2>&1 || return 1
+  for a in ${ARGS[@]+"${ARGS[@]}"}; do
+    case $a in
+      -D | -d | -f | -df | -fd | --delete | --force) continue ;;
+      -*) return 1 ;;
+    esac
+    tip=$(git -C "$dir" rev-parse --verify -q "refs/heads/$a") || return 1
+    head=$(cd "$dir" && gh pr view "$a" --json state,headRefOid \
+      --jq 'select(.state == "MERGED") | .headRefOid' 2>/dev/null) || return 1
+    [[ -n $head && $head == "$tip" ]] || return 1
+    names=$((names + 1))
+  done
+  ((names > 0))
+}
+
 judge_statement() { # scope -> reason, msg_reason, for the statement in W and BODY
   local scope=$1 repo sub="" i n j k out
   ((${#W[@]} > 0)) || return 0
@@ -353,10 +372,13 @@ under .scratch/, local env files, and anything else git was told not to track."
 
   if [[ $sub == branch ]] &&
     { has_arg '-[a-zA-Z]*D.*' ||
-      { has_arg '(-[a-zA-Z]*d|--delete).*' && has_arg '(-[a-zA-Z]*f|--force).*'; }; }; then
+      { has_arg '(-[a-zA-Z]*d|--delete).*' && has_arg '(-[a-zA-Z]*f|--force).*'; }; } &&
+    ! squash_landed "$repo"; then
     reason="git branch -D deletes a branch even when its commits are merged
 nowhere else, and they are then reachable only through the reflog. Use
-git branch -d, which refuses unless the work is safe, or ask the user."
+git branch -d, which refuses unless the work is safe, or ask the user. A
+squash-merged branch passes -D once \`gh pr view <branch>\` shows its PR merged
+at the commit the branch still points to."
   fi
 
   # --staged alone only unstages, so it loses nothing and stays allowed.
