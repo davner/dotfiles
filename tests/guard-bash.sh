@@ -502,6 +502,48 @@ git -C ~/github/acme/app/.claude/worktrees/w diff --quiet 1a2b3c4 origin/main &&
 nix develop --command ./test.sh
 CASES
 
+# Every worktree and session of a repo shares one stash stack, so an entry
+# taken by position may be another session's.
+expect_exit "a stash taken by position or pushed untagged is blocked" 2 bash_payload "$GUARD" <<'CASES'
+git stash
+git stash pop
+git stash pop stash@{0}
+git -C ../w stash pop
+cd /tmp && git stash
+git stash push
+git stash push -u
+git stash push -- home/AGENTS.md
+git stash save
+git stash save "wip"
+git stash -u
+git stash -- home/AGENTS.md
+git stash push -m ""
+git stash push --message=
+git stash push -- -m
+git stash push -uxxmwip
+git stash drop
+git stash drop -q
+git stash clear
+CASES
+
+# The safe path itself has to stay open, or the message points nowhere.
+expect_exit "a stash found by its tag is not blocked" 0 bash_payload "$GUARD" <<'CASES'
+git stash push -u -m "wip-fix"
+git stash push -m wip-fix -- home/AGENTS.md
+git stash push --message wip-fix
+git stash push --message=wip-fix
+git stash push -umwip-fix
+git stash -u -m "wip-fix"
+git stash save -m "wip-fix"
+git stash list
+git stash list --format='%H %gs'
+git stash show -p stash@{1}
+git stash apply 5d7a54b0818d77ca058aa892d1ca83ad36ba6b49
+git stash drop stash@{2}
+echo "git stash pop"
+git log --grep 'stash pop'
+CASES
+
 # Each hides its command from a reader that splits on separators alone: behind
 # an assignment, inside a subshell or substitution, or after a wrapper.
 expect_exit "a rule sees past quotes, subshells and wrappers" 2 bash_payload "$GUARD" <<'CASES'
