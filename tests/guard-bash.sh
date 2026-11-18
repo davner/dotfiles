@@ -504,7 +504,7 @@ CASES
 
 # Every worktree and session of a repo shares one stash stack, so an entry
 # taken by position may be another session's.
-expect_exit "a stash taken by position or pushed untagged is blocked" 2 bash_payload "$GUARD" <<'CASES'
+expect_exit "a stash that takes the newest entry or has no tag is blocked" 2 bash_payload "$GUARD" <<'CASES'
 git stash
 git stash pop
 git stash pop stash@{0}
@@ -524,6 +524,11 @@ git stash push -uxxmwip
 git stash drop
 git stash drop -q
 git stash clear
+git stash apply
+git stash apply --index
+git stash branch topic
+git stash push -mwip -m ""
+git stash push -mwip --message=
 CASES
 
 # The safe path itself has to stay open, or the message points nowhere.
@@ -539,7 +544,9 @@ git stash list
 git stash list --format='%H %gs'
 git stash show -p stash@{1}
 git stash apply 5d7a54b0818d77ca058aa892d1ca83ad36ba6b49
-git stash drop stash@{2}
+git stash drop stash
+git stash branch topic stash
+git stash push -m "" -m wip-fix
 echo "git stash pop"
 git log --grep 'stash pop'
 CASES

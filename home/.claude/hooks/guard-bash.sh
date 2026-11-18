@@ -150,29 +150,38 @@ has_arg() { # ERE -> success when some argument after the subcommand is all of i
   return 1
 }
 
-stash_by_position() { # ARGS after `stash` -> success when it takes an entry by position, clears them all, or pushes one untagged
-  local n=${#ARGS[@]} k=0 t
+stash_untraceable() { # ARGS after `stash` -> success when it takes the newest entry, clears them all, or pushes one with no tag
+  local n=${#ARGS[@]} k=0 t refs=0 need tag=""
   ((n > 0)) || return 0
   case ${ARGS[0]} in
     pop | clear) return 0 ;;
-    drop)
+    # A named ref is how the safe path ends, so these pass once one is given;
+    # without it git takes stash@{0}, whoever pushed it.
+    apply | drop | branch)
+      need=1
+      [[ ${ARGS[0]} != branch ]] || need=2
       for ((k = 1; k < n; k++)); do
-        [[ ${ARGS[k]} == -* ]] || return 1
+        [[ ${ARGS[k]} == -* ]] || refs=$((refs + 1))
       done
-      return 0
+      ((refs < need))
+      return
       ;;
     push | save) k=1 ;;
     -*) ;;
     *) return 1 ;;
   esac
-  # An empty tag is no tag: nothing in `git stash list` then tells the entry apart.
+  # git keeps the last -m, and an empty one leaves nothing to find the entry by.
   for ((; k < n; k++)); do
     t=${ARGS[k]}
     [[ $t != -- ]] || break
-    [[ $t =~ ^(--message=|-[pSkuaq]*m). ]] && return 1
-    [[ $t =~ ^(--message|-[pSkuaq]*m)$ && -n ${ARGS[k + 1]-} ]] && return 1
+    if [[ $t =~ ^(--message|-[pSkuaq]*m)$ ]]; then
+      tag=${ARGS[k + 1]-}
+      k=$((k + 1))
+    elif [[ $t =~ ^(--message=|-[pSkuaq]*m)(.*)$ ]]; then
+      tag=${BASH_REMATCH[2]}
+    fi
   done
-  return 0
+  [[ -z $tag ]]
 }
 
 judge_statement() { # scope -> reason, msg_reason, for the statement in W and BODY
@@ -358,10 +367,11 @@ edit in it, including ones the user or another agent is making right now. Name
 the paths this task changed and restore only those."
   fi
 
-  if [[ $sub == stash ]] && stash_by_position; then
-    reason="Every worktree and session of a repo shares one stash stack, so an entry
-taken by position, cleared, or pushed without a tag may be another session's.
-Push with a tag and take the entry back by its SHA:
+  if [[ $sub == stash ]] && stash_untraceable; then
+    reason="Every worktree and session of a repo shares one stash stack, so the
+newest entry, or the whole stack, may be another session's, and an entry pushed
+without -m has nothing to find it by. Push with a tag and take the entry back
+by its SHA:
 
   git stash push -u -m \"<tag>\"
   git stash list --format='%gd %H %gs'
