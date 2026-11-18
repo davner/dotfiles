@@ -50,7 +50,7 @@ added_lines() { # path, old path, untracked -> the lines this change adds
     grep -v -e '^+++ b/' -e '^+++ /dev/null' | grep '^+' | cut -c2-
 }
 
-blanket() { # stdin lines -> the ones with a suppression that names no code
+blanket_suppressions() { # stdin lines -> the ones with a suppression that names no code
   local line
   shopt -s nocasematch
   while IFS= read -r line; do
@@ -64,10 +64,10 @@ blanket() { # stdin lines -> the ones with a suppression that names no code
 
 report=""
 for i in "${!files[@]}"; do
-  f=${files[i]} part="" on=""
-  tool_on ruff "$root/$f" && on+=r
-  tool_on ty "$root/$f" && on+=t
-  if [[ ${#ruff[@]} -gt 0 && $on == *r* ]]; then
+  f=${files[i]} part="" ruff_on=false ty_on=false
+  tool_on ruff "$root/$f" && ruff_on=true
+  tool_on ty "$root/$f" && ty_on=true
+  if [[ ${#ruff[@]} -gt 0 && $ruff_on == true ]]; then
     if ! out=$("${ruff[@]}" check --no-fix --force-exclude -- "$f" 2>&1); then
       part+=$(printf '%s\nFix: %s check --fix %q' "$out" "${ruff[*]}" "$f")$'\n'
     fi
@@ -75,13 +75,13 @@ for i in "${!files[@]}"; do
       part+=$(printf '%s\nFix: %s format %q' "$out" "${ruff[*]}" "$f")$'\n'
     fi
   fi
-  if [[ ${#ty[@]} -gt 0 && $on == *t* ]]; then
+  if [[ ${#ty[@]} -gt 0 && $ty_on == true ]]; then
     if ! out=$("${ty[@]}" check -- "$f" 2>&1); then
       part+=$(printf '%s\nFix: fix the type error, then rerun: %s check %q' "$out" "${ty[*]}" "$f")$'\n'
     fi
   fi
-  if [[ -n $on ]]; then
-    found=$(added_lines "$f" "${olds[i]}" "${untracked[i]}" | blanket)
+  if [[ $ruff_on == true || $ty_on == true ]]; then
+    found=$(added_lines "$f" "${olds[i]}" "${untracked[i]}" | blanket_suppressions)
     if [[ -n $found ]]; then
       part+=$(printf 'Blanket suppression added:\n%s\nFix: fix the finding, or name it with # noqa: <code> or # type: ignore[<code>]' "$found")$'\n'
     fi
