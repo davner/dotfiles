@@ -4,9 +4,11 @@
 </picture>
 
 One repo sets up my personal Mac with
-[nix-darwin](https://github.com/nix-darwin/nix-darwin) and
-[home-manager](https://github.com/nix-community/home-manager). Copy whatever
-helps, but I do not take contributions.
+[nix-darwin](https://github.com/nix-darwin/nix-darwin), which manages macOS
+settings and apps, and
+[home-manager](https://github.com/nix-community/home-manager), which manages
+the files in my home folder. Copy whatever helps, but I do not take
+contributions.
 
 ## Set up the Mac
 
@@ -29,9 +31,9 @@ Line Tools.
 ## What you get
 
 - Apps and CLI tools: WezTerm, Claude Code, ripgrep, fd, fzf, jq, lazygit,
-  neovim, uv and more.
+  neovim and uv.
 - zsh with a starship prompt, direnv and short aliases.
-- macOS settings: dark mode, a Dock that hides, fast key repeat and more.
+- macOS settings: dark mode, a Dock that hides, fast key repeat.
 - Claude Code skills for a workflow from idea to merged work, and the hooks
   below.
 
@@ -54,7 +56,8 @@ Hooks run on their own, in every repo, once the Mac is set up.
 
 The two Python hooks run only where the repo has ruff or ty config. Set the
 switch to `true` to turn one on without config, for example
-`git config --local claude.ruff true`. `claude.ruff` covers both hooks.
+`git config --local claude.ruff true`. `claude.ruff` controls ruff in both
+hooks; ty in the stop check follows `claude.ty` alone.
 
 [Claude Code setup](docs/claude-code.md#hooks) has the details of each hook.
 
