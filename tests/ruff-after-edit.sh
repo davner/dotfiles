@@ -55,7 +55,7 @@ EOF
   eq "ruff fixes, formats, then checks exactly that file from the repo root" \
     "$FAKE/ruff|$REPO|check|--fix|--force-exclude|$REPO/a.py
 $FAKE/ruff|$REPO|format|--force-exclude|$REPO/a.py
-$FAKE/ruff|$REPO|check|--force-exclude|$REPO/a.py" "$(calls)"
+$FAKE/ruff|$REPO|check|--no-fix|--force-exclude|$REPO/a.py" "$(calls)"
 
   printf 'BADLINT\n' >"$REPO/bad.py"
   edit "$REPO/bad.py"
@@ -76,7 +76,7 @@ $FAKE/ruff|$REPO|check|--force-exclude|$REPO/a.py" "$(calls)"
   eq "a name with a space reaches ruff as one argument" \
     "$FAKE/ruff|$REPO|check|--fix|--force-exclude|$REPO/two words.py
 $FAKE/ruff|$REPO|format|--force-exclude|$REPO/two words.py
-$FAKE/ruff|$REPO|check|--force-exclude|$REPO/two words.py" "$(calls)"
+$FAKE/ruff|$REPO|check|--no-fix|--force-exclude|$REPO/two words.py" "$(calls)"
 
   git -C "$REPO" config --local claude.ruff false
   edit "$REPO/bad.py"
@@ -115,7 +115,7 @@ $FAKE/ruff|$REPO|check|--force-exclude|$REPO/two words.py" "$(calls)"
   eq "the repo's .venv/bin/ruff wins over the one on PATH" \
     "$REPO/.venv/bin/ruff|$REPO|check|--fix|--force-exclude|$REPO/a.py
 $REPO/.venv/bin/ruff|$REPO|format|--force-exclude|$REPO/a.py
-$REPO/.venv/bin/ruff|$REPO|check|--force-exclude|$REPO/a.py" "$(calls)"
+$REPO/.venv/bin/ruff|$REPO|check|--no-fix|--force-exclude|$REPO/a.py" "$(calls)"
 
   new_repo
   : >"$REPO/.ruff.toml"

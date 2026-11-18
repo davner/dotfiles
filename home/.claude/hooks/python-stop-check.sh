@@ -68,7 +68,7 @@ for i in "${!files[@]}"; do
   tool_on ruff "$root/$f" && on+=r
   tool_on ty "$root/$f" && on+=t
   if [[ ${#ruff[@]} -gt 0 && $on == *r* ]]; then
-    if ! out=$("${ruff[@]}" check --force-exclude -- "$f" 2>&1); then
+    if ! out=$("${ruff[@]}" check --no-fix --force-exclude -- "$f" 2>&1); then
       part+=$(printf '%s\nFix: %s check --fix %q' "$out" "${ruff[*]}" "$f")$'\n'
     fi
     if ! out=$("${ruff[@]}" format --check --force-exclude -- "$f" 2>&1); then

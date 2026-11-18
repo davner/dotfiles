@@ -79,7 +79,7 @@ EOF
   stop
   want_exit "a clean modified file exits 0" 0 "$rc"
   eq "a clean file says nothing" "" "$err"
-  contains "a clean file was checked" "$(calls)" "ruff|check|--force-exclude|--|a.py"
+  contains "a clean file was checked" "$(calls)" "ruff|check|--no-fix|--force-exclude|--|a.py"
   contains "a clean file was format-checked" "$(calls)" "ruff|format|--check|--force-exclude|--|a.py"
 
   printf 'BADLINT\n' >"$REPO/a.py"
@@ -120,12 +120,12 @@ EOF
   stop
   want_exit "clean renamed, untracked and spaced files exit 0" 0 "$rc"
   eq "each changed file is checked by its current path, one argument each, deletions skipped" \
-    "ruff|check|--force-exclude|--|moved.py
-ruff|check|--force-exclude|--|pkg/sub/new.py
-ruff|check|--force-exclude|--|renamed.py
-ruff|check|--force-exclude|--|stub.pyi
-ruff|check|--force-exclude|--|two words.py" \
-    "$(grep '|check|--force' "$LOG" | LC_ALL=C sort)"
+    "ruff|check|--no-fix|--force-exclude|--|moved.py
+ruff|check|--no-fix|--force-exclude|--|pkg/sub/new.py
+ruff|check|--no-fix|--force-exclude|--|renamed.py
+ruff|check|--no-fix|--force-exclude|--|stub.pyi
+ruff|check|--no-fix|--force-exclude|--|two words.py" \
+    "$(grep '^ruff|check|' "$LOG" | LC_ALL=C sort)"
   printf 'UNFORMATTED\n' >"$REPO/two words.py"
   stop
   want_exit "a failing file whose name has a space exits 2" 2 "$rc"
@@ -252,6 +252,14 @@ x  =  1" "$(cat "$REPO/a.py")"
     printf 'x = 1\n' >"$REPO/a.py"
     stop
     want_exit "real ruff: a clean file exits 0" 0 "$rc"
+    # A repo's `fix = true` makes a bare `ruff check` rewrite the file, which
+    # would strip a blanket noqa before the scan could see it.
+    new_repo '[tool.ruff]\nfix = true\n'
+    printf 'import os\nx = 1\n' >"$REPO/a.py"
+    stop
+    want_exit "real ruff: fix = true still reports the unused import" 2 "$rc"
+    eq "real ruff: fix = true leaves the file byte-identical" "$(printf 'import os\nx = 1\nEOF')" \
+      "$(cat "$REPO/a.py"; printf EOF)"
     TPATH="$FAKE:$SYS"
   else
     skip "python stop check hook, real ruff (needs ruff on PATH or uvx with ruff cached)"
