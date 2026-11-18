@@ -727,4 +727,52 @@ eq "a cd inside braces carries on" "0" \
 eq "a wrapper that changes directory blocks the push" "2" \
   "$(guard_in "$PUSHES/opted" 'sudo -D /tmp git push')"
 
+# A squash merge leaves a branch git calls unmerged, so -D is let through only
+# when gh says the branch's PR merged at the commit the branch still points to.
+SQUASH="$WORK/squash"
+git init -q -b main "$SQUASH"
+git -C "$SQUASH" -c user.name=t -c user.email=t@t commit -q --allow-empty -m "feat: base"
+git -C "$SQUASH" branch landed
+git -C "$SQUASH" branch moved
+git -C "$SQUASH" branch open
+git -C "$SQUASH" checkout -q moved
+git -C "$SQUASH" -c user.name=t -c user.email=t@t commit -q --allow-empty -m "feat: after the merge"
+git -C "$SQUASH" checkout -q main
+merged_at=$(git -C "$SQUASH" rev-parse main)
+GHSTUB="$WORK/gh-stub"
+mkdir -p "$GHSTUB"
+# Answers `gh pr view <branch> --json state,headRefOid --jq ...` the way gh would.
+cat >"$GHSTUB/gh" <<EOF
+#!/usr/bin/env bash
+[[ \$1 == pr && \$2 == view ]] || exit 1
+case \$3 in
+  landed | moved) json='{"state":"MERGED","headRefOid":"$merged_at"}' ;;
+  open) json='{"state":"OPEN","headRefOid":"$merged_at"}' ;;
+  *) echo "no pull requests found for branch \"\$3\"" >&2; exit 1 ;;
+esac
+shift 3
+while (( \$# )); do [[ \$1 == --jq ]] && { jq -r "\$2" <<<"\$json"; exit; }; shift; done
+echo "\$json"
+EOF
+chmod +x "$GHSTUB/gh"
+squash_guard() { PATH="$GHSTUB:$PATH" guard_in "$SQUASH" "$1"; }
+eq "branch -D on a branch whose PR merged at its tip is allowed" "0" \
+  "$(squash_guard 'git branch -D landed')"
+eq "branch -D on a branch with commits after its merged PR is blocked" "2" \
+  "$(squash_guard 'git branch -D moved')"
+eq "branch -D on a branch whose PR is still open is blocked" "2" \
+  "$(squash_guard 'git branch -D open')"
+eq "branch -D on a branch with no PR is blocked" "2" \
+  "$(squash_guard 'git branch -D nopr')"
+eq "branch -D on two branches, one not landed, is blocked" "2" \
+  "$(squash_guard 'git branch -D landed open')"
+eq "branch --delete --force on a landed branch is allowed" "0" \
+  "$(squash_guard 'git branch --delete --force landed')"
+eq "branch -D with another flag is blocked" "2" \
+  "$(squash_guard 'git branch -D -r landed')"
+eq "branch -D on a landed branch with no gh on PATH is blocked" "2" \
+  "$(PATH="$(dirname "$(command -v jq)"):/usr/bin:/bin" guard_in "$SQUASH" 'git branch -D landed')"
+eq "branch -D on a landed branch with no known directory is blocked" "2" \
+  "$(PATH="$GHSTUB:$PATH" guard 'git branch -D landed')"
+
 finish
