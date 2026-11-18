@@ -61,6 +61,8 @@ gh project item-add 3 --owner davner --url "$url"
 gh project item-edit 3 --owner davner --url "$url" --field Status --value <Status>
 ```
 
+Run the three as separate commands, never chained with `&&`. When the board adds new issues on its own, `item-add` fails with an "already exists" error; the issue is on the board, and the `item-edit` after it still has to set Status.
+
 `<P>` is the goal or spec it goes under. When the owner names a priority, set it too: `gh project item-edit 3 --owner davner --url "$url" --field Priority --value <P1 | P2 | P3>`.
 
 ## When a skill says "publish to the issue tracker"
