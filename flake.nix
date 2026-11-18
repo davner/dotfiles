@@ -70,6 +70,10 @@
           pkgs.actionlint
           pkgs.jq
           pkgs.nixfmt
+          # The Python hooks' tests run the real tools when these are on PATH,
+          # and skip those cases without them.
+          pkgs.ruff
+          pkgs.ty
         ];
       };
 

@@ -27,7 +27,7 @@ jobs:
 
       - uses: DeterminateSystems/nix-installer-action@main
 
-      # nix develop supplies shellcheck and actionlint at the
+      # nix develop supplies shellcheck, actionlint, ruff and ty at the
       # versions flake.lock pins, so nothing in tests/ has to skip.
       - name: ./test.sh --fast
         run: nix develop --command ./test.sh --fast

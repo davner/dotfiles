@@ -264,6 +264,31 @@ x  =  1" "$(cat "$REPO/a.py")"
   else
     skip "python stop check hook, real ruff (needs ruff on PATH or uvx with ruff cached)"
   fi
+
+  section "python stop check hook, real ty"
+  REAL=()
+  if command -v ty >/dev/null 2>&1; then
+    REAL=("$(command -v ty)")
+  elif command -v uvx >/dev/null 2>&1 && uvx --offline ty --version >/dev/null 2>&1; then
+    REAL=("$(command -v uvx)" --offline ty)
+  fi
+  if [ "${#REAL[@]}" -gt 0 ]; then
+    mkdir -p "$FAKE/realty"
+    { printf '#!/usr/bin/env bash\nexec'; printf ' %q' "${REAL[@]}"; printf ' "$@"\n'; } >"$FAKE/realty/ty"
+    chmod +x "$FAKE/realty/ty"
+    TPATH="$FAKE/realty:$SYS:$PATH"
+    new_repo '[tool.ty]\n'
+    printf 'x: int = "one"\n' >"$REPO/a.py"
+    stop
+    want_exit "real ty: a type error exits 2" 2 "$rc"
+    contains "real ty: the rule is reported" "$err" "invalid-assignment"
+    printf 'x: int = 1\n' >"$REPO/a.py"
+    stop
+    want_exit "real ty: a clean file exits 0" 0 "$rc"
+    TPATH="$FAKE:$SYS"
+  else
+    skip "python stop check hook, real ty (needs ty on PATH or uvx with ty cached)"
+  fi
 fi
 
 finish
