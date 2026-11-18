@@ -8,7 +8,8 @@ helpers and fixtures in `tests/lib.sh`; `./test.sh NAME...` runs only
 scripts changed, and `nix develop --command ./test.sh` adds shellcheck and
 actionlint - run it that way when you touched a shell script or a workflow,
 since bare it silently skips both. Both live in `tests/lint.sh`, so a
-named run needs `lint` beside the module: `./test.sh NAME lint`.
+named run needs `lint` beside the module: `./test.sh NAME lint`. The same
+shell supplies ruff and ty, which the Python hooks' tests otherwise skip.
 
 Test what would break silently: the hooks, the merge logic, anything whose
 wrong answer still exits 0. Skip a test whose failure already shows at rebuild

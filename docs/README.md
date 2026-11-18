@@ -76,7 +76,7 @@ once. Adding or removing a linked file needs `./rebuild.sh`.
 `./test.sh` runs every file in `tests/`, one per tested module, with no sudo and no
 writes outside a temp folder. `./test.sh NAME` runs only `tests/NAME.sh`,
 `--fast` skips the Nix evaluations, and `nix develop --command ./test.sh` adds
-the linters.
+the linters, plus the ruff and ty the Python hook tests run.
 
 CI runs the fast suite on every push, and the full suite plus a real build
 every Monday. When the flake inputs move, a stock action keeps them in one
