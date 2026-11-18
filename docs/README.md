@@ -47,9 +47,17 @@ each with a light and a dark version.
 
 ## What lives where
 
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="assets/architecture-dark.svg">
+  <img src="assets/architecture-light.svg" alt="This repo's flake.nix, configuration.nix, home.nix and home/ folder feed nix-darwin, Homebrew and home-manager, which write macOS settings, Homebrew apps, files in $HOME and ~/.claude" width="100%">
+</picture>
+
+Files under `home/` are linked into `$HOME`, so an edit to one takes effect at
+once. Adding or removing a linked file needs `./rebuild.sh`.
+
 | Path | Holds |
 | --- | --- |
-| `flake.nix`, `configuration.nix`, `home.nix` | Inputs and the one configuration; macOS and Homebrew; packages, zsh, and which files get linked |
+| `flake.nix`, `configuration.nix`, `home.nix` | Inputs and the one configuration, `#danavner`; macOS and Homebrew; packages, zsh, and which files get linked |
 | [`AGENTS.md`](../AGENTS.md) (`CLAUDE.md` links to it) | Notes for agents working on this repo |
 | `docs/` | These pages, the ADRs and the research notes |
 | `home/AGENTS.md` | Global agent rules, linked to `~/.claude/CLAUDE.md`, Codex and opencode |
