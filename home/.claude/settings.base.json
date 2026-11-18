@@ -84,6 +84,16 @@
             "statusMessage": "Design deep pass"
           }
         ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "[ ! -x \"$HOME/.claude/hooks/python-stop-check.sh\" ] || \"$HOME/.claude/hooks/python-stop-check.sh\"",
+            "timeout": 180,
+            "statusMessage": "Checking Python"
+          }
+        ]
       }
     ]
   },

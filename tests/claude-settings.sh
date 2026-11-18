@@ -44,6 +44,7 @@ PostToolUse   Write|Edit|MultiEdit            $HOME/.claude/hooks/comment-audit.
 PostToolUse   Write|Edit|MultiEdit            $HOME/.claude/hooks/ruff-after-edit.sh
 PostToolUse   Edit|Write                      skills/impeccable/scripts/impeccable
 Stop          -                               skills/impeccable/scripts/impeccable
+Stop          -                               $HOME/.claude/hooks/python-stop-check.sh
 statusLine    -                               ~/.claude/hooks/statusline.sh
 HOOKS
   eq "the table above covers every command settings.base.json runs" "$rows" \
