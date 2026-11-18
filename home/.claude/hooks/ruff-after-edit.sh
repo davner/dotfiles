@@ -35,9 +35,9 @@ while IFS= read -r word; do ruff+=("$word"); done < <(tool_cmd ruff "$root")
 cd "$root" || exit 0
 # Fix before format, as ruff's docs order them: a fix can leave code that needs
 # formatting. The last check reports line numbers of the file as it now stands.
-"${ruff[@]}" check --fix --force-exclude "$path" >/dev/null 2>&1
-"${ruff[@]}" format --force-exclude "$path" >/dev/null 2>&1
-if ! report=$("${ruff[@]}" check --no-fix --force-exclude "$path" 2>&1); then
+"${ruff[@]}" check --fix --force-exclude -- "$path" >/dev/null 2>&1
+"${ruff[@]}" format --force-exclude -- "$path" >/dev/null 2>&1
+if ! report=$("${ruff[@]}" check --no-fix --force-exclude -- "$path" 2>&1); then
   {
     printf 'ruff still reports lint errors in %s after formatting and safe fixes:\n%s\n' "$path" "$report"
     printf 'Fix them, then rerun: %s check --fix %q\n' "${ruff[*]}" "$path"
