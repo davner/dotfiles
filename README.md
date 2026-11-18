@@ -37,9 +37,34 @@ Line Tools.
 | Apps and tools | WezTerm, Claude Code, and CLI tools such as ripgrep, fd, fzf, jq, lazygit, neovim and uv |
 | Shell | zsh with a starship prompt, direnv, and short aliases such as `add`, `m` and `cc` |
 | macOS settings | Dark mode, a Dock that hides, Finder in column view, fast key repeat and hot corners |
-| Claude Code | Skills for a workflow from idea to merged work, and hooks that block risky git and commit lines that credit an AI |
+| Claude Code | Skills for a workflow from idea to merged work, and [hooks](#hooks) that guard git and check the code Claude writes |
 
 Every package, app and setting is listed in [What you get](docs/installed.md).
+
+## Hooks
+
+Hooks run on their own, in every repo, once the Mac is set up.
+
+| Hook | When | What it does | Turn it off in one repo |
+| --- | --- | --- | --- |
+| `guard-bash.sh` | Before every shell command | Blocks risky git, a push or PR the repo has not allowed, and commit messages that credit an AI | No per-repo switch. To allow more: `cc-push on` for a plain push, `git config --local claude.allowPrs true` for PRs, and `git config --local claude.allowForcePush true` plus `cc-push on` for `--force-with-lease` |
+| `skill-gate.sh` | Before Skill, Write, Edit, MultiEdit and Bash | Blocks a TypeScript write until the agent has loaded `typescript-style-guide` | No per-repo switch |
+| `comment-audit.sh` | After every file write | Flags code comments that tell history or refer to the session | No per-repo switch |
+| `ruff-after-edit.sh` | After a write to a `.py` or `.pyi` file | Runs `ruff check --fix`, then `ruff format`, on that file, then a `ruff check` that changes nothing and reports the lint errors left | `git config --local claude.ruff false` |
+| `python-stop-check.sh` | When Claude stops | Checks the changed Python files with ruff and ty without changing them, and flags a blanket `# noqa` or `# type: ignore` | `git config --local claude.ruff false` and `git config --local claude.ty false` |
+| `session-name.sh` | Session start | Names the session after its repo | No per-repo switch |
+| impeccable's `hook` | Session start, after Edit or Write, and on stop | Checks UI files for design anti-patterns | `/impeccable hooks off` (writes `.impeccable/config.json`; keep it out of commits in a shared repo) |
+| `statusline.sh` (status line) | Always | Shows model, context used and rate limits | No per-repo switch |
+
+The two Python hooks run only where the repo configures the tool. Ruff counts
+`ruff.toml`, `.ruff.toml` or a `[tool.ruff]` table in `pyproject.toml`; ty
+counts `ty.toml` or `[tool.ty]`. To turn one on in a repo without config, set
+it to `true`, for example `git config --local claude.ruff true`. `claude.ruff`
+covers both hooks. Each hook uses the repo's `.venv` first, then `PATH`, then
+`uvx`, and does nothing when it finds none. `uvx` downloads the tool the first
+time a hook needs it.
+
+[Claude Code setup](docs/claude-code.md#hooks) has the details of each hook.
 
 ## How it fits together
 

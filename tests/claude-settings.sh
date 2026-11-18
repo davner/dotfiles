@@ -41,8 +41,10 @@ SessionStart  -                               skills/impeccable/scripts/impeccab
 PreToolUse    Bash                            $HOME/.claude/hooks/guard-bash.sh
 PreToolUse    Skill|Write|Edit|MultiEdit|Bash $HOME/.claude/hooks/skill-gate.sh
 PostToolUse   Write|Edit|MultiEdit            $HOME/.claude/hooks/comment-audit.sh
+PostToolUse   Write|Edit|MultiEdit            $HOME/.claude/hooks/ruff-after-edit.sh
 PostToolUse   Edit|Write                      skills/impeccable/scripts/impeccable
 Stop          -                               skills/impeccable/scripts/impeccable
+Stop          -                               $HOME/.claude/hooks/python-stop-check.sh
 statusLine    -                               ~/.claude/hooks/statusline.sh
 HOOKS
   eq "the table above covers every command settings.base.json runs" "$rows" \
