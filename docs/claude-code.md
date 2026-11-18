@@ -69,6 +69,8 @@ Every file in [`home/.claude/hooks/`](../home/.claude/hooks/) is linked into `~/
 | Before every shell command | `guard-bash.sh` | Blocks risky git (`add .`, `reset --hard`, `clean -f`, `branch -D`, `checkout .`, `--force`, `-f` and `+ref` pushes, `--force-with-lease` unless the repo also opted in with `git config claude.allowForcePush true`, plain push unless the repo opted in with `cc-push on`, and a stash that takes the newest entry or has no tag: bare `git stash`, `pop`, `clear`, `apply`, `drop` or `branch` without a ref, `push` or `save` without `-m`), opening or merging a PR with `gh` or `gh-axi` unless the repo opted in with `git config claude.allowPrs true`, and commit messages that credit an AI or break the one-line shape |
 | Before Skill, Write, Edit, MultiEdit and Bash | `skill-gate.sh` | Blocks a write to a TypeScript file until that agent has loaded `typescript-style-guide`; the rule `~/.claude/rules/typescript.md` asks for the skill as soon as a TypeScript file is read. It misses `touch`, `dd of=`, writes from inside python or node, and `cp a.ts dir` without a trailing slash |
 | After every file write | `comment-audit.sh` | Flags code comments that tell history or refer to the session |
+| After a write to a `.py` or `.pyi` file | `ruff-after-edit.sh` | Runs `ruff check --fix`, then `ruff format`, on that one file, then a read-only `ruff check` whose errors go back to Claude. Fix comes first because a fix can leave code that needs formatting. Runs where the repo configures ruff: `ruff.toml`, `.ruff.toml` or `[tool.ruff]` in `pyproject.toml`, from the file's folder up to the repo root. `git config --local claude.ruff false` turns it off, `true` turns it on without config |
+| On stop | `python-stop-check.sh` | Checks the `.py` and `.pyi` files `git status` shows as changed or new, without changing them: `ruff check` and `ruff format --check` where ruff is on, `ty check` where ty is on, and a blanket `# noqa` or `# type: ignore` (one that names no code) on an added line. Sends Claude back with a fix command per file, once per stop. ty counts `ty.toml` or `[tool.ty]`, and `claude.ty` switches it the way `claude.ruff` does |
 | Session start | `session-name.sh` | Names the session after its repo |
 | Session start, after Edit or Write, and on stop | impeccable's own `scripts/impeccable hook` | Checks UI files for design anti-patterns; does nothing until impeccable is installed |
 | Always | `statusline.sh` | Shows model, context used, and rate limits |
@@ -82,6 +84,11 @@ or `{ }` still counts, and `guard-bash.sh` also judges git behind `VAR=x`,
 `env`, `sudo`, `command`, `exec`, `nohup`, `time`, `nice` and `timeout`. Each
 hook follows its `~/.claude/hooks` link back to the repo and runs the parser
 that sits beside it.
+
+`python-tools.sh` holds the two rules the Python hooks share: whether ruff or
+ty is on for a file (the `claude.ruff` or `claude.ty` switch, else the repo's
+config), and which binary runs it: the repo's `.venv/bin` first, then `PATH`,
+then `uvx`. Without any of them the hook skips that tool.
 
 `ai-credit.sh` is the one place that decides what credits an AI tool and which
 phrases narrate the session. `guard-bash.sh`, `comment-audit.sh` and the `pr`
