@@ -29,6 +29,12 @@
             "command": "[ ! -x \"$HOME/.claude/hooks/comment-audit.sh\" ] || \"$HOME/.claude/hooks/comment-audit.sh\"",
             "timeout": 5,
             "statusMessage": "Auditing comments"
+          },
+          {
+            "type": "command",
+            "command": "[ ! -x \"$HOME/.claude/hooks/ruff-after-edit.sh\" ] || \"$HOME/.claude/hooks/ruff-after-edit.sh\"",
+            "timeout": 60,
+            "statusMessage": "Formatting Python"
           }
         ]
       },
